@@ -35,12 +35,19 @@
             --text-muted: #b88a70;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            height: 100%;
+            overflow: hidden; /* desktop: grid fills viewport */
+        }
         body {
             background: var(--bg-deep);
             font-family: Arial, sans-serif;
-            min-height: 100vh;
             color: var(--text);
             transition: background 0.3s, color 0.3s;
+        }
+        /* On mobile, body must scroll since grid becomes flow layout */
+        @media (max-width: 1100px) {
+            html, body { height: auto; overflow: auto; overflow-x: hidden; }
         }
         /* ===== HEADER ===== */
         #main-header {
@@ -86,7 +93,7 @@
         [data-theme="light"] .side-panel { background: linear-gradient(to bottom, #fdf5f0f5, #f5e8e0f5); border-left: 1px solid #c8a08855; }
         .side-panel.active { right: 0; }
         .panel-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 16px; border-bottom: 1px solid #4a1a0a55; margin-bottom: 20px; }
-        .panel-header h2 { font-family:  Arial, sans-serif; font-size: 15px; color: var(--text); letter-spacing: 2px; }
+        .panel-header h2 { font-family: Arial, sans-serif; font-size: 15px; color: var(--text); letter-spacing: 2px; }
         .close-btn { font-size: 22px; color: var(--text-dim); cursor: pointer; transition: color 0.2s; }
         .close-btn:hover { color: var(--accent); }
         .panel-section { background: #3a0a0433; border: 1px solid #4a1a0a44; border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; }
@@ -116,9 +123,11 @@
             grid-template-columns: 60% 1fr;
             grid-template-rows: auto 1fr;
             gap: 10px;
+            /* Prevent body scroll on desktop — grid fills viewport */
+            overflow: hidden;
         }
         .sensor-bar-cell { grid-column: 1; grid-row: 1; }
-        .sensor-bar {margin-top: 0 !important;}
+        .sensor-bar { margin-top: 0 !important; }
         .map-col { grid-column: 1; grid-row: 2; position: relative; }
         .search-cell { grid-column: 2; grid-row: 1; }
         .mid-right-cell {
@@ -128,82 +137,125 @@
             gap: 10px;
             min-height: 0;
         }
-         /* ===== TABLET (max 1100px) ===== */
+
+        /* ===== RIGHT COLUMN WRAPPER (handles view switching) ===== */
+        .right-col-wrapper {
+            grid-column: 2;
+            grid-row: 1 / 3;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        /* Default view: search + pinned + incidents stacked */
+        .right-default-view {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex: 1;
+            min-height: 0;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        .right-default-view.hidden {
+            display: none;
+        }
+        .right-mid-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        /* History panel — takes full right column */
+        .right-history-view {
+            display: none;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+            animation: hv-slidein 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .right-history-view.visible {
+            display: flex;
+        }
+        @keyframes hv-slidein {
+            from { opacity: 0; transform: translateX(20px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+
+        /* ===== TABLET (max 1100px) ===== */
         @media (max-width: 1100px) {
             .dashboard-grid {
                 position: relative; top: 0;
                 display: flex; flex-direction: column;
-                height: auto; padding: 10px;
+                height: auto; padding: 10px; gap: 10px;
+                overflow: visible;
             }
-            .flames-map-wrap { height: 55vw; min-height: 280px; }
-            .mid-right-cell { grid-template-columns: 1fr 1fr; }
+            .right-col-wrapper { grid-column: unset; grid-row: unset; min-height: 500px; }
+            .right-mid-row { grid-template-columns: 1fr 1fr; }
+            .flames-map-wrap { height: 55vw; min-height: 300px; }
             .sensor-tile { padding: 14px 12px; }
         }
 
         /* ===== MOBILE (max 768px) ===== */
         @media (max-width: 768px) {
+            /* Header */
             #main-header {
-                height: auto; min-height: 56px;
+                height: auto; min-height: 52px;
                 padding: 8px 12px;
-                flex-wrap: wrap; gap: 6px;
+                flex-wrap: nowrap; gap: 8px;
             }
-            .header-logo img { width: 32px; }
-            .header-logo h1 { font-size: 14px; letter-spacing: 2px; }
+            .header-logo img { width: 30px; }
+            .header-logo h1 { font-size: 13px; letter-spacing: 2px; }
             .username-badge { font-size: 11px; padding: 3px 10px; }
             .ws-indicator { font-size: 11px; }
             .ws-dot { width: 7px; height: 7px; }
             .profile-icon-btn img { width: 30px; height: 30px; }
-            #admin-btn { font-size: 10px !important; padding: 4px 10px !important; }
+            #admin-btn { font-size: 10px !important; padding: 4px 8px !important; letter-spacing: 1px !important; }
 
+            /* Grid → single column stack */
             .dashboard-grid {
                 position: relative; top: 0;
                 display: flex; flex-direction: column;
                 height: auto; padding: 8px; gap: 8px;
             }
 
-            .sensor-bar {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 8px;
-            }
-            .sensor-tile {
-                padding: 12px 10px;
-                min-width: unset;
-                flex: unset;
-            }
+            /* Sensor bar → 2x2 grid */
+            .sensor-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+            .sensor-tile { padding: 12px 10px; min-width: unset; flex: unset; }
             .sensor-tile img { width: 18px; }
             .sensor-tile-label { font-size: 9px; }
             .sensor-tile-val { font-size: 15px; }
             .sensor-node-info {
-                margin-left: auto;
-                text-align: right;
-                font-size: 10px;               /* slightly smaller is often better on mobile */
-                color: var(--text-muted);
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                max-width: 45%;                /* relative to tile width – very forgiving */
-                padding-left: 4px;             /* tiny breathing room from value */
+                margin-left: auto; text-align: right; font-size: 10px;
+                white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+                max-width: 40%; padding-left: 4px;
             }
 
+            /* Map */
             .map-col { width: 100%; }
-            .flames-map-wrap { height: 55vw; min-height: 240px; }
-            #flames-map { min-height: 240px; }
+            .flames-map-wrap { height: 65vw; min-height: 260px; }
+            #flames-map { min-height: 260px; }
 
-            .search-cell, .mid-right-cell { width: 100%; }
-            .mid-right-cell {
-                display: flex; flex-direction: column; gap: 8px;
-            }
+            /* Right column */
+            .right-col-wrapper { width: 100%; min-height: unset; }
+            .right-default-view { min-height: unset; }
+            .right-mid-row { grid-template-columns: 1fr 1fr; gap: 8px; }
+            .pinned-panel { min-height: 120px; }
+            .incidents-panel { min-height: 200px; }
 
+            /* Panels */
             .panel { padding: 12px; }
             .panel-title { font-size: 10px; margin-bottom: 8px; }
             .pinned-num { font-size: 28px; }
-
             .incident-title { font-size: 13px; }
             .incident-meta { font-size: 11px; }
             .btn-route { font-size: 12px; padding: 6px; }
             .incident-badge { font-size: 12px; }
 
+            /* Route info box */
             #route-info-box {
                 left: 8px; right: 8px; transform: none;
                 width: auto; font-size: 12px;
@@ -211,21 +263,97 @@
             }
             #route-dist img, #route-time img { width: 16px; }
 
+            /* Side panel full width */
             .side-panel { width: 100%; right: -100%; }
+
+            /* History panel on mobile: show as full-screen overlay */
+            .right-history-view.visible {
+                position: fixed;
+                inset: 0;
+                top: 0;
+                z-index: 5000;
+                background: var(--bg-deep);
+                padding: 0;
+                animation: hv-slidein 0.25s ease;
+                overflow: hidden;
+            }
+            .right-history-view.visible .history-panel {
+                border-radius: 0;
+                border: none;
+                height: 100dvh;
+                height: 100vh;
+                overflow: hidden;
+            }
+
+            /* History panel internals — tighter on mobile */
+            .hp-back-row { padding: 10px 14px 8px; gap: 8px; }
+            .hp-back-btn { padding: 5px 10px; font-size: 11px; }
+            .hp-node-badge { font-size: 9px; padding: 2px 10px; letter-spacing: 1px; }
+            .hp-controls { padding: 8px 14px 6px; gap: 6px; }
+            .hp-limit-btn { padding: 3px 10px; font-size: 10px; }
+            .hp-stats { padding: 6px 14px 0; gap: 5px; }
+            .hp-stat { padding: 4px 10px; font-size: 10px; }
+            .hp-stat-label { font-size: 8px; }
+            .hp-chart-wrap { padding: 6px 14px 0; }
+            .hp-chart-tabs { gap: 3px; margin-bottom: 5px; }
+            .hp-chart-tab { padding: 3px 8px; font-size: 9px; letter-spacing: 0.5px; }
+            .hp-chart { height: 60px; }
+            .hp-table-wrap { padding: 0 14px 14px; }
+            .hp-table-header {
+                grid-template-columns: 22px 86px 46px 40px 46px 40px 52px 42px 36px;
+                padding: 6px 6px;
+                margin-top: 8px;
+            }
+            .hp-table-header span { font-size: 8px; letter-spacing: 0.8px; }
+            .hp-table { font-size: 11px; }
+            .hp-table tbody td { padding: 6px 6px; }
+            .hp-table td.hp-time { font-size: 9px; }
         }
-        
+
         /* ===== SMALL MOBILE (max 480px) ===== */
         @media (max-width: 480px) {
             .header-logo h1 { font-size: 12px; letter-spacing: 1px; }
-            .header-logo img { width: 28px; }
+            .header-logo img { width: 26px; }
             .username-badge { display: none; }
             .ws-indicator span { display: none; }
-            .sensor-bar { grid-template-columns: 1fr 1fr; gap: 6px; }
+
+            .sensor-bar { grid-template-columns: 1fr 1fr; gap: 5px; }
             .sensor-tile { padding: 10px 8px; }
             .sensor-tile-val { font-size: 13px; }
-            .flames-map-wrap { height: 60vw; min-height: 200px; }
-            #flames-map { min-height: 200px; }
+
+            .flames-map-wrap { height: 70vw; min-height: 220px; }
+            #flames-map { min-height: 220px; }
+
+            /* Stack pinned + incidents vertically on very small screens */
+            .right-mid-row { grid-template-columns: 1fr; gap: 8px; }
+            .pinned-panel { min-height: 100px; }
+            .incidents-panel { min-height: 160px; }
+
+            /* History table on tiny phones: horizontal scroll */
+            .hp-table-wrap { overflow-x: auto; }
+            .hp-table-header {
+                min-width: 440px;
+                grid-template-columns: 22px 82px 46px 40px 46px 40px 52px 42px 36px;
+            }
+            .hp-table-body-scroll { overflow-x: auto; }
+            .hp-table { min-width: 440px; }
+
+            /* Stat pills: 2 per row */
+            .hp-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+            .hp-stat { padding: 5px 8px; }
+
+            /* Chart tabs: 2 per row */
+            .hp-chart-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+            .hp-chart-tab { text-align: center; padding: 4px 6px; }
+
+            /* Admin modal full-width */
+            #admin-modal { padding: 10px 0; }
+            #admin-modal > div { width: 96vw; border-radius: 12px; }
+            #admin-tabs-row { flex-wrap: wrap; gap: 4px; padding: 10px 14px 0; }
+            #admin-tabs-row button { font-size: 9px !important; padding: 7px 10px !important; letter-spacing: 1px !important; }
+            #admin-modal > div > div:last-child { padding: 16px 14px 20px; }
         }
+
         /* ===== PANELS ===== */
         .panel {
             background: var(--bg-panel);
@@ -239,9 +367,9 @@
         }
         .panel-title { font-size: 11px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
         .panel-title img { width: 16px; opacity: 0.7; }
-        
+
         /* SEARCH */
-        .search-panel { flex-shrink: 0; overflow:visible !important; }
+        .search-panel { flex-shrink: 0; overflow: visible !important; }
         .search-wrap { position: relative; }
         .search-wrap input {
             width: 100%; background: #12060566; border: 1px solid #4a1a0a;
@@ -261,10 +389,9 @@
         .suggestion-item { padding: 9px 12px; font-size: 13px; color: var(--text); cursor: pointer; border-bottom: 1px solid #3a1a0a44; }
         .suggestion-item:hover { background: #3a1a0a55; }
 
-
         /* PINNED */
         .pinned-panel { flex: 1; min-height: 0; overflow: hidden; padding: 12px 16px; }
-        .pinned-count-view { display: flex; justify-content: space-between; align-items: flex-end;}
+        .pinned-count-view { display: flex; justify-content: space-between; align-items: flex-end; }
         .pinned-num { font-size: 36px; font-family: Arial, sans-serif; color: var(--text); line-height: 1; }
         .pinned-label { font-size: 12px; color: var(--text-dim); margin-top: 3px; }
         .btn-small {
@@ -284,6 +411,7 @@
         .btn-icon-sm { background: none; border: none; cursor: pointer; padding: 3px 6px; border-radius: 4px; font-size: 12px; color: var(--text-dim); transition: 0.2s; }
         .btn-icon-sm:hover { background: #5a1a0a44; color: var(--text); }
         .no-pinned { color: var(--text-muted); font-size: 13px; text-align: center; margin-top: 12px; }
+
         /* MAP */
         .flames-map-wrap {
             border-radius: 12px; overflow: hidden; height: 100%;
@@ -315,6 +443,7 @@
         .zoom-btn { background: transparent; border: none; color: var(--accent); font-size: 14px; font-weight: bold; padding: 8px 0; width: 34px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
         .zoom-btn:hover { background: #e14f0022; }
         .zoom-div { height: 1px; background: #e14f0044; }
+
         /* ROUTE MENU */
         .route-menu {
             position: absolute; top: 138px; right: 12px; z-index: 1001;
@@ -327,6 +456,7 @@
         #calc-route:hover { background: #e14f0055; }
         #clear-route:hover { background: #ff000055; }
         .route-divider { color: #e14f0066; }
+
         /* ROUTE INFO BOX */
         #route-info-box {
             position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
@@ -341,17 +471,10 @@
         .info-div { color: #5a3a2a; }
         #close-info-btn { background: none; border: none; color: white; cursor: pointer; font-size: 20px; margin-left: 6px; transition: color 0.2s; }
         #close-info-btn:hover { color: var(--red); }
+
         /* RIGHT COLUMN panels */
         .pinned-panel { min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
         .incidents-panel { min-height: 0; display: flex; flex-direction: column; }
-        .node-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .node-select-hint { font-size: 12px; color: var(--text-muted); }
-        .node-data { display: flex; flex-direction: column; gap: 6px; }
-        .node-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
-        .node-row img { width: 16px; opacity: 0.8; flex-shrink: 0; }
-        .node-key { color: var(--text-dim); width: 80px; flex-shrink: 0; }
-        .node-val { color: #ff904f; font-weight: 600; }
-        .node-alert { color: var(--red); font-weight: 700; }
         .node-placeholder { color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px 0; }
         .badge-status { font-size: 11px; letter-spacing: 1px; padding: 3px 8px; border-radius: 10px; font-weight: 600; }
         .badge-online { background: #2ecc7133; color: var(--green); border: 1px solid #2ecc7155; }
@@ -364,7 +487,7 @@
         .incident-list { overflow-y: auto; flex: 1; padding-right: 4px; }
         .incident-list::-webkit-scrollbar { width: 4px; }
         .incident-list::-webkit-scrollbar-thumb { background: #4a2b27; border-radius: 10px; }
-        .incident-card { border-bottom: 1px solid #3a1a0a44; padding: 12px 0; }
+        .incident-card { border-bottom: 1px solid #3a1a0a44; padding: 8px 0; }
         .incident-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
         .incident-meta { font-size: 12px; color: var(--text-dim); margin-bottom: 3px; }
         .txt-active { color: var(--red); font-weight: 700; }
@@ -377,16 +500,19 @@
             font-weight: 600; cursor: pointer; transition: 0.3s; letter-spacing: 1px;
         }
         .btn-route:hover { background: var(--accent); box-shadow: 0 0 15px #e14f0055; }
+
         /* LIVE TAG */
         .live-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--green); letter-spacing: 1px; }
         .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse-dot 1.5s ease infinite; }
+
         /* SCROLLBAR global */
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #4a2020; border-radius: 10px; }
+
         /* SENSOR BAR */
         .sensor-bar {
-            display: flex; align-items: center; gap: 10px; flex-wrap: wrap; 
+            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
         }
         .sensor-tile {
             flex: 1; min-width: 120px;
@@ -404,9 +530,6 @@
         .sensor-tile-val.alert { color: var(--red); }
         .sensor-tile-val.ok { color: var(--green); }
         .sensor-node-info { margin-left: auto; text-align: right; font-size: 11px; color: var(--text-muted); }
-        /* shrink incidents list spacing so it fits */
-        .incident-list { overflow-y: auto; flex: 1; padding-right: 2px; }
-        .incident-card { border-bottom: 1px solid #3a1a0a44; padding: 8px 0; }
 
         .leaflet-popup-content-wrapper { background: #1e0a08f5 !important; color: white !important; border-radius: 12px !important; border: 2px solid var(--accent) !important; }
         .leaflet-popup-tip { background: #1e0a08 !important; }
@@ -418,6 +541,180 @@
         .popup-save { flex: 1; background: #8b2200; border: none; color: white; padding: 7px; border-radius: 6px; cursor: pointer; font-weight: 600; font-family: Arial, sans-serif; transition: 0.2s; }
         .popup-save:hover { background: var(--accent); }
         .popup-cancel { background: transparent; border: 1px solid #4a1a0a44; color: #7a4a3a; padding: 7px 12px; border-radius: 6px; cursor: pointer; font-family: Arial, sans-serif; }
+
+        /* ── "View History" button in node popup ── */
+        .popup-history-btn {
+            width: 100%; margin-top: 10px; padding: 7px;
+            background: #2a1a0066; border: 1px solid #c43d0088;
+            color: #ff9055; border-radius: 7px;
+            font-size: 12px; font-weight: 600; cursor: pointer;
+            letter-spacing: 1px; transition: 0.25s;
+            font-family: Arial, sans-serif;
+        }
+        .popup-history-btn:hover {
+            background: linear-gradient(135deg,#6b1200,#a03000);
+            color: white; border-color: var(--accent);
+            box-shadow: 0 0 12px #e14f0044;
+        }
+
+        /* ── INLINE HISTORY PANEL ── */
+        .history-panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-top: 1px solid var(--border-glow);
+            border-radius: 12px;
+            padding: 0;
+            display: flex; flex-direction: column;
+            box-shadow: 0 8px 30px #00000044, inset 0 1px 0 #8b3a1a22;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        /* Back button row */
+        .hp-back-row {
+            display: flex; align-items: center; gap: 10px;
+            padding: 12px 16px 10px;
+            border-bottom: 1px solid #3a1a0a44;
+            flex-shrink: 0;
+        }
+        .hp-back-btn {
+            display: flex; align-items: center; gap: 6px;
+            background: transparent; border: 1px solid #4a1a0a55;
+            color: var(--text-dim); border-radius: 8px; padding: 5px 12px;
+            font-size: 12px; cursor: pointer; transition: 0.2s; font-family: Arial, sans-serif;
+        }
+        .hp-back-btn:hover { border-color: var(--accent); color: var(--text); background: #3a0a0433; }
+        .hp-back-arrow { font-size: 14px; }
+        .hp-node-badge {
+            font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 2px;
+            color: #ff7033; background: #3a0a0455;
+            border: 1px solid #c43d0055; border-radius: 20px; padding: 3px 12px;
+            margin-left: auto;
+        }
+
+        /* Controls row */
+        .hp-controls {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 16px 8px; border-bottom: 1px solid #2a1a0a33;
+            flex-shrink: 0; flex-wrap: wrap;
+        }
+        .hp-limit-label { font-size: 10px; color: #7a4a3a; letter-spacing: 1px; text-transform: uppercase; }
+        .hp-limit-btn {
+            background: #2a0a0455; border: 1px solid #4a1a0a55;
+            color: #9a6a5a; padding: 4px 12px; border-radius: 6px;
+            font-size: 11px; cursor: pointer; transition: 0.2s;
+        }
+        .hp-limit-btn.active, .hp-limit-btn:hover {
+            background: linear-gradient(135deg,#6b1200,#a03000);
+            border-color: var(--accent); color: white;
+        }
+        .hp-refresh {
+            margin-left: auto; background: none;
+            border: 1px solid #4a1a0a55; border-radius: 6px;
+            color: #9a6a5a; padding: 4px 12px; font-size: 11px; cursor: pointer; transition: 0.2s;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .hp-refresh:hover { border-color: #2ecc71; color: #2ecc71; }
+        .hp-refresh-icon { display: inline-block; transition: transform 0.5s; }
+        .hp-refresh.spinning .hp-refresh-icon { transform: rotate(360deg); }
+
+        /* Stat pills */
+        .hp-stats {
+            display: flex; gap: 6px; padding: 8px 16px 0; flex-wrap: wrap; flex-shrink: 0;
+        }
+        .hp-stat {
+            background: #2a0a0444; border: 1px solid #3a1a0a55; border-radius: 8px;
+            padding: 5px 12px; font-size: 11px;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .hp-stat-label { color: #5a3a2a; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; }
+        .hp-stat-val { color: #ff904f; font-weight: 700; }
+
+        /* Sparkline + metric tabs */
+        .hp-chart-wrap { padding: 8px 16px 0; flex-shrink: 0; }
+        .hp-chart-tabs {
+            display: flex; gap: 4px; margin-bottom: 6px; flex-wrap: wrap;
+        }
+        .hp-chart-tab {
+            padding: 3px 10px; border-radius: 5px; font-size: 10px; font-weight: 700;
+            letter-spacing: 1px; cursor: pointer; border: 1px solid transparent;
+            transition: 0.2s; background: #2a0a0444; color: #5a3a2a;
+        }
+        .hp-chart-tab:hover { opacity: 0.85; }
+        .hp-chart-tab.active { color: white; }
+        .hp-chart-tab[data-metric="temperature"]         { border-color: #ff6b3555; }
+        .hp-chart-tab[data-metric="temperature"].active  { background: #ff6b3533; border-color: #ff6b35; color: #ff8555; }
+        .hp-chart-tab[data-metric="humidity"]            { border-color: #3d9cff55; }
+        .hp-chart-tab[data-metric="humidity"].active     { background: #3d9cff22; border-color: #3d9cff; color: #6db8ff; }
+        .hp-chart-tab[data-metric="smoke"]               { border-color: #b0b0b055; }
+        .hp-chart-tab[data-metric="smoke"].active        { background: #b0b0b022; border-color: #c8c8c8; color: #d8d8d8; }
+        .hp-chart-tab[data-metric="flame"]               { border-color: #ff475755; }
+        .hp-chart-tab[data-metric="flame"].active        { background: #ff475722; border-color: #ff4757; color: #ff6575; }
+        .hp-chart-label {
+            font-size: 9px; color: #5a3a2a; letter-spacing: 2px;
+            text-transform: uppercase; margin-bottom: 5px;
+        }
+        .hp-chart {
+            height: 70px; background: #12050344; border-radius: 8px;
+            border: 1px solid #3a1a0a44; padding: 6px 8px;
+            position: relative; overflow: hidden;
+        }
+        .hp-chart svg { width: 100%; height: 100%; overflow: visible; }
+
+        /* Table */
+        .hp-table-wrap {
+            flex: 1; overflow-y: auto; padding: 0 16px 16px;
+            display: flex; flex-direction: column; min-height: 0;
+        }
+        .hp-table-wrap::-webkit-scrollbar { width: 4px; }
+        .hp-table-wrap::-webkit-scrollbar-thumb { background: #4a2020; border-radius: 10px; }
+        .hp-table-header {
+            display: grid;
+            grid-template-columns: 28px 108px 60px 50px 55px 50px 62px 54px 44px;
+            gap: 0;
+            background: #120503;
+            border: 1px solid #3a1a0a55;
+            border-radius: 8px 8px 0 0;
+            padding: 7px 8px;
+            flex-shrink: 0;
+            margin-top: 10px;
+        }
+        .hp-table-header span {
+            font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase;
+            color: #7a4a3a; font-weight: 700;
+        }
+        .hp-table-body-scroll {
+            flex: 1; overflow-y: auto; min-height: 0;
+            border: 1px solid #3a1a0a44; border-top: none;
+            border-radius: 0 0 8px 8px;
+        }
+        .hp-table-body-scroll::-webkit-scrollbar { width: 4px; }
+        .hp-table-body-scroll::-webkit-scrollbar-thumb { background: #4a2020; border-radius: 10px; }
+        .hp-table {
+            width: 100%; border-collapse: collapse; font-size: 12px;
+        }
+        .hp-table thead { display: none; }
+        .hp-table tbody tr { border-bottom: 1px solid #2a1a0a33; transition: background 0.15s; }
+        .hp-table tbody tr:hover { background: #3a1a0a22; }
+        .hp-table tbody td { padding: 7px 8px; color: #c8a080; }
+        .hp-table td.hp-num { color: #ff904f; font-weight: 600; font-family: monospace; }
+        .hp-table td.hp-time { color: #5a3a2a; font-size: 10px; }
+
+        /* Empty / loading */
+        .hp-state { text-align: center; padding: 30px 15px; color: #4a2a1a; font-size: 13px; }
+        .hp-spinner {
+            width: 24px; height: 24px; border: 3px solid #3a1a0a;
+            border-top-color: var(--accent); border-radius: 50%;
+            animation: spin 0.7s linear infinite; margin: 0 auto 10px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* AI badges inline */
+        .ai-badge { display: inline-block; font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 6px; letter-spacing: 0.5px; }
+        .ai-fire    { background: #ff475722; color: #ff4757; border: 1px solid #ff475544; }
+        .ai-normal  { background: #2ecc7122; color: #2ecc71; border: 1px solid #2ecc7144; }
+        .ai-unknown { background: #f1c40f22; color: #f1c40f; border: 1px solid #f1c40f44; }
     </style>
 </head>
 <body>
@@ -459,7 +756,7 @@
     </div>
     <button class="logout-btn" id="logout-trigger">
         <img src="icons/logout-icon.png" alt="logout">
-        <span style="font-family:  Arial, sans-serif;">Log Out</span>
+        <span style="font-family: Arial, sans-serif;">Log Out</span>
     </button>
 </div>
 <div id="panel-overlay" class="panel-overlay"></div>
@@ -527,59 +824,135 @@
         </div>
     </div>
 
-    <!-- Search -->
-    <div class="search-cell">
-        <div class="panel search-panel">
-            <div class="panel-title">
-                <span>Search Location</span>
-                <img src="icons/search-icon.png" alt="">
-            </div>
-            <div class="search-wrap">
-                <input type="text" id="mapSearchInput" placeholder="Search a place…" oninput="handleSearch(this.value)">
-                <span id="clearSearch" class="clr-btn" onclick="clearSearchInput()">×</span>
-                <img src="icons/search-icon.png" class="search-icon" id="search-icon-img" alt="">
-                <div id="suggestionsBox" class="suggestions-box"></div>
-            </div>
-        </div>
-    </div>
+    <!-- RIGHT COLUMN — single wrapper that switches between default and history views -->
+    <div class="right-col-wrapper">
 
-    <!-- Pinned + Incidents -->
-    <div class="mid-right-cell">
-        <!-- Pinned Locations -->
-        <div class="panel pinned-panel">
-            <div class="panel-title">
-                <span>Pinned</span>
-                <img src="icons/pinned-location.png" alt="">
-            </div>
-            <div class="pinned-count-view" id="pinned-count-view">
-                <div>
-                    <div class="pinned-num" id="pinned-count">0</div>
-                    <div class="pinned-label">locations saved</div>
+        <!-- DEFAULT VIEW: Search + Pinned + Incidents -->
+        <div class="right-default-view" id="right-default-view">
+            <!-- Search -->
+            <div class="panel search-panel">
+                <div class="panel-title">
+                    <span>Search Location</span>
+                    <img src="icons/search-icon.png" alt="">
                 </div>
-                <button class="btn-small" id="view-all-btn" onclick="togglePinnedList()">View All</button>
-            </div>
-            <div class="pinned-list" id="pinned-list">
-                <button class="btn-small" style="margin-bottom:8px;" onclick="togglePinnedList()">Hide</button>
-                <div class="no-pinned" id="no-pinned-msg">No locations pinned yet.</div>
-            </div>
-        </div>
-        <!-- Live Incidents -->
-        <div class="panel incidents-panel">
-            <div class="incident-header-row">
-                <div class="panel-title" style="margin-bottom:0;">
-                    <span>Live Incidents</span>
-                    <span id="incidents-last-update" style="font-size:11px; color:greenyellow; margin-left:12px; opacity:0.8;"></span>
-                </div>
-                <div class="incident-badge">
-                    <img src="icons/FireIncident.png" alt="fire">
-                    <span id="incident-count">5</span>
+                <div class="search-wrap">
+                    <input type="text" id="mapSearchInput" placeholder="Search a place…" oninput="handleSearch(this.value)">
+                    <span id="clearSearch" class="clr-btn" onclick="clearSearchInput()">×</span>
+                    <img src="icons/search-icon.png" class="search-icon" id="search-icon-img" alt="">
+                    <div id="suggestionsBox" class="suggestions-box"></div>
                 </div>
             </div>
-            <div class="incident-list" id="incident-list">
-                <!-- Filled by JS -->
+
+            <!-- Pinned + Incidents -->
+            <div class="right-mid-row">
+                <!-- Pinned Locations -->
+                <div class="panel pinned-panel">
+                    <div class="panel-title">
+                        <span>Pinned</span>
+                        <img src="icons/pinned-location.png" alt="">
+                    </div>
+                    <div class="pinned-count-view" id="pinned-count-view">
+                        <div>
+                            <div class="pinned-num" id="pinned-count">0</div>
+                            <div class="pinned-label">locations saved</div>
+                        </div>
+                        <button class="btn-small" id="view-all-btn" onclick="togglePinnedList()">View All</button>
+                    </div>
+                    <div class="pinned-list" id="pinned-list">
+                        <button class="btn-small" style="margin-bottom:8px;" onclick="togglePinnedList()">Hide</button>
+                        <div class="no-pinned" id="no-pinned-msg">No locations pinned yet.</div>
+                    </div>
+                </div>
+
+                <!-- Live Incidents -->
+                <div class="panel incidents-panel">
+                    <div class="incident-header-row">
+                        <div class="panel-title" style="margin-bottom:0;">
+                            <span>Live Incidents</span>
+                            <span id="incidents-last-update" style="font-size:11px; color:greenyellow; margin-left:12px; opacity:0.8;"></span>
+                        </div>
+                        <div class="incident-badge">
+                            <img src="icons/FireIncident.png" alt="fire">
+                            <span id="incident-count">0</span>
+                        </div>
+                    </div>
+                    <div class="incident-list" id="incident-list"></div>
+                </div>
             </div>
-        </div>
-    </div>
+        </div><!-- /right-default-view -->
+
+        <!-- HISTORY VIEW: full-height history panel -->
+        <div class="right-history-view" id="right-history-view">
+            <div class="history-panel">
+                <!-- Back button row -->
+                <div class="hp-back-row">
+                    <button class="hp-back-btn" onclick="closeHistoryPanel()">
+                        <span class="hp-back-arrow">←</span> Back
+                    </button>
+                    <span style="font-size:12px; color:var(--text-dim); letter-spacing:1px;">SENSOR HISTORY</span>
+                    <span class="hp-node-badge" id="hp-node-id">—</span>
+                </div>
+
+                <!-- Controls -->
+                <div class="hp-controls">
+                    <span class="hp-limit-label">Show:</span>
+                    <button class="hp-limit-btn" onclick="setHistoryLimit(20)">20</button>
+                    <button class="hp-limit-btn active" onclick="setHistoryLimit(50)">50</button>
+                    <button class="hp-limit-btn" onclick="setHistoryLimit(100)">100</button>
+                    <button class="hp-limit-btn" onclick="setHistoryLimit(200)">200</button>
+                    <button class="hp-refresh" onclick="refreshHistory()" id="hp-refresh-btn">
+                        <span class="hp-refresh-icon">⟳</span> Refresh
+                    </button>
+                </div>
+
+                <!-- Stats -->
+                <div class="hp-stats" id="hp-stats"></div>
+
+                <!-- Chart with metric tabs -->
+                <div class="hp-chart-wrap">
+                    <div class="hp-chart-tabs">
+                        <button class="hp-chart-tab active" data-metric="temperature" onclick="switchChartMetric('temperature')">🌡 Temp</button>
+                        <button class="hp-chart-tab" data-metric="humidity" onclick="switchChartMetric('humidity')">💧 Humidity</button>
+                        <button class="hp-chart-tab" data-metric="smoke" onclick="switchChartMetric('smoke')">💨 Smoke</button>
+                        <button class="hp-chart-tab" data-metric="flame" onclick="switchChartMetric('flame')">🔥 Flame</button>
+                    </div>
+                    <div class="hp-chart-label" id="hp-chart-label">Temperature Trend (°C)</div>
+                    <div class="hp-chart">
+                        <svg id="hp-chart-svg" viewBox="0 0 800 70" preserveAspectRatio="none">
+                            <text x="400" y="40" text-anchor="middle" fill="#3a1a0a" font-size="13">No data yet</text>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Record count -->
+                <div style="padding:4px 16px 0; font-size:11px; color:var(--text-muted); flex-shrink:0;">
+                    <span id="hp-record-count">0 readings</span>
+                </div>
+
+                <!-- Table with fixed detached header -->
+                <div class="hp-table-wrap">
+                    <div class="hp-table-header" id="hp-table-header">
+                        <span>#</span>
+                        <span>Timestamp</span>
+                        <span>Temp °C</span>
+                        <span>Hum %</span>
+                        <span>Smoke</span>
+                        <span>Flame</span>
+                        <span>AI</span>
+                        <span>Conf.</span>
+                        <span>RSSI</span>
+                    </div>
+                    <div class="hp-table-body-scroll" id="hp-table-body">
+                        <div class="hp-state">
+                            <div class="hp-spinner"></div>
+                            Select a node to view its history
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div><!-- /right-history-view -->
+
+    </div><!-- /right-col-wrapper -->
 </div>
 
 <!-- LEAFLET -->
@@ -587,49 +960,42 @@
 
 <!-- ADMIN MODAL -->
 <div id="admin-modal" style="display:none;position:fixed;inset:0;z-index:30000;background:rgba(0,0,0,0.82);backdrop-filter:blur(6px);align-items:flex-start;justify-content:center;overflow-y:auto;padding:30px 0;">
-    <div style="background:linear-gradient(135deg,#1e0a08,#2d1209);border:1px solid #5a1a0a88;border-radius:16px;width:640px;max-width:95vw;box-shadow:0 0 60px #3a0a0088;margin:auto;position:relative;">
-
-        <!-- Modal Header -->
+    <div style="background:linear-gradient(135deg,#1e0a08,#2d1209);border:1px solid #5a1a0a88;border-radius:16px;width:680px;max-width:95vw;box-shadow:0 0 60px #3a0a0088;margin:auto;position:relative;">
         <div style="display:flex;justify-content:space-between;align-items:center;padding:22px 28px 18px;border-bottom:1px solid #4a1a0a55;">
             <h2 style="font-family:'Cinzel',serif;font-size:16px;color:#e8c4a0;letter-spacing:3px;">⚙ ADMIN PANEL</h2>
             <span onclick="closeAdminModal()" style="font-size:22px;color:#9a6a5a;cursor:pointer;line-height:1;transition:color 0.2s;" onmouseover="this.style.color='#e14f00'" onmouseout="this.style.color='#9a6a5a'">✕</span>
         </div>
-
-        <!-- Tabs -->
         <div style="display:flex;gap:4px;padding:16px 28px 0;border-bottom:1px solid #4a1a0a44;" id="admin-tabs-row">
             <button id="admin-tab-invite" onclick="switchAdminTab('invite')" style="padding:9px 22px;border:none;border-radius:8px 8px 0 0;font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;cursor:pointer;transition:0.2s;background:linear-gradient(135deg,#8b1a00,#c43d00);color:white;">🎟 INVITE CODES</button>
             <button id="admin-tab-users" onclick="switchAdminTab('users')" style="padding:9px 22px;border:none;border-radius:8px 8px 0 0;font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;cursor:pointer;transition:0.2s;background:#2a0a0466;color:#9a6a5a;">👥 USERS</button>
+            <button id="admin-tab-orgs" onclick="switchAdminTab('orgs')" style="padding:9px 22px;border:none;border-radius:8px 8px 0 0;font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;cursor:pointer;transition:0.2s;background:#2a0a0466;color:#9a6a5a;">🏢 ORGANIZATIONS</button>
         </div>
-
-        <!-- Tab Body -->
         <div style="padding:24px 28px 28px;">
-
             <!-- INVITE CODES TAB -->
             <div id="admin-panel-invite">
-
-                <!-- Generate -->
                 <div style="background:#2a0a0444;border:1px solid #4a1a0a55;border-radius:12px;padding:20px;margin-bottom:18px;">
                     <div style="font-size:11px;letter-spacing:2px;color:#9a6a5a;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
                         <span style="display:inline-block;width:3px;height:16px;background:#e14f00;border-radius:2px;flex-shrink:0;"></span>Generate Invite Code
                     </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+                    <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:14px;margin-bottom:14px;">
                         <div>
-                            <label style="display:block;font-size:10px;color:#9a6a5a;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Organization ID</label>
-                            <input id="admin-invite-org-id" type="number" placeholder="e.g. 1" style="width:100%;background:#12060566;border:1px solid #4a1a0a;border-radius:8px;padding:10px 12px;color:#f0d0b8;font-size:14px;outline:none;" onfocus="this.style.borderColor='#e14f00';this.style.boxShadow='0 0 10px #e14f0033'" onblur="this.style.borderColor='#4a1a0a';this.style.boxShadow='none'">
+                            <label style="display:block;font-size:10px;color:#9a6a5a;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Organization</label>
+                            <select id="admin-invite-org-select" style="width:100%;background:#12060566;border:1px solid #4a1a0a;border-radius:8px;padding:10px 12px;color:#f0d0b8;font-size:14px;outline:none;">
+                                <option value="">Select Organization</option>
+                            </select>
                         </div>
                         <div>
                             <label style="display:block;font-size:10px;color:#9a6a5a;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Expires (days)</label>
-                            <input id="admin-invite-expires" type="number" value="30" style="width:100%;background:#12060566;border:1px solid #4a1a0a;border-radius:8px;padding:10px 12px;color:#f0d0b8;font-size:14px;outline:none;" onfocus="this.style.borderColor='#e14f00';this.style.boxShadow='0 0 10px #e14f0033'" onblur="this.style.borderColor='#4a1a0a';this.style.boxShadow='none'">
+                            <input id="admin-invite-expires" type="number" value="30" style="width:100%;background:#12060566;border:1px solid #4a1a0a;border-radius:8px;padding:10px 12px;color:#f0d0b8;font-size:14px;outline:none;">
                         </div>
                         <div>
-                            <label style="display:block;font-size:10px;color:#9a6a5a;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Max Uses (0 = unlimited)</label>
-                            <input id="admin-invite-max-uses" type="number" value="1" style="width:100%;background:#12060566;border:1px solid #4a1a0a;border-radius:8px;padding:10px 12px;color:#f0d0b8;font-size:14px;outline:none;" onfocus="this.style.borderColor='#e14f00';this.style.boxShadow='0 0 10px #e14f0033'" onblur="this.style.borderColor='#4a1a0a';this.style.boxShadow='none'">
+                            <label style="display:block;font-size:10px;color:#9a6a5a;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Max Uses</label>
+                            <input id="admin-invite-max-uses" type="number" value="1" style="width:100%;background:#12060566;border:1px solid #4a1a0a;border-radius:8px;padding:10px 12px;color:#f0d0b8;font-size:14px;outline:none;">
                         </div>
                         <div style="display:flex;align-items:flex-end;">
                             <button onclick="adminGenerateInvite()" style="width:100%;padding:11px;background:linear-gradient(135deg,#8b1a00,#c43d00);border:1px solid #e14f0055;border-radius:8px;color:white;font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;cursor:pointer;transition:0.3s;" onmouseover="this.style.boxShadow='0 0 15px #e14f0055'" onmouseout="this.style.boxShadow='none'">Generate</button>
                         </div>
                     </div>
-                    <!-- Result box -->
                     <div id="admin-invite-result" style="display:none;background:#0a160a;border:1px solid #2ecc7144;border-radius:10px;padding:18px;text-align:center;">
                         <div style="font-size:10px;color:#2ecc71;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;">✓ Code Generated</div>
                         <div id="admin-invite-code-display" style="font-size:30px;font-weight:700;color:#f0d0b8;letter-spacing:8px;margin-bottom:8px;font-family:monospace;"></div>
@@ -637,8 +1003,6 @@
                         <button id="admin-copy-code-btn" onclick="adminCopyCode()" style="background:#2a0a0466;border:1px solid #4a1a0a;color:#f0d0b8;padding:7px 18px;border-radius:6px;cursor:pointer;font-size:13px;transition:0.2s;" onmouseover="this.style.borderColor='#e14f00'" onmouseout="this.style.borderColor='#4a1a0a'">📋 Copy Code</button>
                     </div>
                 </div>
-
-                <!-- Delete invite -->
                 <div style="background:#2a0a0444;border:1px solid #4a1a0a55;border-radius:12px;padding:20px;">
                     <div style="font-size:11px;letter-spacing:2px;color:#9a6a5a;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
                         <span style="display:inline-block;width:3px;height:16px;background:#ff4757;border-radius:2px;flex-shrink:0;"></span>Delete Invite Code
@@ -652,24 +1016,19 @@
                     </div>
                 </div>
             </div>
-
             <!-- USERS TAB -->
             <div id="admin-panel-users" style="display:none;">
-
-                <!-- Users list -->
                 <div style="background:#2a0a0444;border:1px solid #4a1a0a55;border-radius:12px;padding:20px;margin-bottom:18px;">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
                         <div style="font-size:11px;letter-spacing:2px;color:#9a6a5a;text-transform:uppercase;display:flex;align-items:center;gap:8px;">
                             <span style="display:inline-block;width:3px;height:16px;background:#e14f00;border-radius:2px;flex-shrink:0;"></span>All Users
                         </div>
-                        <button onclick="adminLoadUsers()" style="padding:6px 16px;background:linear-gradient(135deg,#8b1a00,#c43d00);border:1px solid #e14f0055;border-radius:6px;color:white;font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;cursor:pointer;transition:0.3s;" onmouseover="this.style.boxShadow='0 0 10px #e14f0055'" onmouseout="this.style.boxShadow='none'">⟳ Load</button>
+                        <button onclick="adminLoadUsers()" style="padding:6px 16px;background:linear-gradient(135deg,#8b1a00,#c43d00);border:1px solid #e14f0055;border-radius:6px;color:white;font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;cursor:pointer;transition:0.3s;">⟳ Load</button>
                     </div>
                     <div id="admin-users-table" style="max-height:280px;overflow-y:auto;">
                         <div style="color:#5a3a2a;font-size:13px;text-align:center;padding:24px;">Click "Load" to fetch users.</div>
                     </div>
                 </div>
-
-                <!-- Delete by ID -->
                 <div style="background:#2a0a0444;border:1px solid #4a1a0a55;border-radius:12px;padding:20px;">
                     <div style="font-size:11px;letter-spacing:2px;color:#9a6a5a;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
                         <span style="display:inline-block;width:3px;height:16px;background:#ff4757;border-radius:2px;flex-shrink:0;"></span>Delete User by ID
@@ -683,15 +1042,49 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Access Denied (shown for non-admin) -->
+            <!-- ORGS TAB -->
+            <div id="admin-panel-orgs" style="display:none;">
+                <div style="background:#2a0a0444;border:1px solid #4a1a0a55;border-radius:12px;padding:20px;margin-bottom:18px;">
+                    <div style="font-size:11px;letter-spacing:2px;color:#9a6a5a;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+                        <span style="display:inline-block;width:3px;height:16px;background:#e14f00;border-radius:2px;flex-shrink:0;"></span>Create New Organization
+                    </div>
+                    <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px;margin-bottom:14px;">
+                        <div>
+                            <label style="display:block;font-size:10px;color:#9a6a5a;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Organization Name</label>
+                            <input id="admin-create-org-name" type="text" placeholder="e.g. Dagupan Fire Dept" style="width:100%;background:#12060566;border:1px solid #4a1a0a;border-radius:8px;padding:10px 12px;color:#f0d0b8;font-size:14px;outline:none;">
+                        </div>
+                        <div>
+                            <label style="display:block;font-size:10px;color:#9a6a5a;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Expires (days)</label>
+                            <input id="admin-create-org-expires" type="number" value="30" style="width:100%;background:#12060566;border:1px solid #4a1a0a;border-radius:8px;padding:10px 12px;color:#f0d0b8;font-size:14px;outline:none;">
+                        </div>
+                        <div style="display:flex;align-items:flex-end;">
+                            <button onclick="adminCreateOrganization()" style="width:100%;padding:11px;background:linear-gradient(135deg,#8b1a00,#c43d00);border:1px solid #e14f0055;border-radius:8px;color:white;font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;cursor:pointer;transition:0.3s;">Create Org</button>
+                        </div>
+                    </div>
+                    <div id="admin-create-org-result" style="display:none;background:#0a160a;border:1px solid #2ecc7144;border-radius:10px;padding:18px;text-align:center;">
+                        <div style="font-size:10px;color:#2ecc71;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;">✓ Organization Created</div>
+                        <div id="admin-create-org-name-display" style="font-size:20px;font-weight:700;color:#f0d0b8;margin-bottom:8px;"></div>
+                        <div id="admin-create-org-meta" style="font-size:12px;color:#9a6a5a;"></div>
+                    </div>
+                </div>
+                <div style="background:#2a0a0444;border:1px solid #4a1a0a55;border-radius:12px;padding:20px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                        <div style="font-size:11px;letter-spacing:2px;color:#9a6a5a;text-transform:uppercase;display:flex;align-items:center;gap:8px;">
+                            <span style="display:inline-block;width:3px;height:16px;background:#e14f00;border-radius:2px;flex-shrink:0;"></span>All Organizations
+                        </div>
+                        <button onclick="loadOrganizations()" style="padding:6px 16px;background:linear-gradient(135deg,#8b1a00,#c43d00);border:1px solid #e14f0055;border-radius:6px;color:white;font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;cursor:pointer;transition:0.3s;">⟳ Load</button>
+                    </div>
+                    <div id="admin-orgs-table" style="max-height:280px;overflow-y:auto;">
+                        <div style="color:#5a3a2a;font-size:13px;text-align:center;padding:24px;">Click "Load" to fetch organizations.</div>
+                    </div>
+                </div>
+            </div>
+            <!-- Access Denied -->
             <div id="admin-panel-denied" style="display:none;text-align:center;padding:40px 20px;">
                 <div style="font-size:48px;margin-bottom:14px;">🔒</div>
                 <div style="color:#e8c4a0;font-family:'Cinzel',serif;font-size:14px;letter-spacing:3px;margin-bottom:10px;">ACCESS RESTRICTED</div>
                 <div style="color:#9a6a5a;font-size:13px;">Only <strong style="color:#ff7733;">Admin</strong> accounts can access this panel.</div>
             </div>
-
-            <!-- Toast -->
             <div id="admin-toast" style="display:none;margin-top:16px;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600;text-align:center;transition:0.3s;"></div>
         </div>
     </div>
@@ -703,10 +1096,8 @@ const API_BASE = () => localStorage.getItem('flames_api') || 'https://flamesapp.
 const TOKEN    = () => localStorage.getItem('flames_token');
 const authHeader = () => ({ 'Authorization': `Bearer ${TOKEN()}` });
 
-// ====================== AUTH CHECK ======================
 if (!TOKEN()) window.location.href = 'login.html';
 
-// Decode JWT to get is_admin without extra API call
 function decodeJWT(token) {
     try {
         const payload = token.split('.')[1];
@@ -730,31 +1121,12 @@ function decodeJWT(token) {
 
 async function checkAdminAccess() {
     try {
-        // Decode JWT to check is_admin flag (fastest, no extra API call)
-        const jwt = decodeJWT(TOKEN() || '');
-        // Also try /me-extended if available, fallback to JWT decode
-        // The backend /me doesn't expose is_admin, so we use JWT payload
-        // or try a protected admin endpoint to detect admin status
-        
-        // Try calling an admin-only endpoint to detect if user is admin
-        const testRes = await fetch(`${API_BASE()}/organizations`, { headers: authHeader() });
-        if (!testRes.ok) return; // Not accessible at all
-
-        // /organizations is public (no auth), so try a real admin-only call
-        // POST /organizations requires admin_required — use that as our probe
-        // Instead, decode the JWT sub and check by trying to create an invite code
-        // Best approach: expose is_admin in /me — but since backend doesn't, 
-        // we store the result of a privileged action test:
         const probeRes = await fetch(`${API_BASE()}/users/0`, { method: 'DELETE', headers: authHeader() });
-        // 403 = authenticated but not admin; 404 = admin (user not found is fine)
         const isAdmin = probeRes.status === 404 || probeRes.status === 200;
-
-        // Set role label
-        document.getElementById('admin-btn-label').textContent = isAdmin ? 'ADMIN' : 
+        document.getElementById('admin-btn-label').textContent = isAdmin ? 'ADMIN' :
             (localStorage.getItem('flames_org_role') || 'MEMBER');
         window._flamesIsAdmin = isAdmin;
         document.getElementById('admin-btn').style.display = 'flex';
-
     } catch {}
 }
 
@@ -790,161 +1162,106 @@ document.getElementById('logout-trigger').addEventListener('click', () => {
 // ====================== ADMIN MODAL ======================
 function openAdminModal() {
     document.getElementById('admin-modal').style.display = 'flex';
-    const isAdmin = window._flamesIsAdmin === true;
-
-    document.getElementById('admin-tabs-row').style.display    = isAdmin ? 'flex' : 'none';
-    document.getElementById('admin-panel-invite').style.display = isAdmin ? 'block' : 'none';
-    document.getElementById('admin-panel-users').style.display  = 'none';
-    document.getElementById('admin-panel-denied').style.display = isAdmin ? 'none' : 'block';
-    document.getElementById('admin-toast').style.display       = 'none';
-    if (isAdmin) switchAdminTab('invite');
+    loadOrganizations();
+    switchAdminTab('invite');
 }
-
 function closeAdminModal() {
     document.getElementById('admin-modal').style.display = 'none';
 }
-
-// Close on backdrop click
 document.getElementById('admin-modal').addEventListener('click', function(e) {
     if (e.target === this) closeAdminModal();
 });
-
 function switchAdminTab(tab) {
     document.getElementById('admin-panel-invite').style.display = tab === 'invite' ? 'block' : 'none';
-    document.getElementById('admin-panel-users').style.display  = tab === 'users'  ? 'block' : 'none';
-    const btnInvite = document.getElementById('admin-tab-invite');
-    const btnUsers  = document.getElementById('admin-tab-users');
-    btnInvite.style.background = tab === 'invite' ? 'linear-gradient(135deg,#8b1a00,#c43d00)' : '#2a0a0466';
-    btnInvite.style.color      = tab === 'invite' ? 'white' : '#9a6a5a';
-    btnUsers.style.background  = tab === 'users'  ? 'linear-gradient(135deg,#8b1a00,#c43d00)' : '#2a0a0466';
-    btnUsers.style.color       = tab === 'users'  ? 'white' : '#9a6a5a';
+    document.getElementById('admin-panel-users').style.display = tab === 'users' ? 'block' : 'none';
+    document.getElementById('admin-panel-orgs').style.display = tab === 'orgs' ? 'block' : 'none';
+    ['invite','users','orgs'].forEach(t => {
+        const btn = document.getElementById(`admin-tab-${t}`);
+        btn.style.background = t === tab ? 'linear-gradient(135deg,#8b1a00,#c43d00)' : '#2a0a0466';
+        btn.style.color = t === tab ? 'white' : '#9a6a5a';
+    });
 }
-
-// ---- INVITE CODE FUNCTIONS ----
-async function adminGenerateInvite() {
-    const org_id   = parseInt(document.getElementById('admin-invite-org-id').value);
-    const expires  = parseInt(document.getElementById('admin-invite-expires').value) || 30;
-    const max_uses = parseInt(document.getElementById('admin-invite-max-uses').value);
-    if (!org_id) { adminToast('Enter an Organization ID', 'error'); return; }
+async function loadOrganizations() {
     try {
-        const res = await fetch(`${API_BASE()}/organizations/${org_id}/invite-codes`, {
-            method: 'POST',
-            headers: { ...authHeader(), 'Content-Type': 'application/json' },
-            body: JSON.stringify({ expires_days: expires, max_uses: isNaN(max_uses) ? 1 : max_uses })
+        const res = await fetch(`${API_BASE()}/organizations`, { headers: authHeader() });
+        if (!res.ok) throw new Error('Failed');
+        const orgs = await res.json();
+        const select = document.getElementById('admin-invite-org-select');
+        select.innerHTML = '<option value="">Select Organization</option>';
+        orgs.forEach(org => {
+            const opt = document.createElement('option');
+            opt.value = org.id;
+            opt.textContent = `${org.name} (ID: ${org.id})`;
+            select.appendChild(opt);
+        });
+        // populate orgs table
+        const wrap = document.getElementById('admin-orgs-table');
+        if (!orgs.length) { wrap.innerHTML = '<div style="color:#5a3a2a;text-align:center;padding:20px;">No organizations found.</div>'; return; }
+        wrap.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <thead><tr style="border-bottom:1px solid #4a1a0a55;">
+                <th style="text-align:left;padding:8px 10px;color:#9a6a5a;font-size:10px;">ID</th>
+                <th style="text-align:left;padding:8px 10px;color:#9a6a5a;font-size:10px;">Name</th>
+            </tr></thead><tbody>
+            ${orgs.map(o=>`<tr style="border-bottom:1px solid #3a1a0a33;">
+                <td style="padding:8px 10px;color:#5a3a2a;font-family:monospace;">${o.id}</td>
+                <td style="padding:8px 10px;color:#f0d0b8;font-weight:600;">${o.name}</td>
+            </tr>`).join('')}
+            </tbody></table>`;
+    } catch (err) { console.error(err); }
+}
+async function adminGenerateInvite() {
+    const orgId = document.getElementById('admin-invite-org-select').value;
+    const expires = parseInt(document.getElementById('admin-invite-expires').value) || 30;
+    const maxUses = parseInt(document.getElementById('admin-invite-max-uses').value) || 1;
+    if (!orgId) { adminToast('Please select an organization', 'error'); return; }
+    try {
+        const res = await fetch(`${API_BASE()}/organizations/${orgId}/invite-codes`, {
+            method: 'POST', headers: { ...authHeader(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({ expires_days: expires, max_uses: maxUses })
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Failed to generate code');
-
-        const resultEl = document.getElementById('admin-invite-result');
+        if (!res.ok) throw new Error(data.detail || 'Failed');
         document.getElementById('admin-invite-code-display').textContent = data.code;
-        const expDate = data.expires_at ? new Date(data.expires_at).toLocaleDateString() : 'N/A';
-        document.getElementById('admin-invite-meta').textContent =
-            `Expires: ${expDate}  •  Max uses: ${data.max_uses === 0 ? 'Unlimited' : data.max_uses}`;
+        const expDate = data.expires_at ? new Date(data.expires_at).toLocaleDateString() : 'Never';
+        document.getElementById('admin-invite-meta').textContent = `Expires: ${expDate} • Max uses: ${data.max_uses === 0 ? 'Unlimited' : data.max_uses}`;
         document.getElementById('admin-copy-code-btn').dataset.code = data.code;
-        resultEl.style.display = 'block';
+        document.getElementById('admin-invite-result').style.display = 'block';
         adminToast('Invite code generated!', 'success');
-    } catch(e) { adminToast(e.message, 'error'); }
+    } catch (err) { adminToast(err.message, 'error'); }
 }
-
 function adminCopyCode() {
     const code = document.getElementById('admin-copy-code-btn').dataset.code;
-    if (code) { navigator.clipboard.writeText(code); adminToast('Code copied to clipboard!', 'success'); }
+    if (code) { navigator.clipboard.writeText(code); adminToast('Code copied!', 'success'); }
 }
-
 async function adminDeleteInvite() {
     const code = (document.getElementById('admin-delete-invite-input').value || '').trim().toUpperCase();
     if (!code) { adminToast('Enter an invite code', 'error'); return; }
-    if (!confirm(`Delete invite code "${code}"? This cannot be undone.`)) return;
+    if (!confirm(`Delete "${code}"?`)) return;
     try {
         const res = await fetch(`${API_BASE()}/invite-codes/${code}`, { method: 'DELETE', headers: authHeader() });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Failed to delete');
+        if (!res.ok) throw new Error(await res.text());
         adminToast(`Code "${code}" deleted`, 'success');
         document.getElementById('admin-delete-invite-input').value = '';
-    } catch(e) { adminToast(e.message, 'error'); }
+    } catch (err) { adminToast(err.message, 'error'); }
 }
-
-// ---- USER FUNCTIONS ----
-// NOTE: Backend has no GET /users endpoint yet — shows instructions
-async function adminLoadUsers() {
-    const wrap = document.getElementById('admin-users-table');
-    wrap.innerHTML = '<div style="color:#9a6a5a;text-align:center;padding:20px;">Loading…</div>';
+async function adminCreateOrganization() {
+    const name = document.getElementById('admin-create-org-name').value.trim();
+    const expires = parseInt(document.getElementById('admin-create-org-expires').value) || 30;
+    if (!name) { adminToast('Enter organization name', 'error'); return; }
     try {
-        const res = await fetch(`${API_BASE()}/users`, { headers: authHeader() });
-        if (res.status === 404 || res.status === 405) {
-            wrap.innerHTML = `
-                <div style="text-align:center;padding:24px;">
-                    <div style="font-size:24px;margin-bottom:8px;">⚠️</div>
-                    <div style="color:#f1c40f;font-size:13px;margin-bottom:6px;">GET /users not available on this backend.</div>
-                    <div style="color:#5a3a2a;font-size:12px;">Add a <code style="color:#e14f00;">GET /users</code> endpoint in main.py to list users here.</div>
-                </div>`;
-            return;
-        }
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const users = await res.json();
-        if (!users.length) {
-            wrap.innerHTML = '<div style="color:#5a3a2a;text-align:center;padding:20px;">No users found.</div>';
-            return;
-        }
-        wrap.innerHTML = `
-            <table style="width:100%;border-collapse:collapse;font-size:13px;">
-                <thead>
-                    <tr style="border-bottom:1px solid #4a1a0a55;">
-                        <th style="text-align:left;padding:8px 10px;color:#9a6a5a;font-size:10px;letter-spacing:1px;text-transform:uppercase;">ID</th>
-                        <th style="text-align:left;padding:8px 10px;color:#9a6a5a;font-size:10px;letter-spacing:1px;text-transform:uppercase;">Username</th>
-                        <th style="text-align:left;padding:8px 10px;color:#9a6a5a;font-size:10px;letter-spacing:1px;text-transform:uppercase;">Role</th>
-                        <th style="text-align:left;padding:8px 10px;color:#9a6a5a;font-size:10px;letter-spacing:1px;text-transform:uppercase;">Org</th>
-                        <th style="padding:8px 10px;"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${users.map(u => `
-                    <tr style="border-bottom:1px solid #3a1a0a33;">
-                        <td style="padding:8px 10px;color:#5a3a2a;font-family:monospace;">${u.id}</td>
-                        <td style="padding:8px 10px;color:#f0d0b8;font-weight:600;">${u.username}</td>
-                        <td style="padding:8px 10px;">
-                            <span style="font-size:10px;padding:2px 8px;border-radius:10px;
-                                background:${u.is_admin ? '#3a0a0066' : '#1a0a0466'};
-                                border:1px solid ${u.is_admin ? '#e14f0055' : '#4a1a0a55'};
-                                color:${u.is_admin ? '#ff7733' : '#9a6a5a'};">
-                                ${u.is_admin ? 'ADMIN' : 'MEMBER'}
-                            </span>
-                        </td>
-                        <td style="padding:8px 10px;color:#9a6a5a;font-size:12px;">${u.organization || u.org_id || '—'}</td>
-                        <td style="padding:8px 10px;text-align:right;">
-                            <button onclick="adminDeleteUserById(${u.id},'${u.username}')"
-                                style="padding:4px 10px;background:#1a000066;border:1px solid #ff475755;border-radius:6px;
-                                color:#ff4757;font-size:10px;cursor:pointer;font-family:'Cinzel',serif;letter-spacing:1px;transition:0.2s;"
-                                onmouseover="this.style.background='#ff475722'" onmouseout="this.style.background='#1a000066'">
-                                Delete
-                            </button>
-                        </td>
-                    </tr>`).join('')}
-                </tbody>
-            </table>`;
-    } catch(e) {
-        wrap.innerHTML = `<div style="color:#ff4757;text-align:center;padding:20px;">${e.message}</div>`;
-    }
-}
-
-async function adminDeleteUser() {
-    const id = parseInt(document.getElementById('admin-delete-user-input').value);
-    if (!id || isNaN(id)) { adminToast('Enter a valid User ID', 'error'); return; }
-    await adminDeleteUserById(id, `ID ${id}`);
-    document.getElementById('admin-delete-user-input').value = '';
-}
-
-async function adminDeleteUserById(id, name) {
-    if (!confirm(`Delete user "${name}" (ID: ${id})? This is permanent.`)) return;
-    try {
-        const res = await fetch(`${API_BASE()}/users/${id}`, { method: 'DELETE', headers: authHeader() });
+        const res = await fetch(`${API_BASE()}/organizations`, {
+            method: 'POST', headers: { ...authHeader(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, invite_code_expires_days: expires })
+        });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Delete failed');
-        adminToast(`User "${name}" deleted`, 'success');
-        adminLoadUsers();
-    } catch(e) { adminToast(e.message, 'error'); }
+        if (!res.ok) throw new Error(data.detail || 'Failed');
+        document.getElementById('admin-create-org-name-display').textContent = name;
+        document.getElementById('admin-create-org-meta').textContent = `ID: ${data.id}`;
+        document.getElementById('admin-create-org-result').style.display = 'block';
+        adminToast('Organization created!', 'success');
+        loadOrganizations();
+    } catch (err) { adminToast(err.message, 'error'); }
 }
-
 function adminToast(msg, type = 'info') {
     const el = document.getElementById('admin-toast');
     el.textContent = msg;
@@ -954,24 +1271,63 @@ function adminToast(msg, type = 'info') {
         info:    { bg:'#120e04', border:'#f1c40f55', color:'#f1c40f' }
     };
     const c = colors[type] || colors.info;
-    el.style.background = c.bg;
-    el.style.border     = `1px solid ${c.border}`;
-    el.style.color      = c.color;
-    el.style.display    = 'block';
+    el.style.background = c.bg; el.style.border = `1px solid ${c.border}`; el.style.color = c.color;
+    el.style.display = 'block';
     clearTimeout(el._t);
     el._t = setTimeout(() => el.style.display = 'none', 3500);
 }
+async function adminLoadUsers() {
+    const wrap = document.getElementById('admin-users-table');
+    wrap.innerHTML = '<div style="color:#9a6a5a;text-align:center;padding:20px;">Loading…</div>';
+    try {
+        const res = await fetch(`${API_BASE()}/users`, { headers: authHeader() });
+        if (res.status === 404 || res.status === 405) {
+            wrap.innerHTML = `<div style="text-align:center;padding:24px;"><div style="color:#f1c40f;font-size:13px;">GET /users not available on this backend.</div></div>`;
+            return;
+        }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const users = await res.json();
+        if (!users.length) { wrap.innerHTML = '<div style="color:#5a3a2a;text-align:center;padding:20px;">No users found.</div>'; return; }
+        wrap.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <thead><tr style="border-bottom:1px solid #4a1a0a55;">
+                <th style="text-align:left;padding:8px 10px;color:#9a6a5a;font-size:10px;">ID</th>
+                <th style="text-align:left;padding:8px 10px;color:#9a6a5a;font-size:10px;">Username</th>
+                <th style="text-align:left;padding:8px 10px;color:#9a6a5a;font-size:10px;">Role</th>
+                <th style="padding:8px 10px;"></th>
+            </tr></thead><tbody>
+            ${users.map(u=>`<tr style="border-bottom:1px solid #3a1a0a33;">
+                <td style="padding:8px 10px;color:#5a3a2a;font-family:monospace;">${u.id}</td>
+                <td style="padding:8px 10px;color:#f0d0b8;font-weight:600;">${u.username}</td>
+                <td style="padding:8px 10px;"><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:${u.is_admin?'#3a0a0066':'#1a0a0466'};border:1px solid ${u.is_admin?'#e14f0055':'#4a1a0a55'};color:${u.is_admin?'#ff7733':'#9a6a5a'};">${u.is_admin?'ADMIN':'MEMBER'}</span></td>
+                <td style="padding:8px 10px;text-align:right;"><button onclick="adminDeleteUserById(${u.id},'${u.username}')" style="padding:4px 10px;background:#1a000066;border:1px solid #ff475755;border-radius:6px;color:#ff4757;font-size:10px;cursor:pointer;font-family:'Cinzel',serif;" onmouseover="this.style.background='#ff475722'" onmouseout="this.style.background='#1a000066'">Delete</button></td>
+            </tr>`).join('')}
+            </tbody></table>`;
+    } catch(e) { wrap.innerHTML = `<div style="color:#ff4757;text-align:center;padding:20px;">${e.message}</div>`; }
+}
+async function adminDeleteUser() {
+    const id = parseInt(document.getElementById('admin-delete-user-input').value);
+    if (!id || isNaN(id)) { adminToast('Enter a valid User ID', 'error'); return; }
+    await adminDeleteUserById(id, `ID ${id}`);
+    document.getElementById('admin-delete-user-input').value = '';
+}
+async function adminDeleteUserById(id, name) {
+    if (!confirm(`Delete user "${name}" (ID: ${id})?`)) return;
+    try {
+        const res = await fetch(`${API_BASE()}/users/${id}`, { method: 'DELETE', headers: authHeader() });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Delete failed');
+        adminToast(`User "${name}" deleted`, 'success');
+        adminLoadUsers();
+    } catch(e) { adminToast(e.message, 'error'); }
+}
 
-// ====================== MAP & NODES ======================
+// ====================== MAP ======================
 const MAP_CENTER = [16.0435, 120.3351];
 const GATEWAY = { lat: 16.046962, lng: 120.342117 };
 
-const map = L.map('flames-map', { zoomControl: false, attributionControl: false })
-    .setView(MAP_CENTER, 14);
-
+const map = L.map('flames-map', { zoomControl: false, attributionControl: false }).setView(MAP_CENTER, 14);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
-// Map controls
 document.getElementById('home-btn').addEventListener('click', () => map.flyTo(MAP_CENTER, 14));
 document.getElementById('locate-btn').addEventListener('click', () => {
     navigator.geolocation.getCurrentPosition(p => map.flyTo([p.coords.latitude, p.coords.longitude], 16), () => alert('Location access denied.'));
@@ -979,23 +1335,19 @@ document.getElementById('locate-btn').addEventListener('click', () => {
 document.getElementById('zoom-in').addEventListener('click', () => map.zoomIn());
 document.getElementById('zoom-out').addEventListener('click', () => map.zoomOut());
 
-// Icons
 const greenIcon  = L.icon({ iconUrl: 'icons/StartingPoint.png', iconSize: [60,60], iconAnchor:[30,55], popupAnchor:[0,-60] });
 const redIcon    = L.icon({ iconUrl: 'icons/EndPoint.png',      iconSize: [60,60], iconAnchor:[30,55], popupAnchor:[0,-60] });
 const nodeIcon   = L.icon({ iconUrl: 'icons/Node.png',          iconSize: [50,50], iconAnchor:[18,18] });
 const gwIcon     = L.icon({ iconUrl: 'icons/Gateway.png',       iconSize: [40,40], iconAnchor:[20,20] });
 const fireIcon   = L.icon({ iconUrl: 'icons/FireIncident.png',  iconSize: [30,30], iconAnchor:[15,15] });
 
-// Gateway marker
 L.marker([GATEWAY.lat, GATEWAY.lng], { icon: gwIcon }).addTo(map).bindPopup('<b>🏠 F.L.A.M.E.S. Gateway</b>');
 
-// Node state
 let nodeMarkers = {};
 let nodeData = {};
 let selectedNodeId = null;
-
-let pinnedLocations = [];          // ← Add this! Start as empty array
-let pinnedMarkers = {};            // ← Keep or add this too if not already present
+let pinnedLocations = [];
+let pinnedMarkers = {};
 
 const OFFLINE_THRESHOLD_MINUTES = 5;
 const COLOR_RED = '#ff4757';
@@ -1005,105 +1357,42 @@ const COLOR_NORMAL = '#ff904f';
 
 async function loadAndPlaceNodes(silent = false) {
     try {
-        const res = await fetch(`${API_BASE()}/nodes`, {
-            headers: authHeader(),
-            cache: silent ? 'default' : 'no-cache'
-        });
-
+        const res = await fetch(`${API_BASE()}/nodes`, { headers: authHeader(), cache: silent ? 'default' : 'no-cache' });
         if (res.status === 401) { window.location.href = 'login.html'; return; }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
         const nodes = await res.json();
-        console.log('Fetched nodes from API:', nodes);
+        if (!nodes || nodes.length === 0) { if (!silent) alert('No sensor nodes available.'); return; }
 
-        if (!nodes || nodes.length === 0) {
-            console.warn('API returned empty or no nodes array');
-            if (!silent) alert('No sensor nodes available from server.');
-            return;
-        }
-
-        // Clean up removed nodes
         Object.keys(nodeMarkers).forEach(id => {
-            if (!nodes.some(n => n.node_id === id)) {
-                map.removeLayer(nodeMarkers[id]);
-                delete nodeMarkers[id];
-                delete nodeData[id];
-            }
+            if (!nodes.some(n => n.node_id === id)) { map.removeLayer(nodeMarkers[id]); delete nodeMarkers[id]; delete nodeData[id]; }
         });
 
-        let skippedCount = 0;
-        const gatewayLat = 16.046962;
-        const gatewayLng = 120.342117;
-
+        const gatewayLat = 16.046962, gatewayLng = 120.342117;
         nodes.forEach(n => {
             const node_id = n.node_id;
-
-            let lat = parseFloat(n.latitude);
-            let lng = parseFloat(n.longitude);
-            const hasCurrentValid = !isNaN(lat) && lat !== 0 && lat != null && !isNaN(lng) && lng !== 0 && lng != null;
-
-            if (!hasCurrentValid) {
-                // Try previous known position
-                lat = nodeData[node_id]?.latitude;
-                lng = nodeData[node_id]?.longitude;
-            }
-
+            let lat = parseFloat(n.latitude), lng = parseFloat(n.longitude);
+            const hasValid = !isNaN(lat) && lat !== 0 && !isNaN(lng) && lng !== 0;
+            if (!hasValid) { lat = nodeData[node_id]?.latitude; lng = nodeData[node_id]?.longitude; }
             let isUsingFallback = false;
-
-            // Still no valid position → place near gateway with small random offset
             if (lat == null || lng == null || isNaN(lat) || isNaN(lng)) {
-                // Random offset: 10–100 meters (~0.00009° to 0.0009° lat/lng)
-                const offsetMeters = 10 + Math.random() * 90;           // 10 to 100m
-                const angle = Math.random() * 2 * Math.PI;              // random direction
-                const offsetLat = (offsetMeters / 111000) * Math.cos(angle);
-                const offsetLng = (offsetMeters / (111000 * Math.cos(gatewayLat * Math.PI / 180))) * Math.sin(angle);
-
-                lat = gatewayLat + offsetLat;
-                lng = gatewayLng + offsetLng;
-
+                const offsetM = 10 + Math.random() * 90, angle = Math.random() * 2 * Math.PI;
+                lat = gatewayLat + (offsetM / 111000) * Math.cos(angle);
+                lng = gatewayLng + (offsetM / (111000 * Math.cos(gatewayLat * Math.PI / 180))) * Math.sin(angle);
                 isUsingFallback = true;
-                console.log(`Node ${node_id} has no position → placed near gateway at ~${offsetMeters.toFixed(0)}m offset`);
             }
-
-            // Update stored data with final (valid) position
             const lastUpdated = n.updated_at || n.last_seen || new Date().toISOString();
-
-            nodeData[node_id] = { 
-                ...nodeData[node_id] || {},
-                ...n,
-                latitude: lat,
-                longitude: lng,
-                last_updated: lastUpdated,
-                isUsingFallbackPosition: isUsingFallback  // optional flag
-            };
+            nodeData[node_id] = { ...nodeData[node_id] || {}, ...n, latitude: lat, longitude: lng, last_updated: lastUpdated, isUsingFallbackPosition: isUsingFallback };
 
             const lastTime = new Date(lastUpdated);
             const minutesAgo = (Date.now() - lastTime.getTime()) / 1000 / 60;
             const isOffline = minutesAgo > OFFLINE_THRESHOLD_MINUTES;
-
             const pred = (n.ai_prediction || "normal").toLowerCase();
             const conf = n.confidence != null ? Number(n.confidence) : 0;
-
-            const isFire = pred === "fire";
-            const isHighConf = conf >= 0.70;
-            const isMediumConf = conf >= 0.40 && conf < 0.70;
-
-            const statusColor = isFire 
-                ? (isHighConf ? '#ff4757' : '#ff9f1c')   // red or orange
-                : '#2ecc71';                              // green = normal
-
-            const statusLabel = isFire 
-                ? (isHighConf ? '🔥 FIRE' : 'Possible Fire')
-                : 'Normal';
-
-            const lastOnlineStr = lastTime.toLocaleString([], {
-                month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-            });
-
-            // Optional: mark in popup if using fallback position
-            const positionNote = isUsingFallback 
-                ? `<div style="color:#ff9f1c;font-size:11px;margin-top:6px;">(Approximate position near gateway - awaiting real GPS)</div>`
-                : '';
+            const isFire = pred === "fire", isHighConf = conf >= 0.70;
+            const statusColor = isFire ? (isHighConf ? '#ff4757' : '#ff9f1c') : '#2ecc71';
+            const statusLabel = isFire ? (isHighConf ? '🔥 FIRE' : 'Possible Fire') : 'Normal';
+            const lastOnlineStr = lastTime.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const positionNote = isUsingFallback ? `<div style="color:#ff9f1c;font-size:11px;margin-top:6px;">(Approximate position near gateway)</div>` : '';
 
             const popupContent = `
                 <div class="popup-title">📡 ${node_id}</div>
@@ -1125,85 +1414,39 @@ async function loadAndPlaceNodes(silent = false) {
                 nodeMarkers[node_id].setPopupContent(popupContent);
                 nodeMarkers[node_id].getElement().style.opacity = isOffline ? 0.55 : 1.0;
             } else {
-                const marker = L.marker([lat, lng], { 
-                    icon: nodeIcon,
-                    opacity: isOffline ? 0.55 : 1.0 
-                }).addTo(map);
+                const marker = L.marker([lat, lng], { icon: nodeIcon, opacity: isOffline ? 0.55 : 1.0 }).addTo(map);
                 marker.bindPopup(popupContent);
-                marker.on('click', () => {
-                    selectedNodeId = node_id;
-                    updateSensorBar(nodeData[node_id], node_id);
-                });
+                marker.on('click', () => { selectedNodeId = node_id; updateSensorBar(nodeData[node_id], node_id); });
                 nodeMarkers[node_id] = marker;
             }
         });
 
-        if (skippedCount > 0 && !silent) {
-            console.warn(`${skippedCount} node(s) skipped (should be 0 now with gateway fallback)`);
-        }
-
-        if (selectedNodeId && nodeData[selectedNodeId]) {
-            updateSensorBar(nodeData[selectedNodeId], selectedNodeId);
-        }
-
+        if (selectedNodeId && nodeData[selectedNodeId]) updateSensorBar(nodeData[selectedNodeId], selectedNodeId);
     } catch (err) {
         console.error('Failed to load nodes:', err);
-        if (!silent) alert('Could not load sensor nodes. Check console for details.');
+        if (!silent) alert('Could not load sensor nodes.');
     }
 }
 
-// Load nodes immediately
 loadAndPlaceNodes();
-
-// Periodic refresh
 setInterval(() => loadAndPlaceNodes(true), 15000);
 
 // ====================== WEBSOCKET ======================
 function connectWebSocket() {
     const wsUrl = API_BASE().replace(/^http/, 'ws') + '/ws';
     const ws = new WebSocket(wsUrl);
-
-    const dot   = document.getElementById('ws-dot');
-    const label = document.getElementById('ws-label');
-
-    ws.onopen = () => {
-        dot.className = 'ws-dot connected';
-        label.textContent = 'Live';
-        console.log("WebSocket connected successfully");
-    };
-
-    ws.onclose = () => {
-        dot.className = 'ws-dot error';
-        label.textContent = 'Disconnected';
-        console.log("WebSocket closed — reconnecting in 5s...");
-        setTimeout(connectWebSocket, 5000);
-    };
-
-    ws.onerror = (err) => {
-        dot.className = 'ws-dot error';
-        label.textContent = 'Error';
-        console.error("WebSocket error:", err);
-    };
-
+    const dot = document.getElementById('ws-dot'), label = document.getElementById('ws-label');
+    ws.onopen = () => { dot.className = 'ws-dot connected'; label.textContent = 'Live'; };
+    ws.onclose = () => { dot.className = 'ws-dot error'; label.textContent = 'Disconnected'; setTimeout(connectWebSocket, 5000); };
+    ws.onerror = () => { dot.className = 'ws-dot error'; label.textContent = 'Error'; };
     ws.onmessage = (event) => {
         try {
             const msg = JSON.parse(event.data);
-            console.log("WS message received:", msg);  // ← debug: see ALL messages
-
-            // Refresh nodes on any valid message
             loadAndPlaceNodes(true);
-
-            // Real-time incident refresh
-            if (msg.type === "incident_update") {
-                console.log("WS → Incident update received:", msg);
-                loadLiveIncidents(true);
-            }
-        } catch (e) {
-            console.warn("WS message parse error:", e);
-        }
+            if (msg.type === "incident_update") loadLiveIncidents(true);
+        } catch {}
     };
 }
-
 connectWebSocket();
 
 // ====================== SENSOR BAR ======================
@@ -1212,58 +1455,29 @@ function updateSensorBar(d, nodeId) {
     document.getElementById('sb-hum').textContent = d.humidity != null ? `${d.humidity}%` : '—';
     document.getElementById('sb-smoke').textContent = d.smoke != null ? `${d.smoke} ppm` : '—';
     document.getElementById('sb-flame').textContent = d.flame != null ? d.flame : '—';
-
-    // Reset to neutral/default style
-    document.getElementById('sb-temp').className = 'sensor-tile-val';
-    document.getElementById('sb-hum').className = 'sensor-tile-val';
-    document.getElementById('sb-smoke').className = 'sensor-tile-val';
-    document.getElementById('sb-flame').className = 'sensor-tile-val';
-
-    // ML-based highlighting only
+    ['sb-temp','sb-hum','sb-smoke','sb-flame'].forEach(id => document.getElementById(id).className = 'sensor-tile-val');
     const pred = (d.ai_prediction || "normal").toLowerCase();
     const conf = d.confidence != null ? Number(d.confidence) : 0;
-
-    if (pred === "fire") {
-        if (conf >= 0.70) {
-            document.getElementById('sb-smoke').className += ' alert';
-            document.getElementById('sb-flame').className += ' alert';
-        } else if (conf >= 0.40) {
-            document.getElementById('sb-smoke').className += ' fire-medium';
-            document.getElementById('sb-flame').className += ' fire-medium';
-        }
+    if (pred === "fire" && conf >= 0.70) {
+        document.getElementById('sb-smoke').className += ' alert';
+        document.getElementById('sb-flame').className += ' alert';
     }
-
     const lastUpdated = d.last_updated ? new Date(d.last_updated) : null;
     const isOffline = lastUpdated && (Date.now() - lastUpdated.getTime()) / 1000 / 60 > OFFLINE_THRESHOLD_MINUTES;
-
-    document.getElementById('sb-node-label').innerHTML = 
-        nodeId 
-            ? `${nodeId}${isOffline ? ' <small style="color:#ff9f1c;">(offline)</small>' : ''}`
-            : 'No node';
-
+    document.getElementById('sb-node-label').innerHTML = nodeId ? `${nodeId}${isOffline ? ' <small style="color:#ff9f1c;">(offline)</small>' : ''}` : 'No node';
     const offlineStyle = isOffline ? 'opacity:0.6; font-style:italic;' : '';
-    document.getElementById('sb-temp').style = offlineStyle;
-    document.getElementById('sb-hum').style = offlineStyle;
-    document.getElementById('sb-smoke').style = offlineStyle;
-    document.getElementById('sb-flame').style = offlineStyle;
+    ['sb-temp','sb-hum','sb-smoke','sb-flame'].forEach(id => document.getElementById(id).style = offlineStyle);
 }
 
 // ====================== PINNED LOCATIONS ======================
-
 function renderPinned() {
     document.getElementById('pinned-count').textContent = pinnedLocations.length;
     const list = document.getElementById('pinned-list');
     const noMsg = document.getElementById('no-pinned-msg');
-    
-    // Clear old items
     list.querySelectorAll('.pinned-item').forEach(i => i.remove());
     noMsg.style.display = pinnedLocations.length ? 'none' : 'block';
-
-    // Optional: clear old markers if you were adding them here
-    // (you can move marker creation here if you want pins always visible on map)
     Object.values(pinnedMarkers).forEach(m => map.removeLayer(m));
     pinnedMarkers = {};
-
     pinnedLocations.forEach(pin => {
         const item = document.createElement('div');
         item.className = 'pinned-item';
@@ -1277,16 +1491,11 @@ function renderPinned() {
                 <button class="btn-icon-sm" onclick="removePin(${pin.id})" title="Remove" style="color:var(--red)">✕</button>
             </div>`;
         list.appendChild(item);
-
-        // Optional: add persistent marker on map for each pin
-        const marker = L.marker([pin.latitude, pin.longitude])
-            .addTo(map)
+        const marker = L.marker([pin.latitude, pin.longitude]).addTo(map)
             .bindPopup(`<b>${pin.name || 'Pinned'}</b><br>${pin.latitude.toFixed(6)}, ${pin.longitude.toFixed(6)}`);
         pinnedMarkers[pin.id] = marker;
     });
 }
-
-
 let pinnedListVisible = false;
 function togglePinnedList() {
     pinnedListVisible = !pinnedListVisible;
@@ -1294,95 +1503,42 @@ function togglePinnedList() {
     document.getElementById('pinned-count-view').style.display = pinnedListVisible ? 'none' : 'flex';
 }
 renderPinned();
-
-// Load pins from backend when dashboard loads
 async function loadPinnedLocations() {
     try {
-        const res = await fetch(`${API_BASE()}/me/pins`, {
-            headers: authHeader(),
-            cache: 'no-cache'
-        });
-
+        const res = await fetch(`${API_BASE()}/me/pins`, { headers: authHeader(), cache: 'no-cache' });
         if (res.status === 401) { window.location.href = 'login.html'; return; }
-        if (!res.ok) {
-            console.warn('Pins fetch failed:', res.status);
-            return;
-        }
-
+        if (!res.ok) { console.warn('Pins fetch failed:', res.status); return; }
         pinnedLocations = await res.json();
         renderPinned();
-    } catch (err) {
-        console.error('Failed to load pinned locations:', err);
-    }
+    } catch (err) { console.error('Failed to load pins:', err); }
 }
-
-// Save new pin to backend
 async function savePin(lat, lng) {
     const name = document.getElementById('pin-name')?.value.trim() || null;
-
     try {
         const res = await fetch(`${API_BASE()}/me/pins`, {
-            method: 'POST',
-            headers: {
-                ...authHeader(),
-                'Content-Type': 'application/json'
-            },
+            method: 'POST', headers: { ...authHeader(), 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, latitude: lat, longitude: lng })
         });
-
         if (!res.ok) throw new Error(await res.text());
-
         map.closePopup();
-        await loadPinnedLocations();  // refresh the list
-    } catch (err) {
-        console.error('Save pin failed:', err);
-        alert('Could not save pin. Check console.');
-    }
+        await loadPinnedLocations();
+    } catch (err) { console.error(err); alert('Could not save pin.'); }
 }
-
-// Remove pin by its database ID
 async function removePin(pinId) {
     try {
-        const res = await fetch(`${API_BASE()}/me/pins/${pinId}`, {
-            method: 'DELETE',
-            headers: authHeader()
-        });
-
+        const res = await fetch(`${API_BASE()}/me/pins/${pinId}`, { method: 'DELETE', headers: authHeader() });
         if (!res.ok) throw new Error(await res.text());
-
-        await loadPinnedLocations();  // refresh
-    } catch (err) {
-        console.error('Delete pin failed:', err);
-        alert('Could not delete pin.');
-    }
+        await loadPinnedLocations();
+    } catch (err) { console.error(err); alert('Could not delete pin.'); }
 }
-
-// Fly to coordinates (updated to take lat/lng directly)
-function flyToPin(lat, lng) {
-    map.flyTo([lat, lng], 16);
-}
-
-// Load user pins from server
+function flyToPin(lat, lng) { map.flyTo([lat, lng], 16); }
 loadPinnedLocations();
 
-
-// Map RIGHT-CLICK → pin popup
 let pendingPopup = null;
-
 map.on('contextmenu', function(e) {
-    // Prevent the browser's default right-click menu
     e.originalEvent.preventDefault();
-
-    // Close any existing pin popup
-    if (pendingPopup) {
-        map.closePopup(pendingPopup);
-        pendingPopup = null;
-        // Optional: return;   ← uncomment if you don't want to open new one immediately
-    }
-
-    const lat = e.latlng.lat.toFixed(6);
-    const lng = e.latlng.lng.toFixed(6);
-
+    if (pendingPopup) { map.closePopup(pendingPopup); pendingPopup = null; }
+    const lat = e.latlng.lat.toFixed(6), lng = e.latlng.lng.toFixed(6);
     const popup = L.popup({ maxWidth: 260 })
         .setLatLng(e.latlng)
         .setContent(`
@@ -1393,14 +1549,9 @@ map.on('contextmenu', function(e) {
                 <button class="popup-save" onclick="savePin(${lat}, ${lng})">Save</button>
                 <button class="popup-cancel" onclick="map.closePopup()">Cancel</button>
             </div>
-        `)
-        .addTo(map);
-
+        `).addTo(map);
     pendingPopup = popup;
-
-    popup.on('remove', () => {
-        pendingPopup = null;
-    });
+    popup.on('remove', () => { pendingPopup = null; });
 });
 
 // ====================== SEARCH ======================
@@ -1412,7 +1563,6 @@ async function handleSearch(val) {
     clrBtn.style.display = val ? 'block' : 'none';
     searchIcon.style.display = val ? 'none' : 'block';
     if (!val) { box.style.display = 'none'; return; }
-
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(async () => {
         try {
@@ -1437,7 +1587,6 @@ async function handleSearch(val) {
         } catch {}
     }, 400);
 }
-
 function clearSearchInput() {
     document.getElementById('mapSearchInput').value = '';
     document.getElementById('suggestionsBox').style.display = 'none';
@@ -1452,35 +1601,21 @@ const ORS_API_KEY = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImEyYTE
 document.getElementById('route-btn').addEventListener('click', () => {
     document.getElementById('route-menu').classList.toggle('visible');
 });
-
 document.getElementById('calc-route').addEventListener('click', () => {
-    if (waypoints.length === 2) {
-        calculateRoute(waypoints[0], waypoints[1]);
-        document.getElementById('route-menu').classList.remove('visible');
-    } else {
-        alert('Click to place Start Point (green), then End Point (red).');
-        waypoints = [];
-        routeMarkers.forEach(m => map.removeLayer(m));
-        routeMarkers = [];
-        if (routingControl) { map.removeLayer(routingControl); routingControl = null; }
-    }
+    if (waypoints.length === 2) { calculateRoute(waypoints[0], waypoints[1]); document.getElementById('route-menu').classList.remove('visible'); }
+    else { alert('Click to place Start Point (green), then End Point (red).'); waypoints = []; routeMarkers.forEach(m => map.removeLayer(m)); routeMarkers = []; if (routingControl) { map.removeLayer(routingControl); routingControl = null; } }
 });
-
 document.getElementById('clear-route').addEventListener('click', () => {
     if (routingControl) { map.removeLayer(routingControl); routingControl = null; }
-    routeMarkers.forEach(m => map.removeLayer(m));
-    routeMarkers = []; waypoints = [];
+    routeMarkers.forEach(m => map.removeLayer(m)); routeMarkers = []; waypoints = [];
     document.getElementById('route-info-box').style.display = 'none';
     document.getElementById('route-menu').classList.remove('visible');
 });
-
 document.getElementById('close-info-btn').addEventListener('click', () => {
     if (routingControl) { map.removeLayer(routingControl); routingControl = null; }
-    routeMarkers.forEach(m => map.removeLayer(m));
-    routeMarkers = []; waypoints = [];
+    routeMarkers.forEach(m => map.removeLayer(m)); routeMarkers = []; waypoints = [];
     document.getElementById('route-info-box').style.display = 'none';
 });
-
 map.on('click', function(e) {
     if (waypoints.length < 2) {
         waypoints.push(e.latlng);
@@ -1488,7 +1623,6 @@ map.on('click', function(e) {
         routeMarkers.push(marker);
     }
 });
-
 async function calculateRoute(start, end) {
     const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${ORS_API_KEY}&start=${start.lng},${start.lat}&end=${end.lng},${end.lat}`;
     try {
@@ -1497,23 +1631,15 @@ async function calculateRoute(start, end) {
         const data = await res.json();
         const coords = data.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
         const summary = data.features[0].properties.summary;
-
         if (routingControl) map.removeLayer(routingControl);
         routingControl = L.polyline(coords, { color: '#0055ff', weight: 4, opacity: 0.9 }).addTo(map);
-
-        const dist = (summary.distance / 1000).toFixed(2);
-        const time = Math.round(summary.duration / 60);
-
+        const dist = (summary.distance / 1000).toFixed(2), time = Math.round(summary.duration / 60);
         document.getElementById('route-info-box').style.display = 'flex';
         document.getElementById('route-dist').innerHTML = `<img src="icons/distance.png"> ${dist} km`;
         document.getElementById('route-time').innerHTML = `<img src="icons/minutes.png"> ~${time} min`;
-
         map.fitBounds(routingControl.getBounds());
-    } catch {
-        alert('Routing failed. No road available.');
-    }
+    } catch { alert('Routing failed. No road available.'); }
 }
-
 function routeToIncident(lat, lng) {
     waypoints = [GATEWAY, { lat, lng }];
     const m1 = L.marker([GATEWAY.lat, GATEWAY.lng], { icon: greenIcon }).addTo(map);
@@ -1523,72 +1649,268 @@ function routeToIncident(lat, lng) {
     map.flyTo([lat, lng], 14);
 }
 
-// ====================== REAL LIVE INCIDENTS ======================
+// ====================== LIVE INCIDENTS ======================
 async function loadLiveIncidents(silent = false) {
     try {
-        const res = await fetch(`${API_BASE()}/incidents/active`, {
-            headers: authHeader(),
-            cache: 'no-cache'
-        });
-
+        const res = await fetch(`${API_BASE()}/incidents/active`, { headers: authHeader(), cache: 'no-cache' });
         if (res.status === 401) { window.location.href = 'login.html'; return; }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
         const incidents = await res.json();
-        console.log('Real incidents loaded:', incidents);
-
         const listEl = document.getElementById('incident-list');
         listEl.innerHTML = '';
-
         if (incidents.length === 0) {
             listEl.innerHTML = '<div class="node-placeholder">No active incidents right now</div>';
         } else {
             incidents.forEach(inc => {
-                const confColor = inc.confidence_pct >= 70 ? 'var(--green)' :
-                                 (inc.confidence_pct >= 40 ? 'var(--yellow)' : 'var(--orange-offline)');
-
-                const cardHTML = `
+                const confColor = inc.confidence_pct >= 70 ? 'var(--green)' : (inc.confidence_pct >= 40 ? 'var(--yellow)' : 'var(--orange-offline)');
+                listEl.innerHTML += `
                     <div class="incident-card">
                         <div class="incident-title">${inc.location_name || `Node ${inc.node_id}`}</div>
-                        <div class="incident-meta">
-                            Status: <span class="${inc.status_class}">${inc.status}</span>
-                        </div>
-                        <div class="incident-meta">
-                            AI Prediction: <strong>${inc.ai_prediction}</strong> 
-                            <span style="color:${confColor}; font-weight:600;">
-                                (${inc.confidence_pct}%)
-                            </span>
-                        </div>
+                        <div class="incident-meta">Status: <span class="${inc.status_class}">${inc.status}</span></div>
+                        <div class="incident-meta">AI: <strong>${inc.ai_prediction}</strong> <span style="color:${confColor};font-weight:600;">(${inc.confidence_pct}%)</span></div>
                         <div class="incident-meta">Last reading: ${inc.timestamp}</div>
                         ${inc.assigned_team ? `<div class="incident-meta">Team: ${inc.assigned_team}</div>` : ''}
-                        <button class="btn-route" onclick="routeToIncident(${inc.latitude}, ${inc.longitude})">
-                            🔥 Show on Map & Route
-                        </button>
-                    </div>
-                `;
-                listEl.innerHTML += cardHTML;
+                        <button class="btn-route" onclick="routeToIncident(${inc.latitude}, ${inc.longitude})">🔥 Show on Map & Route</button>
+                    </div>`;
             });
         }
-
         document.getElementById('incident-count').textContent = incidents.length;
-        // Show "Last updated" indicator
         const now = new Date();
-        const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        document.getElementById('incidents-last-update').textContent = `Last updated: ${timeStr}`;
-
+        document.getElementById('incidents-last-update').textContent = `Last updated: ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
     } catch (err) {
         console.error('Failed to load incidents:', err);
-        if (!silent) {
-            document.getElementById('incident-list').innerHTML = 
-                '<div class="node-placeholder">Error loading incidents</div>';
-        }
+        if (!silent) document.getElementById('incident-list').innerHTML = '<div class="node-placeholder">Error loading incidents</div>';
     }
 }
-
-// Load immediately + refresh every 20 seconds
 loadLiveIncidents();
 setInterval(() => loadLiveIncidents(true), 20000);
 
+// ====================== INLINE HISTORY PANEL ======================
+let _hm_node = null;
+let _hm_limit = 50;
+
+function openHistoryPanel(nodeId) {
+    _hm_node = nodeId;
+    _hm_metric = 'temperature';
+    _hm_rows_cache = [];
+    document.getElementById('hp-node-id').textContent = nodeId;
+    document.getElementById('hp-record-count').textContent = '0 readings';
+    // Reset limit buttons
+    document.querySelectorAll('.hp-limit-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.hp-limit-btn')[1].classList.add('active');
+    _hm_limit = 50;
+    // Reset chart tabs to Temperature
+    document.querySelectorAll('.hp-chart-tab').forEach(b => b.classList.toggle('active', b.dataset.metric === 'temperature'));
+    document.getElementById('hp-chart-label').textContent = CHART_METRICS['temperature'].label;
+    // Switch views
+    document.getElementById('right-default-view').classList.add('hidden');
+    document.getElementById('right-history-view').classList.add('visible');
+    // Fetch data
+    fetchHistory();
+}
+
+function closeHistoryPanel() {
+    document.getElementById('right-history-view').classList.remove('visible');
+    document.getElementById('right-default-view').classList.remove('hidden');
+    _hm_node = null;
+    _hm_rows_cache = [];
+    // Reset table
+    document.getElementById('hp-table-body').innerHTML = `<div class="hp-state"><div>Select a node to view its history</div></div>`;
+    document.getElementById('hp-stats').innerHTML = '';
+    document.getElementById('hp-record-count').textContent = '0 readings';
+    renderSparkline([]);
+}
+
+function setHistoryLimit(n) {
+    _hm_limit = n;
+    document.querySelectorAll('.hp-limit-btn').forEach(b => {
+        b.classList.toggle('active', parseInt(b.textContent) === n);
+    });
+    fetchHistory();
+}
+
+function refreshHistory() {
+    const btn = document.getElementById('hp-refresh-btn');
+    btn.classList.add('spinning');
+    fetchHistory().finally(() => setTimeout(() => btn.classList.remove('spinning'), 500));
+}
+
+async function fetchHistory() {
+    if (!_hm_node) return;
+    const bodyEl = document.getElementById('hp-table-body');
+    bodyEl.innerHTML = `<div class="hp-state"><div class="hp-spinner"></div>Loading…</div>`;
+    document.getElementById('hp-stats').innerHTML = '';
+    renderSparkline([]);
+    try {
+        const res = await fetch(`${API_BASE()}/history/${encodeURIComponent(_hm_node)}?limit=${_hm_limit}`, { headers: authHeader(), cache: 'no-cache' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const rows = await res.json();
+        // DEBUG: log the first row so we can see exact field names from the API
+        if (rows.length > 0) console.log('History row sample:', JSON.stringify(rows[0]));
+        document.getElementById('hp-record-count').textContent = `${rows.length} readings`;
+        if (!rows.length) { bodyEl.innerHTML = `<div class="hp-state">No history for node <strong>${_hm_node}</strong>.</div>`; return; }
+        renderStats(rows);
+        renderSparkline(rows);
+        renderTable(rows);
+    } catch(err) {
+        bodyEl.innerHTML = `<div class="hp-state" style="color:#ff4757;">⚠ Failed: ${err.message}</div>`;
+    }
+}
+
+function renderStats(rows) {
+    const temps  = rows.map(r => r.temperature).filter(v => v != null);
+    const smokes = rows.map(r => r.smoke).filter(v => v != null);
+    const hums   = rows.map(r => r.humidity).filter(v => v != null);
+    const fires  = rows.filter(r => r.ai_prediction === 'fire').length;
+    const avg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : '—';
+    const max = arr => arr.length ? Math.max(...arr).toFixed(1) : '—';
+    document.getElementById('hp-stats').innerHTML = `
+        <div class="hp-stat"><span class="hp-stat-label">AVG TEMP</span><span class="hp-stat-val">${avg(temps)}°C</span></div>
+        <div class="hp-stat"><span class="hp-stat-label">MAX TEMP</span><span class="hp-stat-val">${max(temps)}°C</span></div>
+        <div class="hp-stat"><span class="hp-stat-label">AVG SMOKE</span><span class="hp-stat-val">${avg(smokes)} ppm</span></div>
+        <div class="hp-stat"><span class="hp-stat-label">AVG HUM</span><span class="hp-stat-val">${avg(hums)}%</span></div>
+        <div class="hp-stat" style="${fires>0?'border-color:#ff475577;':''}">
+            <span class="hp-stat-label">🔥 FIRE EVENTS</span>
+            <span class="hp-stat-val" style="${fires>0?'color:#ff4757;':''}">${fires}</span>
+        </div>`;
+}
+
+// Chart metric state
+let _hm_metric = 'temperature';
+let _hm_rows_cache = [];
+
+const CHART_METRICS = {
+    temperature: { label: 'Temperature Trend (°C)',  unit: '°C',  color: '#ff6b35', key: 'temperature' },
+    humidity:    { label: 'Humidity Trend (%)',       unit: '%',   color: '#3d9cff', key: 'humidity'    },
+    smoke:       { label: 'Smoke Trend (ppm)',        unit: ' ppm',color: '#c8c8c8', key: 'smoke'       },
+    flame:       { label: 'Flame Sensor Trend',       unit: '',    color: '#ff4757', key: 'flame'       },
+};
+
+function switchChartMetric(metric) {
+    _hm_metric = metric;
+    // Update tab active states
+    document.querySelectorAll('.hp-chart-tab').forEach(b => {
+        b.classList.toggle('active', b.dataset.metric === metric);
+    });
+    // Update label
+    document.getElementById('hp-chart-label').textContent = CHART_METRICS[metric].label;
+    // Re-render chart with cached rows
+    renderSparkline(_hm_rows_cache);
+}
+
+function renderSparkline(rows) {
+    _hm_rows_cache = rows;
+    const svg = document.getElementById('hp-chart-svg');
+    const cfg = CHART_METRICS[_hm_metric];
+    const vals = [...rows].reverse().map(r => r[cfg.key]).filter(v => v != null && v !== undefined);
+
+    if (vals.length < 2) {
+        svg.innerHTML = `<text x="400" y="38" text-anchor="middle" fill="#3a1a0a" font-size="12">Not enough data</text>`;
+        return;
+    }
+
+    const W = 800, H = 70, PAD = 6;
+    const rawMin = Math.min(...vals), rawMax = Math.max(...vals);
+    const range = rawMax - rawMin;
+    const min = rawMin - (range * 0.1 || 1);
+    const max = rawMax + (range * 0.1 || 1);
+
+    const px = i => PAD + (i / (vals.length - 1)) * (W - PAD * 2);
+    const py = v => PAD + (1 - (v - min) / (max - min)) * (H - PAD * 2);
+    const pts = vals.map((v, i) => `${px(i)},${py(v)}`).join(' ');
+    const areaD = `M${px(0)},${H} ` + vals.map((v, i) => `L${px(i)},${py(v)}`).join(' ') + ` L${px(vals.length - 1)},${H} Z`;
+    const lineCol = cfg.color;
+
+    svg.innerHTML = `
+        <defs><linearGradient id="hp-area-grad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="${lineCol}" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="${lineCol}" stop-opacity="0.02"/>
+        </linearGradient></defs>
+        <path d="${areaD}" fill="url(#hp-area-grad)"/>
+        <polyline points="${pts}" fill="none" stroke="${lineCol}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+        <circle cx="${px(vals.length - 1)}" cy="${py(vals[vals.length - 1])}" r="3.5" fill="${lineCol}" opacity="0.9"/>
+        <text x="${PAD + 2}" y="${H - 3}" fill="#4a2a1a" font-size="9">${rawMin.toFixed(1)}${cfg.unit}</text>
+        <text x="${PAD + 2}" y="13" fill="#4a2a1a" font-size="9">${rawMax.toFixed(1)}${cfg.unit}</text>`;
+}
+
+function formatTimestamp(raw) {
+    if (!raw) return '—';
+    // raw is like "2026-02-20 04:34:30" — parse as local time
+    const s = raw.toString().replace('T', ' ').replace(/\.\d+Z?$/, '');
+    const [datePart, timePart] = s.split(' ');
+    if (!datePart) return raw;
+    const [year, month, day] = datePart.split('-');
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const monthName = months[parseInt(month, 10) - 1] || month;
+    return `${monthName} ${parseInt(day, 10)}, ${timePart || ''}`;
+}
+
+function renderTable(rows) {
+    document.getElementById('hp-table-body').innerHTML = `
+        <table class="hp-table">
+            <colgroup>
+                <col style="width:28px"><col style="width:108px"><col style="width:60px">
+                <col style="width:50px"><col style="width:55px"><col style="width:50px">
+                <col style="width:62px"><col style="width:54px"><col style="width:44px">
+            </colgroup>
+            <thead><tr>
+                <th>#</th><th>Timestamp</th><th>Temp °C</th>
+                <th>Hum %</th><th>Smoke</th><th>Flame</th>
+                <th>AI</th><th>Conf.</th><th>RSSI</th>
+            </tr></thead>
+            <tbody>
+                ${rows.map((r, i) => {
+                    // Use exact MySQL column names: ai_prediction, confidence
+                    const rawPred = r.ai_prediction || '';
+                    const pred = rawPred.toLowerCase();
+                    // confidence is 0–1 in MySQL (e.g. 1 = 100%), multiply by 100
+                    const confRaw = r.confidence != null ? parseFloat(r.confidence) : null;
+                    const confPct = confRaw != null ? (confRaw <= 1 ? confRaw * 100 : confRaw) : null;
+                    const confStr = confPct != null ? confPct.toFixed(1) : '—';
+                    const confColor = confPct != null
+                        ? (confPct >= 70 ? '#2ecc71' : confPct >= 40 ? '#f1c40f' : '#ff9f1c')
+                        : '#5a3a2a';
+                    const aiBadge = pred === 'fire'
+                        ? `<span class="ai-badge ai-fire">🔥 Fire</span>`
+                        : (pred === 'normal')
+                            ? `<span class="ai-badge ai-normal">✓ Normal</span>`
+                            : rawPred
+                                ? `<span class="ai-badge ai-unknown">${rawPred}</span>`
+                                : `<span style="color:#5a3a2a;">—</span>`;
+                    const ts = formatTimestamp(r.local_timestamp || r.timestamp);
+                    return `<tr>
+                        <td style="color:#3a2a1a;font-size:10px;">${i+1}</td>
+                        <td class="hp-time">${ts}</td>
+                        <td class="hp-num">${r.temperature ?? '—'}</td>
+                        <td class="hp-num">${r.humidity ?? '—'}</td>
+                        <td class="hp-num">${r.smoke ?? '—'}</td>
+                        <td class="hp-num">${r.flame ?? '—'}</td>
+                        <td>${aiBadge}</td>
+                        <td style="color:${confColor};font-weight:600;font-family:monospace;">${confStr}%</td>
+                        <td style="color:#5a3a2a;font-family:monospace;">${r.rssi ?? '—'}</td>
+                    </tr>`;
+                }).join('')}
+            </tbody>
+        </table>`;
+}
+
+// ====================== NODE POPUP → HISTORY BUTTON ======================
+// Inject "View History" button into every node popup when it opens
+map.on('popupopen', function(e) {
+    const container = e.popup.getElement();
+    if (!container) return;
+    const titleEl = container.querySelector('.popup-title');
+    if (!titleEl) return;
+    const match = (titleEl.textContent || '').match(/📡\s*(.+)/);
+    if (!match) return;
+    const nodeId = match[1].trim();
+    if (container.querySelector('.popup-history-btn')) return;
+    const btn = document.createElement('button');
+    btn.className = 'popup-history-btn';
+    btn.innerHTML = '📊 View History';
+    btn.onclick = () => { map.closePopup(); openHistoryPanel(nodeId); };
+    container.querySelector('.leaflet-popup-content').appendChild(btn);
+});
 </script>
 </body>
 </html>

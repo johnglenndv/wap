@@ -141,7 +141,7 @@
             const data = await res.json();
             if (!res.ok) throw new Error(data.detail || 'Signup failed');
 
-            sucEl.textContent = `Account created! Welcome to ${data.organization}. Redirecting to login...`;
+            sucEl.textContent = `Account created! Welcome to FLAMES. Redirecting to login...`;
             sucEl.style.display = 'block';
             setTimeout(() => window.location.href = 'login.html', 2500);
         } catch (err) {
