@@ -434,7 +434,7 @@
             <span id="ws-label">Connecting…</span>
         </div>
         <div class="username-badge" id="username-badge">—</div>
-        <button id="admin-btn" onclick="openAdminModal()" style="display:none;background:linear-gradient(135deg,#8b1a00,#c43d00);border:1px solid #e14f0055;color:white;padding:5px 14px;border-radius:8px;font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;cursor:pointer;transition:0.3s;" onmouseover="this.style.boxShadow='0 0 15px #e14f0055'" onmouseout="this.style.boxShadow='none'">⚙ ADMIN</button>
+        <button id="admin-btn" onclick="openAdminModal()" style="display:none;background:linear-gradient(135deg,#8b1a00,#c43d00);border:1px solid #e14f0055;color:white;padding:5px 14px;border-radius:8px;font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;cursor:pointer;transition:0.3s;" onmouseover="this.style.boxShadow='0 0 15px #e14f0055'" onmouseout="this.style.boxShadow='none'">⚙ <span id="admin-btn-label">PANEL</span></button>
         <button class="profile-icon-btn" id="profile-btn">
             <img src="icons/Profile.png" alt="Profile">
         </button>
@@ -585,14 +585,115 @@
 <!-- LEAFLET -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-<!-- ADMIN MODAL (kept minimal - add your full admin content if needed) -->
-<div id="admin-modal" style="display:none;position:fixed;inset:0;z-index:30000;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);align-items:center;justify-content:center;">
-    <div style="background:linear-gradient(135deg,#1e0a08,#2d1209);border:1px solid #5a1a0a88;border-radius:16px;padding:28px 32px;width:520px;max-width:95vw;max-height:85vh;overflow-y:auto;box-shadow:0 0 60px #3a0a0088;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid #4a1a0a55;padding-bottom:14px;">
-            <h2 style="font-family:'Cinzel',serif;font-size:16px;color:#e8c4a0;letter-spacing:3px;">ADMIN PANEL</h2>
-            <span onclick="closeAdminModal()" style="font-size:22px;color:#9a6a5a;cursor:pointer;">✕</span>
+<!-- ADMIN MODAL -->
+<div id="admin-modal" style="display:none;position:fixed;inset:0;z-index:30000;background:rgba(0,0,0,0.82);backdrop-filter:blur(6px);align-items:flex-start;justify-content:center;overflow-y:auto;padding:30px 0;">
+    <div style="background:linear-gradient(135deg,#1e0a08,#2d1209);border:1px solid #5a1a0a88;border-radius:16px;width:640px;max-width:95vw;box-shadow:0 0 60px #3a0a0088;margin:auto;position:relative;">
+
+        <!-- Modal Header -->
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:22px 28px 18px;border-bottom:1px solid #4a1a0a55;">
+            <h2 style="font-family:'Cinzel',serif;font-size:16px;color:#e8c4a0;letter-spacing:3px;">⚙ ADMIN PANEL</h2>
+            <span onclick="closeAdminModal()" style="font-size:22px;color:#9a6a5a;cursor:pointer;line-height:1;transition:color 0.2s;" onmouseover="this.style.color='#e14f00'" onmouseout="this.style.color='#9a6a5a'">✕</span>
         </div>
-        <p style="text-align:center;color:#9a6a5a;">(Admin features placeholder)</p>
+
+        <!-- Tabs -->
+        <div style="display:flex;gap:4px;padding:16px 28px 0;border-bottom:1px solid #4a1a0a44;" id="admin-tabs-row">
+            <button id="admin-tab-invite" onclick="switchAdminTab('invite')" style="padding:9px 22px;border:none;border-radius:8px 8px 0 0;font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;cursor:pointer;transition:0.2s;background:linear-gradient(135deg,#8b1a00,#c43d00);color:white;">🎟 INVITE CODES</button>
+            <button id="admin-tab-users" onclick="switchAdminTab('users')" style="padding:9px 22px;border:none;border-radius:8px 8px 0 0;font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;cursor:pointer;transition:0.2s;background:#2a0a0466;color:#9a6a5a;">👥 USERS</button>
+        </div>
+
+        <!-- Tab Body -->
+        <div style="padding:24px 28px 28px;">
+
+            <!-- INVITE CODES TAB -->
+            <div id="admin-panel-invite">
+
+                <!-- Generate -->
+                <div style="background:#2a0a0444;border:1px solid #4a1a0a55;border-radius:12px;padding:20px;margin-bottom:18px;">
+                    <div style="font-size:11px;letter-spacing:2px;color:#9a6a5a;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+                        <span style="display:inline-block;width:3px;height:16px;background:#e14f00;border-radius:2px;flex-shrink:0;"></span>Generate Invite Code
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+                        <div>
+                            <label style="display:block;font-size:10px;color:#9a6a5a;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Organization ID</label>
+                            <input id="admin-invite-org-id" type="number" placeholder="e.g. 1" style="width:100%;background:#12060566;border:1px solid #4a1a0a;border-radius:8px;padding:10px 12px;color:#f0d0b8;font-size:14px;outline:none;" onfocus="this.style.borderColor='#e14f00';this.style.boxShadow='0 0 10px #e14f0033'" onblur="this.style.borderColor='#4a1a0a';this.style.boxShadow='none'">
+                        </div>
+                        <div>
+                            <label style="display:block;font-size:10px;color:#9a6a5a;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Expires (days)</label>
+                            <input id="admin-invite-expires" type="number" value="30" style="width:100%;background:#12060566;border:1px solid #4a1a0a;border-radius:8px;padding:10px 12px;color:#f0d0b8;font-size:14px;outline:none;" onfocus="this.style.borderColor='#e14f00';this.style.boxShadow='0 0 10px #e14f0033'" onblur="this.style.borderColor='#4a1a0a';this.style.boxShadow='none'">
+                        </div>
+                        <div>
+                            <label style="display:block;font-size:10px;color:#9a6a5a;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Max Uses (0 = unlimited)</label>
+                            <input id="admin-invite-max-uses" type="number" value="1" style="width:100%;background:#12060566;border:1px solid #4a1a0a;border-radius:8px;padding:10px 12px;color:#f0d0b8;font-size:14px;outline:none;" onfocus="this.style.borderColor='#e14f00';this.style.boxShadow='0 0 10px #e14f0033'" onblur="this.style.borderColor='#4a1a0a';this.style.boxShadow='none'">
+                        </div>
+                        <div style="display:flex;align-items:flex-end;">
+                            <button onclick="adminGenerateInvite()" style="width:100%;padding:11px;background:linear-gradient(135deg,#8b1a00,#c43d00);border:1px solid #e14f0055;border-radius:8px;color:white;font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;cursor:pointer;transition:0.3s;" onmouseover="this.style.boxShadow='0 0 15px #e14f0055'" onmouseout="this.style.boxShadow='none'">Generate</button>
+                        </div>
+                    </div>
+                    <!-- Result box -->
+                    <div id="admin-invite-result" style="display:none;background:#0a160a;border:1px solid #2ecc7144;border-radius:10px;padding:18px;text-align:center;">
+                        <div style="font-size:10px;color:#2ecc71;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;">✓ Code Generated</div>
+                        <div id="admin-invite-code-display" style="font-size:30px;font-weight:700;color:#f0d0b8;letter-spacing:8px;margin-bottom:8px;font-family:monospace;"></div>
+                        <div id="admin-invite-meta" style="font-size:12px;color:#9a6a5a;margin-bottom:14px;"></div>
+                        <button id="admin-copy-code-btn" onclick="adminCopyCode()" style="background:#2a0a0466;border:1px solid #4a1a0a;color:#f0d0b8;padding:7px 18px;border-radius:6px;cursor:pointer;font-size:13px;transition:0.2s;" onmouseover="this.style.borderColor='#e14f00'" onmouseout="this.style.borderColor='#4a1a0a'">📋 Copy Code</button>
+                    </div>
+                </div>
+
+                <!-- Delete invite -->
+                <div style="background:#2a0a0444;border:1px solid #4a1a0a55;border-radius:12px;padding:20px;">
+                    <div style="font-size:11px;letter-spacing:2px;color:#9a6a5a;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+                        <span style="display:inline-block;width:3px;height:16px;background:#ff4757;border-radius:2px;flex-shrink:0;"></span>Delete Invite Code
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:flex-end;">
+                        <div>
+                            <label style="display:block;font-size:10px;color:#9a6a5a;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Invite Code</label>
+                            <input id="admin-delete-invite-input" type="text" placeholder="e.g. K7N4P8X2" style="width:100%;background:#12060566;border:1px solid #4a1a0a;border-radius:8px;padding:10px 12px;color:#f0d0b8;font-size:14px;outline:none;text-transform:uppercase;" onfocus="this.style.borderColor='#ff4757';this.style.boxShadow='0 0 10px #ff475733'" onblur="this.style.borderColor='#4a1a0a';this.style.boxShadow='none'">
+                        </div>
+                        <button onclick="adminDeleteInvite()" style="padding:10px 18px;background:#1a000066;border:1px solid #ff475755;border-radius:8px;color:#ff4757;font-family:'Cinzel',serif;font-size:11px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:0.3s;" onmouseover="this.style.background='#ff475722'" onmouseout="this.style.background='#1a000066'">Delete</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- USERS TAB -->
+            <div id="admin-panel-users" style="display:none;">
+
+                <!-- Users list -->
+                <div style="background:#2a0a0444;border:1px solid #4a1a0a55;border-radius:12px;padding:20px;margin-bottom:18px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                        <div style="font-size:11px;letter-spacing:2px;color:#9a6a5a;text-transform:uppercase;display:flex;align-items:center;gap:8px;">
+                            <span style="display:inline-block;width:3px;height:16px;background:#e14f00;border-radius:2px;flex-shrink:0;"></span>All Users
+                        </div>
+                        <button onclick="adminLoadUsers()" style="padding:6px 16px;background:linear-gradient(135deg,#8b1a00,#c43d00);border:1px solid #e14f0055;border-radius:6px;color:white;font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;cursor:pointer;transition:0.3s;" onmouseover="this.style.boxShadow='0 0 10px #e14f0055'" onmouseout="this.style.boxShadow='none'">⟳ Load</button>
+                    </div>
+                    <div id="admin-users-table" style="max-height:280px;overflow-y:auto;">
+                        <div style="color:#5a3a2a;font-size:13px;text-align:center;padding:24px;">Click "Load" to fetch users.</div>
+                    </div>
+                </div>
+
+                <!-- Delete by ID -->
+                <div style="background:#2a0a0444;border:1px solid #4a1a0a55;border-radius:12px;padding:20px;">
+                    <div style="font-size:11px;letter-spacing:2px;color:#9a6a5a;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+                        <span style="display:inline-block;width:3px;height:16px;background:#ff4757;border-radius:2px;flex-shrink:0;"></span>Delete User by ID
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:flex-end;">
+                        <div>
+                            <label style="display:block;font-size:10px;color:#9a6a5a;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">User ID</label>
+                            <input id="admin-delete-user-input" type="number" placeholder="e.g. 5" style="width:100%;background:#12060566;border:1px solid #4a1a0a;border-radius:8px;padding:10px 12px;color:#f0d0b8;font-size:14px;outline:none;" onfocus="this.style.borderColor='#ff4757';this.style.boxShadow='0 0 10px #ff475733'" onblur="this.style.borderColor='#4a1a0a';this.style.boxShadow='none'">
+                        </div>
+                        <button onclick="adminDeleteUser()" style="padding:10px 18px;background:#1a000066;border:1px solid #ff475755;border-radius:8px;color:#ff4757;font-family:'Cinzel',serif;font-size:11px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:0.3s;" onmouseover="this.style.background='#ff475722'" onmouseout="this.style.background='#1a000066'">Delete</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Access Denied (shown for non-admin) -->
+            <div id="admin-panel-denied" style="display:none;text-align:center;padding:40px 20px;">
+                <div style="font-size:48px;margin-bottom:14px;">🔒</div>
+                <div style="color:#e8c4a0;font-family:'Cinzel',serif;font-size:14px;letter-spacing:3px;margin-bottom:10px;">ACCESS RESTRICTED</div>
+                <div style="color:#9a6a5a;font-size:13px;">Only <strong style="color:#ff7733;">Admin</strong> accounts can access this panel.</div>
+            </div>
+
+            <!-- Toast -->
+            <div id="admin-toast" style="display:none;margin-top:16px;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600;text-align:center;transition:0.3s;"></div>
+        </div>
     </div>
 </div>
 
@@ -605,6 +706,14 @@ const authHeader = () => ({ 'Authorization': `Bearer ${TOKEN()}` });
 // ====================== AUTH CHECK ======================
 if (!TOKEN()) window.location.href = 'login.html';
 
+// Decode JWT to get is_admin without extra API call
+function decodeJWT(token) {
+    try {
+        const payload = token.split('.')[1];
+        return JSON.parse(atob(payload.replace(/-/g,'+').replace(/_/g,'/')));
+    } catch { return {}; }
+}
+
 (async () => {
     try {
         const res = await fetch(`${API_BASE()}/me`, { headers: authHeader() });
@@ -615,13 +724,37 @@ if (!TOKEN()) window.location.href = 'login.html';
         checkAdminAccess();
     } catch {
         document.getElementById('username-badge').textContent = localStorage.getItem('flames_username') || '—';
+        checkAdminAccess();
     }
 })();
 
 async function checkAdminAccess() {
     try {
-        const res = await fetch(`${API_BASE()}/organizations`, { headers: authHeader() });
-        if (res.ok) document.getElementById('admin-btn').style.display = 'flex';
+        // Decode JWT to check is_admin flag (fastest, no extra API call)
+        const jwt = decodeJWT(TOKEN() || '');
+        // Also try /me-extended if available, fallback to JWT decode
+        // The backend /me doesn't expose is_admin, so we use JWT payload
+        // or try a protected admin endpoint to detect admin status
+        
+        // Try calling an admin-only endpoint to detect if user is admin
+        const testRes = await fetch(`${API_BASE()}/organizations`, { headers: authHeader() });
+        if (!testRes.ok) return; // Not accessible at all
+
+        // /organizations is public (no auth), so try a real admin-only call
+        // POST /organizations requires admin_required — use that as our probe
+        // Instead, decode the JWT sub and check by trying to create an invite code
+        // Best approach: expose is_admin in /me — but since backend doesn't, 
+        // we store the result of a privileged action test:
+        const probeRes = await fetch(`${API_BASE()}/users/0`, { method: 'DELETE', headers: authHeader() });
+        // 403 = authenticated but not admin; 404 = admin (user not found is fine)
+        const isAdmin = probeRes.status === 404 || probeRes.status === 200;
+
+        // Set role label
+        document.getElementById('admin-btn-label').textContent = isAdmin ? 'ADMIN' : 
+            (localStorage.getItem('flames_org_role') || 'MEMBER');
+        window._flamesIsAdmin = isAdmin;
+        document.getElementById('admin-btn').style.display = 'flex';
+
     } catch {}
 }
 
@@ -655,8 +788,179 @@ document.getElementById('logout-trigger').addEventListener('click', () => {
 });
 
 // ====================== ADMIN MODAL ======================
-function openAdminModal() { document.getElementById('admin-modal').style.display = 'flex'; }
-function closeAdminModal() { document.getElementById('admin-modal').style.display = 'none'; }
+function openAdminModal() {
+    document.getElementById('admin-modal').style.display = 'flex';
+    const isAdmin = window._flamesIsAdmin === true;
+
+    document.getElementById('admin-tabs-row').style.display    = isAdmin ? 'flex' : 'none';
+    document.getElementById('admin-panel-invite').style.display = isAdmin ? 'block' : 'none';
+    document.getElementById('admin-panel-users').style.display  = 'none';
+    document.getElementById('admin-panel-denied').style.display = isAdmin ? 'none' : 'block';
+    document.getElementById('admin-toast').style.display       = 'none';
+    if (isAdmin) switchAdminTab('invite');
+}
+
+function closeAdminModal() {
+    document.getElementById('admin-modal').style.display = 'none';
+}
+
+// Close on backdrop click
+document.getElementById('admin-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeAdminModal();
+});
+
+function switchAdminTab(tab) {
+    document.getElementById('admin-panel-invite').style.display = tab === 'invite' ? 'block' : 'none';
+    document.getElementById('admin-panel-users').style.display  = tab === 'users'  ? 'block' : 'none';
+    const btnInvite = document.getElementById('admin-tab-invite');
+    const btnUsers  = document.getElementById('admin-tab-users');
+    btnInvite.style.background = tab === 'invite' ? 'linear-gradient(135deg,#8b1a00,#c43d00)' : '#2a0a0466';
+    btnInvite.style.color      = tab === 'invite' ? 'white' : '#9a6a5a';
+    btnUsers.style.background  = tab === 'users'  ? 'linear-gradient(135deg,#8b1a00,#c43d00)' : '#2a0a0466';
+    btnUsers.style.color       = tab === 'users'  ? 'white' : '#9a6a5a';
+}
+
+// ---- INVITE CODE FUNCTIONS ----
+async function adminGenerateInvite() {
+    const org_id   = parseInt(document.getElementById('admin-invite-org-id').value);
+    const expires  = parseInt(document.getElementById('admin-invite-expires').value) || 30;
+    const max_uses = parseInt(document.getElementById('admin-invite-max-uses').value);
+    if (!org_id) { adminToast('Enter an Organization ID', 'error'); return; }
+    try {
+        const res = await fetch(`${API_BASE()}/organizations/${org_id}/invite-codes`, {
+            method: 'POST',
+            headers: { ...authHeader(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({ expires_days: expires, max_uses: isNaN(max_uses) ? 1 : max_uses })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Failed to generate code');
+
+        const resultEl = document.getElementById('admin-invite-result');
+        document.getElementById('admin-invite-code-display').textContent = data.code;
+        const expDate = data.expires_at ? new Date(data.expires_at).toLocaleDateString() : 'N/A';
+        document.getElementById('admin-invite-meta').textContent =
+            `Expires: ${expDate}  •  Max uses: ${data.max_uses === 0 ? 'Unlimited' : data.max_uses}`;
+        document.getElementById('admin-copy-code-btn').dataset.code = data.code;
+        resultEl.style.display = 'block';
+        adminToast('Invite code generated!', 'success');
+    } catch(e) { adminToast(e.message, 'error'); }
+}
+
+function adminCopyCode() {
+    const code = document.getElementById('admin-copy-code-btn').dataset.code;
+    if (code) { navigator.clipboard.writeText(code); adminToast('Code copied to clipboard!', 'success'); }
+}
+
+async function adminDeleteInvite() {
+    const code = (document.getElementById('admin-delete-invite-input').value || '').trim().toUpperCase();
+    if (!code) { adminToast('Enter an invite code', 'error'); return; }
+    if (!confirm(`Delete invite code "${code}"? This cannot be undone.`)) return;
+    try {
+        const res = await fetch(`${API_BASE()}/invite-codes/${code}`, { method: 'DELETE', headers: authHeader() });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Failed to delete');
+        adminToast(`Code "${code}" deleted`, 'success');
+        document.getElementById('admin-delete-invite-input').value = '';
+    } catch(e) { adminToast(e.message, 'error'); }
+}
+
+// ---- USER FUNCTIONS ----
+// NOTE: Backend has no GET /users endpoint yet — shows instructions
+async function adminLoadUsers() {
+    const wrap = document.getElementById('admin-users-table');
+    wrap.innerHTML = '<div style="color:#9a6a5a;text-align:center;padding:20px;">Loading…</div>';
+    try {
+        const res = await fetch(`${API_BASE()}/users`, { headers: authHeader() });
+        if (res.status === 404 || res.status === 405) {
+            wrap.innerHTML = `
+                <div style="text-align:center;padding:24px;">
+                    <div style="font-size:24px;margin-bottom:8px;">⚠️</div>
+                    <div style="color:#f1c40f;font-size:13px;margin-bottom:6px;">GET /users not available on this backend.</div>
+                    <div style="color:#5a3a2a;font-size:12px;">Add a <code style="color:#e14f00;">GET /users</code> endpoint in main.py to list users here.</div>
+                </div>`;
+            return;
+        }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const users = await res.json();
+        if (!users.length) {
+            wrap.innerHTML = '<div style="color:#5a3a2a;text-align:center;padding:20px;">No users found.</div>';
+            return;
+        }
+        wrap.innerHTML = `
+            <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                <thead>
+                    <tr style="border-bottom:1px solid #4a1a0a55;">
+                        <th style="text-align:left;padding:8px 10px;color:#9a6a5a;font-size:10px;letter-spacing:1px;text-transform:uppercase;">ID</th>
+                        <th style="text-align:left;padding:8px 10px;color:#9a6a5a;font-size:10px;letter-spacing:1px;text-transform:uppercase;">Username</th>
+                        <th style="text-align:left;padding:8px 10px;color:#9a6a5a;font-size:10px;letter-spacing:1px;text-transform:uppercase;">Role</th>
+                        <th style="text-align:left;padding:8px 10px;color:#9a6a5a;font-size:10px;letter-spacing:1px;text-transform:uppercase;">Org</th>
+                        <th style="padding:8px 10px;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${users.map(u => `
+                    <tr style="border-bottom:1px solid #3a1a0a33;">
+                        <td style="padding:8px 10px;color:#5a3a2a;font-family:monospace;">${u.id}</td>
+                        <td style="padding:8px 10px;color:#f0d0b8;font-weight:600;">${u.username}</td>
+                        <td style="padding:8px 10px;">
+                            <span style="font-size:10px;padding:2px 8px;border-radius:10px;
+                                background:${u.is_admin ? '#3a0a0066' : '#1a0a0466'};
+                                border:1px solid ${u.is_admin ? '#e14f0055' : '#4a1a0a55'};
+                                color:${u.is_admin ? '#ff7733' : '#9a6a5a'};">
+                                ${u.is_admin ? 'ADMIN' : 'MEMBER'}
+                            </span>
+                        </td>
+                        <td style="padding:8px 10px;color:#9a6a5a;font-size:12px;">${u.organization || u.org_id || '—'}</td>
+                        <td style="padding:8px 10px;text-align:right;">
+                            <button onclick="adminDeleteUserById(${u.id},'${u.username}')"
+                                style="padding:4px 10px;background:#1a000066;border:1px solid #ff475755;border-radius:6px;
+                                color:#ff4757;font-size:10px;cursor:pointer;font-family:'Cinzel',serif;letter-spacing:1px;transition:0.2s;"
+                                onmouseover="this.style.background='#ff475722'" onmouseout="this.style.background='#1a000066'">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>`;
+    } catch(e) {
+        wrap.innerHTML = `<div style="color:#ff4757;text-align:center;padding:20px;">${e.message}</div>`;
+    }
+}
+
+async function adminDeleteUser() {
+    const id = parseInt(document.getElementById('admin-delete-user-input').value);
+    if (!id || isNaN(id)) { adminToast('Enter a valid User ID', 'error'); return; }
+    await adminDeleteUserById(id, `ID ${id}`);
+    document.getElementById('admin-delete-user-input').value = '';
+}
+
+async function adminDeleteUserById(id, name) {
+    if (!confirm(`Delete user "${name}" (ID: ${id})? This is permanent.`)) return;
+    try {
+        const res = await fetch(`${API_BASE()}/users/${id}`, { method: 'DELETE', headers: authHeader() });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Delete failed');
+        adminToast(`User "${name}" deleted`, 'success');
+        adminLoadUsers();
+    } catch(e) { adminToast(e.message, 'error'); }
+}
+
+function adminToast(msg, type = 'info') {
+    const el = document.getElementById('admin-toast');
+    el.textContent = msg;
+    const colors = {
+        success: { bg:'#0a160a', border:'#2ecc7155', color:'#2ecc71' },
+        error:   { bg:'#160a0a', border:'#ff475755', color:'#ff4757' },
+        info:    { bg:'#120e04', border:'#f1c40f55', color:'#f1c40f' }
+    };
+    const c = colors[type] || colors.info;
+    el.style.background = c.bg;
+    el.style.border     = `1px solid ${c.border}`;
+    el.style.color      = c.color;
+    el.style.display    = 'block';
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.style.display = 'none', 3500);
+}
 
 // ====================== MAP & NODES ======================
 const MAP_CENTER = [16.0435, 120.3351];
@@ -683,7 +987,7 @@ const gwIcon     = L.icon({ iconUrl: 'icons/Gateway.png',       iconSize: [40,40
 const fireIcon   = L.icon({ iconUrl: 'icons/FireIncident.png',  iconSize: [30,30], iconAnchor:[15,15] });
 
 // Gateway marker
-L.marker([GATEWAY.lat, GATEWAY.lng], { icon: gwIcon }).addTo(map).bindPopup('<b>🏠 Fire Station Gateway</b>');
+L.marker([GATEWAY.lat, GATEWAY.lng], { icon: gwIcon }).addTo(map).bindPopup('<b>🏠 F.L.A.M.E.S. Gateway</b>');
 
 // Node state
 let nodeMarkers = {};
