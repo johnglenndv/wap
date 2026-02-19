@@ -568,6 +568,7 @@
             <div class="incident-header-row">
                 <div class="panel-title" style="margin-bottom:0;">
                     <span>Live Incidents</span>
+                    <span id="incidents-last-update" style="font-size:11px; color:var(--text-dim); margin-left:12px; opacity:0.8;"></span>
                 </div>
                 <div class="incident-badge">
                     <img src="icons/FireIncident.png" alt="fire">
@@ -864,24 +865,38 @@ function connectWebSocket() {
     ws.onopen = () => {
         dot.className = 'ws-dot connected';
         label.textContent = 'Live';
+        console.log("WebSocket connected successfully");
     };
 
     ws.onclose = () => {
         dot.className = 'ws-dot error';
         label.textContent = 'Disconnected';
+        console.log("WebSocket closed — reconnecting in 5s...");
         setTimeout(connectWebSocket, 5000);
     };
 
-    ws.onerror = () => {
+    ws.onerror = (err) => {
         dot.className = 'ws-dot error';
         label.textContent = 'Error';
+        console.error("WebSocket error:", err);
     };
 
     ws.onmessage = (event) => {
         try {
-            JSON.parse(event.data);
+            const msg = JSON.parse(event.data);
+            console.log("WS message received:", msg);  // ← debug: see ALL messages
+
+            // Refresh nodes on any valid message
             loadAndPlaceNodes(true);
-        } catch {}
+
+            // Real-time incident refresh
+            if (msg.type === "incident_update") {
+                console.log("WS → Incident update received:", msg);
+                loadLiveIncidents(true);
+            }
+        } catch (e) {
+            console.warn("WS message parse error:", e);
+        }
     };
 }
 
@@ -1252,6 +1267,10 @@ async function loadLiveIncidents(silent = false) {
         }
 
         document.getElementById('incident-count').textContent = incidents.length;
+        // Show "Last updated" indicator
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        document.getElementById('incidents-last-update').textContent = `Last updated: ${timeStr}`;
 
     } catch (err) {
         console.error('Failed to load incidents:', err);
