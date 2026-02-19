@@ -174,7 +174,17 @@
             .sensor-tile img { width: 18px; }
             .sensor-tile-label { font-size: 9px; }
             .sensor-tile-val { font-size: 15px; }
-            .sensor-node-info { font-size: 10px; }
+            .sensor-node-info {
+                margin-left: auto;
+                text-align: right;
+                font-size: 10px;               /* slightly smaller is often better on mobile */
+                color: var(--text-muted);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 45%;                /* relative to tile width – very forgiving */
+                padding-left: 4px;             /* tiny breathing room from value */
+            }
 
             .map-col { width: 100%; }
             .flames-map-wrap { height: 55vw; min-height: 240px; }
