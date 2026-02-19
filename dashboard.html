@@ -596,6 +596,9 @@ let nodeMarkers = {};
 let nodeData = {};
 let selectedNodeId = null;
 
+let pinnedLocations = [];          // ← Add this! Start as empty array
+let pinnedMarkers = {};            // ← Keep or add this too if not already present
+
 const OFFLINE_THRESHOLD_MINUTES = 5;
 const COLOR_RED = '#ff4757';
 const COLOR_GREEN = '#2ecc71';
@@ -839,44 +842,38 @@ function renderPinned() {
     document.getElementById('pinned-count').textContent = pinnedLocations.length;
     const list = document.getElementById('pinned-list');
     const noMsg = document.getElementById('no-pinned-msg');
+    
+    // Clear old items
     list.querySelectorAll('.pinned-item').forEach(i => i.remove());
     noMsg.style.display = pinnedLocations.length ? 'none' : 'block';
 
-    pinnedLocations.forEach((pin, i) => {
+    // Optional: clear old markers if you were adding them here
+    // (you can move marker creation here if you want pins always visible on map)
+    Object.values(pinnedMarkers).forEach(m => map.removeLayer(m));
+    pinnedMarkers = {};
+
+    pinnedLocations.forEach(pin => {
         const item = document.createElement('div');
         item.className = 'pinned-item';
         item.innerHTML = `
             <div>
-                <div class="pinned-item-name">${pin.name || 'Location ' + (i+1)}</div>
-                <div class="pinned-item-coords">${pin.lat}, ${pin.lng}</div>
+                <div class="pinned-item-name">${pin.name || 'Pinned Location'}</div>
+                <div class="pinned-item-coords">${pin.latitude.toFixed(6)}, ${pin.longitude.toFixed(6)}</div>
             </div>
             <div class="pinned-item-actions">
-                <button class="btn-icon-sm" onclick="flyToPin(${i})" title="Go to">📍</button>
-                <button class="btn-icon-sm" onclick="removePin(${i})" title="Remove" style="color:#ff4757">✕</button>
+                <button class="btn-icon-sm" onclick="flyToPin(${pin.latitude}, ${pin.longitude})" title="Go to">📍</button>
+                <button class="btn-icon-sm" onclick="removePin(${pin.id})" title="Remove" style="color:var(--red)">✕</button>
             </div>`;
         list.appendChild(item);
 
-        if (pinnedMarkers[i]) map.removeLayer(pinnedMarkers[i]);
-        pinnedMarkers[i] = L.marker([pin.lat, pin.lng]).addTo(map).bindPopup(`<b>${pin.name || 'Pinned'}</b><br>${pin.lat}, ${pin.lng}`);
+        // Optional: add persistent marker on map for each pin
+        const marker = L.marker([pin.latitude, pin.longitude])
+            .addTo(map)
+            .bindPopup(`<b>${pin.name || 'Pinned'}</b><br>${pin.latitude.toFixed(6)}, ${pin.longitude.toFixed(6)}`);
+        pinnedMarkers[pin.id] = marker;
     });
 }
 
-function savePin(lat, lng) {
-    const name = document.getElementById('pin-name')?.value.trim() || '';
-    pinnedLocations.push({ lat, lng, name });
-    localStorage.setItem('flames_pinned', JSON.stringify(pinnedLocations));
-    map.closePopup();
-    renderPinned();
-}
-
-function removePin(i) {
-    if (pinnedMarkers[i]) { map.removeLayer(pinnedMarkers[i]); delete pinnedMarkers[i]; }
-    pinnedLocations.splice(i, 1);
-    localStorage.setItem('flames_pinned', JSON.stringify(pinnedLocations));
-    renderPinned();
-}
-
-function flyToPin(i) { map.flyTo([pinnedLocations[i].lat, pinnedLocations[i].lng], 16); }
 
 let pinnedListVisible = false;
 function togglePinnedList() {
@@ -885,6 +882,76 @@ function togglePinnedList() {
     document.getElementById('pinned-count-view').style.display = pinnedListVisible ? 'none' : 'flex';
 }
 renderPinned();
+
+// Load pins from backend when dashboard loads
+async function loadPinnedLocations() {
+    try {
+        const res = await fetch(`${API_BASE()}/me/pins`, {
+            headers: authHeader(),
+            cache: 'no-cache'
+        });
+
+        if (res.status === 401) { window.location.href = 'login.html'; return; }
+        if (!res.ok) {
+            console.warn('Pins fetch failed:', res.status);
+            return;
+        }
+
+        pinnedLocations = await res.json();
+        renderPinned();
+    } catch (err) {
+        console.error('Failed to load pinned locations:', err);
+    }
+}
+
+// Save new pin to backend
+async function savePin(lat, lng) {
+    const name = document.getElementById('pin-name')?.value.trim() || null;
+
+    try {
+        const res = await fetch(`${API_BASE()}/me/pins`, {
+            method: 'POST',
+            headers: {
+                ...authHeader(),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ name, latitude: lat, longitude: lng })
+        });
+
+        if (!res.ok) throw new Error(await res.text());
+
+        map.closePopup();
+        await loadPinnedLocations();  // refresh the list
+    } catch (err) {
+        console.error('Save pin failed:', err);
+        alert('Could not save pin. Check console.');
+    }
+}
+
+// Remove pin by its database ID
+async function removePin(pinId) {
+    try {
+        const res = await fetch(`${API_BASE()}/me/pins/${pinId}`, {
+            method: 'DELETE',
+            headers: authHeader()
+        });
+
+        if (!res.ok) throw new Error(await res.text());
+
+        await loadPinnedLocations();  // refresh
+    } catch (err) {
+        console.error('Delete pin failed:', err);
+        alert('Could not delete pin.');
+    }
+}
+
+// Fly to coordinates (updated to take lat/lng directly)
+function flyToPin(lat, lng) {
+    map.flyTo([lat, lng], 16);
+}
+
+// Load user pins from server
+loadPinnedLocations();
 
 
 // Map RIGHT-CLICK → pin popup
