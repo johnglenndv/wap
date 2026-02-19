@@ -3,7 +3,7 @@
 <head>
     <title>F.L.A.M.E.S. | Dashboard</title>
     <link rel="icon" type="image/png" href="icons/heading-logo.png">
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="UTF-8">
@@ -37,7 +37,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: var(--bg-deep);
-            font-family: 'Rajdhani', sans-serif;
+            font-family: Arial, sans-serif;
             min-height: 100vh;
             color: var(--text);
             transition: background 0.3s, color 0.3s;
@@ -102,7 +102,7 @@
         input:checked + .slider:before { content: "☀️"; transform: translateX(26px); }
         .logout-btn {
             margin-top: auto; background: transparent; border: 1px solid #4a1a0a55; color: var(--text-dim);
-            padding: 10px 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-family: 'Rajdhani', sans-serif; font-size: 14px; width: 100%; transition: 0.3s;
+            padding: 10px 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-family: 'Cinzel', serif; font-size: 14px; width: 100%; transition: 0.3s;
         }
         .logout-btn:hover { background: #5a0a0533; border-color: var(--accent); color: var(--text); }
         .logout-btn img { width: 18px; opacity: 0.7; }
@@ -246,7 +246,7 @@
         .search-wrap input {
             width: 100%; background: #12060566; border: 1px solid #4a1a0a;
             border-radius: 8px; padding: 10px 40px 10px 12px;
-            color: var(--text); font-family: 'Rajdhani', sans-serif; font-size: 14px; outline: none;
+            color: var(--text); font-family: Arial, sans-serif; font-size: 14px; outline: none;
             transition: border-color 0.3s, box-shadow 0.3s;
         }
         .search-wrap input:focus { border-color: var(--accent); box-shadow: 0 0 12px #e14f0033; }
@@ -265,11 +265,11 @@
         /* PINNED */
         .pinned-panel { flex: 1; min-height: 0; overflow: hidden; padding: 12px 16px; }
         .pinned-count-view { display: flex; justify-content: space-between; align-items: flex-end;}
-        .pinned-num { font-size: 36px; font-family: 'Cinzel', serif; color: var(--text); line-height: 1; }
+        .pinned-num { font-size: 36px; font-family: Arial, sans-serif; color: var(--text); line-height: 1; }
         .pinned-label { font-size: 12px; color: var(--text-dim); margin-top: 3px; }
         .btn-small {
             background: transparent; border: 1px solid #4a1a0a; color: var(--text);
-            padding: 6px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; font-family: 'Rajdhani', sans-serif; transition: 0.3s;
+            padding: 6px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; font-family: Arial, sans-serif; transition: 0.3s;
         }
         .btn-small:hover { background: linear-gradient(to right, #8b1a00, #c43d00); border-color: var(--accent); }
         .pinned-list { display: none; flex-direction: column; gap: 6px; overflow-y: auto; flex: 1; padding-top: 8px; }
@@ -323,7 +323,7 @@
             box-shadow: 0 4px 15px #00000055;
         }
         .route-menu.visible { display: flex; }
-        .route-menu button { background: none; border: none; color: white; padding: 8px 12px; cursor: pointer; font-family: 'Rajdhani', sans-serif; font-size: 14px; border-radius: 6px; transition: background 0.2s; }
+        .route-menu button { background: none; border: none; color: white; padding: 8px 12px; cursor: pointer; font-family: Arial, sans-serif; font-size: 14px; border-radius: 6px; transition: background 0.2s; }
         #calc-route:hover { background: #e14f0055; }
         #clear-route:hover { background: #ff000055; }
         .route-divider { color: #e14f0066; }
@@ -333,7 +333,7 @@
             z-index: 1001; background: #1a0806ee; border: 2px solid var(--accent);
             border-radius: 10px; padding: 10px 16px; display: none; align-items: center; gap: 14px;
             box-shadow: 0 4px 15px #00000055; white-space: nowrap;
-            font-family: 'Rajdhani', sans-serif;
+            font-family: Arial, sans-serif;
         }
         #route-dist { color: var(--green); font-weight: 700; display: flex; align-items: center; gap: 5px; }
         #route-time { color: var(--yellow); font-weight: 700; display: flex; align-items: center; gap: 5px; }
@@ -373,7 +373,7 @@
         .btn-route {
             width: 100%; margin-top: 8px; padding: 7px;
             background: #c43d0066; border: 1px solid var(--accent);
-            color: white; border-radius: 7px; font-family: 'Rajdhani', sans-serif; font-size: 13px;
+            color: white; border-radius: 7px; font-family: Arial, sans-serif; font-size: 13px;
             font-weight: 600; cursor: pointer; transition: 0.3s; letter-spacing: 1px;
         }
         .btn-route:hover { background: var(--accent); box-shadow: 0 0 15px #e14f0055; }
@@ -400,7 +400,7 @@
         }
         .sensor-tile img { width: 22px; opacity: 0.85; flex-shrink: 0; }
         .sensor-tile-label { font-size: 10px; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; }
-        .sensor-tile-val { font-size: 18px; font-weight: 700; color: #ff904f; font-family: 'Cinzel', serif; }
+        .sensor-tile-val { font-size: 18px; font-weight: 700; color: #ff904f; font-family: Arial, sans-serif; }
         .sensor-tile-val.alert { color: var(--red); }
         .sensor-tile-val.ok { color: var(--green); }
         .sensor-node-info { margin-left: auto; text-align: right; font-size: 11px; color: var(--text-muted); }
@@ -410,14 +410,14 @@
 
         .leaflet-popup-content-wrapper { background: #1e0a08f5 !important; color: white !important; border-radius: 12px !important; border: 2px solid var(--accent) !important; }
         .leaflet-popup-tip { background: #1e0a08 !important; }
-        .popup-title { font-family: 'Cinzel', serif; font-size: 13px; margin-bottom: 8px; color: #ff9055; }
+        .popup-title { font-family: Arial, sans-serif; font-size: 13px; margin-bottom: 8px; color: #ff9055; }
         .popup-coords { font-size: 12px; color: #7a4a3a; margin-bottom: 12px; }
-        .popup-input { width: 100%; background: #2a0a0566; border: 1px solid #4a1a0a; border-radius: 6px; padding: 7px 9px; color: white; font-family: 'Rajdhani', sans-serif; font-size: 13px; outline: none; margin-bottom: 8px; }
+        .popup-input { width: 100%; background: #2a0a0566; border: 1px solid #4a1a0a; border-radius: 6px; padding: 7px 9px; color: white; font-family: Arial, sans-serif; font-size: 13px; outline: none; margin-bottom: 8px; }
         .popup-input:focus { border-color: var(--accent); }
         .popup-actions { display: flex; gap: 8px; }
-        .popup-save { flex: 1; background: #8b2200; border: none; color: white; padding: 7px; border-radius: 6px; cursor: pointer; font-weight: 600; font-family: 'Rajdhani', sans-serif; transition: 0.2s; }
+        .popup-save { flex: 1; background: #8b2200; border: none; color: white; padding: 7px; border-radius: 6px; cursor: pointer; font-weight: 600; font-family: Arial, sans-serif; transition: 0.2s; }
         .popup-save:hover { background: var(--accent); }
-        .popup-cancel { background: transparent; border: 1px solid #4a1a0a44; color: #7a4a3a; padding: 7px 12px; border-radius: 6px; cursor: pointer; font-family: 'Rajdhani', sans-serif; }
+        .popup-cancel { background: transparent; border: 1px solid #4a1a0a44; color: #7a4a3a; padding: 7px 12px; border-radius: 6px; cursor: pointer; font-family: Arial, sans-serif; }
     </style>
 </head>
 <body>
