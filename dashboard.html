@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>F.L.A.M.E.S. | Dashboard</title>
+    <link rel="icon" type="image/png" href="icons/heading-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <style>
+        :root {
+            --bg-deep: #0d0302;
+            --bg-panel: #1a0905ee;
+            --bg-card: #200b06dd;
+            --border: #4a1a0a55;
+            --border-glow: #8b3a1a44;
+            --accent: #e14f00;
+            --accent-soft: #c43d0088;
+            --text: #f0d0b8;
+            --text-dim: #9a6a5a;
+            --text-muted: #5a3a2a;
+            --green: #2ecc71;
+            --yellow: #f1c40f;
+            --red: #ff4757;
+            --orange-offline: #ff9f1c;
+        }
+        [data-theme="light"] {
+            --bg-deep: #f5ede8;
+            --bg-panel: #ffffffee;
+            --bg-card: #fdf5f0ee;
+            --border: #c8a08844;
+            --border-glow: #d4896044;
+            --text: #2a1208;
+            --text-dim: #7a4a35;
+            --text-muted: #b88a70;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--bg-deep);
+            font-family: 'Rajdhani', sans-serif;
+            min-height: 100vh;
+            color: var(--text);
+            transition: background 0.3s, color 0.3s;
+        }
+        /* ===== HEADER ===== */
+        #main-header {
+            height: 64px;
+            background: linear-gradient(to right, #180401f5, #3a1005f5);
+            border-bottom: 1px solid #5a1a0a55;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 20px; position: relative; z-index: 1000;
+            box-shadow: 0 4px 20px #00000066;
+        }
+        [data-theme="light"] #main-header { background: linear-gradient(to right, #f5e8e0f5, #f0d5c8f5); border-bottom: 1px solid #c8a08866; }
+        .header-logo { display: flex; align-items: center; gap: 10px; }
+        .header-logo img { width: 44px; filter: drop-shadow(0 0 8px #e14f0077); }
+        .header-logo h1 {
+            font-family: 'Cinzel', serif; font-size: 20px; letter-spacing: 4px; font-weight: 700;
+            background: linear-gradient(to bottom, #ff7733, #9b1a00);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .header-right { display: flex; align-items: center; gap: 12px; }
+        .username-badge {
+            font-size: 13px; color: var(--text-dim); letter-spacing: 1px;
+            background: #3a0a0444; border: 1px solid var(--border); border-radius: 20px;
+            padding: 4px 14px;
+        }
+        [data-theme="light"] .username-badge { background: #f0d5c844; }
+        .ws-indicator { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-dim); }
+        .ws-dot { width: 8px; height: 8px; border-radius: 50%; background: #555; transition: background 0.3s; }
+        .ws-dot.connected { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse-dot 2s ease infinite; }
+        .ws-dot.error { background: var(--red); }
+        @keyframes pulse-dot { 0%,100%{opacity:1}50%{opacity:0.4} }
+        .profile-icon-btn { background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; transition: 0.2s; }
+        .profile-icon-btn img { width: 36px; height: 36px; border-radius: 50%; border: 2px solid transparent; transition: border-color 0.2s; }
+        .profile-icon-btn:hover img { border-color: var(--accent); }
+        /* ===== SIDE PANEL ===== */
+        .side-panel {
+            position: fixed; top: 0; right: -360px; width: 300px; height: 100%;
+            background: linear-gradient(to bottom, #1a0805f5, #120404f5);
+            border-left: 1px solid #5a1a0a55;
+            box-shadow: -10px 0 40px #00000088;
+            z-index: 20000; transition: right 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            display: flex; flex-direction: column; padding: 20px;
+        }
+        [data-theme="light"] .side-panel { background: linear-gradient(to bottom, #fdf5f0f5, #f5e8e0f5); border-left: 1px solid #c8a08855; }
+        .side-panel.active { right: 0; }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 16px; border-bottom: 1px solid #4a1a0a55; margin-bottom: 20px; }
+        .panel-header h2 { font-family: 'Cinzel', serif; font-size: 15px; color: var(--text); letter-spacing: 2px; }
+        .close-btn { font-size: 22px; color: var(--text-dim); cursor: pointer; transition: color 0.2s; }
+        .close-btn:hover { color: var(--accent); }
+        .panel-section { background: #3a0a0433; border: 1px solid #4a1a0a44; border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; }
+        [data-theme="light"] .panel-section { background: #f0d5c833; border-color: #c8a08844; }
+        .panel-section h3 { font-size: 11px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 12px; }
+        .setting-item { display: flex; justify-content: space-between; align-items: center; }
+        .setting-item span { font-size: 14px; color: var(--text); }
+        .theme-switch { position: relative; display: inline-block; width: 52px; height: 26px; }
+        .theme-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top:0;left:0;right:0;bottom:0; background: #2a1a14; border-radius: 26px; transition: 0.4s; display: flex; align-items: center; }
+        .slider:before { position: absolute; content: "🌙"; font-size: 13px; height: 20px; width: 20px; left: 3px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: 0.4s; }
+        input:checked + .slider { background: #c8a08855; }
+        input:checked + .slider:before { content: "☀️"; transform: translateX(26px); }
+        .logout-btn {
+            margin-top: auto; background: transparent; border: 1px solid #4a1a0a55; color: var(--text-dim);
+            padding: 10px 14px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-family: 'Rajdhani', sans-serif; font-size: 14px; width: 100%; transition: 0.3s;
+        }
+        .logout-btn:hover { background: #5a0a0533; border-color: var(--accent); color: var(--text); }
+        .logout-btn img { width: 18px; opacity: 0.7; }
+        .panel-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; z-index: 15000; backdrop-filter: blur(4px); }
+        .panel-overlay.active { display: block; }
+        /* ===== LAYOUT GRID ===== */
+        .dashboard-grid {
+            position: absolute; top: 64px; left: 0; right: 0; bottom: 0;
+            padding: 15px;
+            display: grid;
+            grid-template-columns: 60% 1fr;
+            grid-template-rows: auto 1fr;
+            gap: 10px;
+        }
+        .sensor-bar-cell { grid-column: 1; grid-row: 1; }
+        .sensor-bar {margin-top: 0 !important;}
+        .map-col { grid-column: 1; grid-row: 2; position: relative; }
+        .search-cell { grid-column: 2; grid-row: 1; }
+        .mid-right-cell {
+            grid-column: 2; grid-row: 2;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            min-height: 0;
+        }
+        @media (max-width: 1100px) {
+            .dashboard-grid { position: relative; display: flex; flex-direction: column; height: auto; top: 0; }
+            .flames-map-wrap { height: 60vw; min-height: 300px; }
+            .mid-right-cell { grid-template-columns: 1fr; }
+        }
+        /* ===== PANELS ===== */
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-top: 1px solid var(--border-glow);
+            border-radius: 12px;
+            padding: 16px;
+            overflow: hidden;
+            display: flex; flex-direction: column;
+            box-shadow: 0 8px 30px #00000044, inset 0 1px 0 #8b3a1a22;
+        }
+        .panel-title { font-size: 11px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+        .panel-title img { width: 16px; opacity: 0.7; }
+        
+        /* SEARCH */
+        .search-panel { flex-shrink: 0; overflow:visible !important; }
+        .search-wrap { position: relative; }
+        .search-wrap input {
+            width: 100%; background: #12060566; border: 1px solid #4a1a0a;
+            border-radius: 8px; padding: 10px 40px 10px 12px;
+            color: var(--text); font-family: 'Rajdhani', sans-serif; font-size: 14px; outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .search-wrap input:focus { border-color: var(--accent); box-shadow: 0 0 12px #e14f0033; }
+        .search-wrap input::placeholder { color: var(--text-muted); }
+        .search-icon { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 20px; opacity: 0.5; pointer-events: none; }
+        .clr-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--text); font-size: 18px; cursor: pointer; display: none; z-index: 5; }
+        .suggestions-box {
+            position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+            background: #1e0905f5; border: 1px solid var(--accent);
+            border-radius: 8px; max-height: 180px; overflow-y: auto; display: none; z-index: 9999 !important;
+        }
+        .suggestion-item { padding: 9px 12px; font-size: 13px; color: var(--text); cursor: pointer; border-bottom: 1px solid #3a1a0a44; }
+        .suggestion-item:hover { background: #3a1a0a55; }
+
+
+        /* PINNED */
+        .pinned-panel { flex: 1; min-height: 0; overflow: hidden; padding: 12px 16px; }
+        .pinned-count-view { display: flex; justify-content: space-between; align-items: flex-end;}
+        .pinned-num { font-size: 36px; font-family: 'Cinzel', serif; color: var(--text); line-height: 1; }
+        .pinned-label { font-size: 12px; color: var(--text-dim); margin-top: 3px; }
+        .btn-small {
+            background: transparent; border: 1px solid #4a1a0a; color: var(--text);
+            padding: 6px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; font-family: 'Rajdhani', sans-serif; transition: 0.3s;
+        }
+        .btn-small:hover { background: linear-gradient(to right, #8b1a00, #c43d00); border-color: var(--accent); }
+        .pinned-list { display: none; flex-direction: column; gap: 6px; overflow-y: auto; flex: 1; padding-top: 8px; }
+        .pinned-list.visible { display: flex; }
+        .pinned-item {
+            background: #2a0a0555; border: 1px solid #3a1a0a44; border-radius: 8px; padding: 8px 10px;
+            display: flex; justify-content: space-between; align-items: center; font-size: 13px;
+        }
+        .pinned-item-name { color: var(--text); font-weight: 500; }
+        .pinned-item-coords { color: var(--text-dim); font-size: 11px; }
+        .pinned-item-actions { display: flex; gap: 6px; }
+        .btn-icon-sm { background: none; border: none; cursor: pointer; padding: 3px 6px; border-radius: 4px; font-size: 12px; color: var(--text-dim); transition: 0.2s; }
+        .btn-icon-sm:hover { background: #5a1a0a44; color: var(--text); }
+        .no-pinned { color: var(--text-muted); font-size: 13px; text-align: center; margin-top: 12px; }
+        /* MAP */
+        .flames-map-wrap {
+            border-radius: 12px; overflow: hidden; height: 100%;
+            border: 1px solid #09000099;
+            box-shadow: 0 8px 30px #00000066;
+            position: relative;
+        }
+        #flames-map { width: 100%; height: 100%; min-height: 400px; }
+        .map-btn {
+            position: absolute; z-index: 1000;
+            background: white; border: 2px solid var(--accent);
+            border-radius: 50%; width: 34px; height: 34px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 8px #00000055; transition: 0.2s;
+        }
+        .map-btn:hover { background: #1a0500cc; outline: 3px solid var(--accent); }
+        .map-btn img { width: 20px; height: 20px; }
+        #home-btn { top: 12px; right: 12px; }
+        #locate-btn { top: 54px; right: 12px; }
+        #route-btn { top: 96px; right: 12px; border-radius: 50%; width: 34px; height: 34px; }
+        #route-btn img { width: 24px; height: 24px; }
+        .zoom-group {
+            position: absolute; bottom: 20px; right: 12px; z-index: 1000;
+            display: flex; flex-direction: column;
+            background: white; border: 2px solid var(--accent); border-radius: 12px; overflow: hidden;
+            box-shadow: 0 2px 8px #00000055;
+        }
+        .zoom-group:hover { outline: 3px solid var(--accent); }
+        .zoom-btn { background: transparent; border: none; color: var(--accent); font-size: 14px; font-weight: bold; padding: 8px 0; width: 34px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+        .zoom-btn:hover { background: #e14f0022; }
+        .zoom-div { height: 1px; background: #e14f0044; }
+        /* ROUTE MENU */
+        .route-menu {
+            position: absolute; top: 138px; right: 12px; z-index: 1001;
+            background: #2a0a06ee; border: 2px solid var(--accent); border-radius: 10px;
+            padding: 4px 10px; display: none; align-items: center; gap: 4px;
+            box-shadow: 0 4px 15px #00000055;
+        }
+        .route-menu.visible { display: flex; }
+        .route-menu button { background: none; border: none; color: white; padding: 8px 12px; cursor: pointer; font-family: 'Rajdhani', sans-serif; font-size: 14px; border-radius: 6px; transition: background 0.2s; }
+        #calc-route:hover { background: #e14f0055; }
+        #clear-route:hover { background: #ff000055; }
+        .route-divider { color: #e14f0066; }
+        /* ROUTE INFO BOX */
+        #route-info-box {
+            position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+            z-index: 1001; background: #1a0806ee; border: 2px solid var(--accent);
+            border-radius: 10px; padding: 10px 16px; display: none; align-items: center; gap: 14px;
+            box-shadow: 0 4px 15px #00000055; white-space: nowrap;
+            font-family: 'Rajdhani', sans-serif;
+        }
+        #route-dist { color: var(--green); font-weight: 700; display: flex; align-items: center; gap: 5px; }
+        #route-time { color: var(--yellow); font-weight: 700; display: flex; align-items: center; gap: 5px; }
+        #route-dist img, #route-time img { width: 22px; }
+        .info-div { color: #5a3a2a; }
+        #close-info-btn { background: none; border: none; color: white; cursor: pointer; font-size: 20px; margin-left: 6px; transition: color 0.2s; }
+        #close-info-btn:hover { color: var(--red); }
+        /* RIGHT COLUMN panels */
+        .pinned-panel { min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+        .incidents-panel { min-height: 0; display: flex; flex-direction: column; }
+        .node-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .node-select-hint { font-size: 12px; color: var(--text-muted); }
+        .node-data { display: flex; flex-direction: column; gap: 6px; }
+        .node-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+        .node-row img { width: 16px; opacity: 0.8; flex-shrink: 0; }
+        .node-key { color: var(--text-dim); width: 80px; flex-shrink: 0; }
+        .node-val { color: #ff904f; font-weight: 600; }
+        .node-alert { color: var(--red); font-weight: 700; }
+        .node-placeholder { color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px 0; }
+        .badge-status { font-size: 11px; letter-spacing: 1px; padding: 3px 8px; border-radius: 10px; font-weight: 600; }
+        .badge-online { background: #2ecc7133; color: var(--green); border: 1px solid #2ecc7155; }
+        .badge-offline { background: #ff475733; color: var(--red); border: 1px solid #ff475755; }
+        .badge-alert { background: #ff450033; color: #ff7733; border: 1px solid #ff450055; animation: blink 1s ease infinite; }
+        @keyframes blink { 0%,100%{opacity:1}50%{opacity:0.5} }
+        .incident-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .incident-badge { background: #5a0a00; border: 1px solid #8b2a0055; border-radius: 8px; padding: 4px 10px; display: flex; align-items: center; gap: 5px; font-weight: 700; font-size: 14px; }
+        .incident-badge img { width: 14px; }
+        .incident-list { overflow-y: auto; flex: 1; padding-right: 4px; }
+        .incident-list::-webkit-scrollbar { width: 4px; }
+        .incident-list::-webkit-scrollbar-thumb { background: #4a2b27; border-radius: 10px; }
+        .incident-card { border-bottom: 1px solid #3a1a0a44; padding: 12px 0; }
+        .incident-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+        .incident-meta { font-size: 12px; color: var(--text-dim); margin-bottom: 3px; }
+        .txt-active { color: var(--red); font-weight: 700; }
+        .txt-contained { color: var(--yellow); font-weight: 700; }
+        .txt-resolved { color: var(--green); font-weight: 700; }
+        .btn-route {
+            width: 100%; margin-top: 8px; padding: 7px;
+            background: #c43d0066; border: 1px solid var(--accent);
+            color: white; border-radius: 7px; font-family: 'Rajdhani', sans-serif; font-size: 13px;
+            font-weight: 600; cursor: pointer; transition: 0.3s; letter-spacing: 1px;
+        }
+        .btn-route:hover { background: var(--accent); box-shadow: 0 0 15px #e14f0055; }
+        /* LIVE TAG */
+        .live-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--green); letter-spacing: 1px; }
+        .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse-dot 1.5s ease infinite; }
+        /* SCROLLBAR global */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #4a2020; border-radius: 10px; }
+        /* SENSOR BAR */
+        .sensor-bar {
+            display: flex; align-items: center; gap: 10px; flex-wrap: wrap; 
+        }
+        .sensor-tile {
+            flex: 1; min-width: 120px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-top: 1px solid var(--border-glow);
+            border-radius: 12px;
+            padding: 30px 16px;
+            display: flex; align-items: center; gap: 10px;
+            box-shadow: 0 4px 16px #00000033;
+        }
+        .sensor-tile img { width: 22px; opacity: 0.85; flex-shrink: 0; }
+        .sensor-tile-label { font-size: 10px; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; }
+        .sensor-tile-val { font-size: 18px; font-weight: 700; color: #ff904f; font-family: 'Cinzel', serif; }
+        .sensor-tile-val.alert { color: var(--red); }
+        .sensor-tile-val.ok { color: var(--green); }
+        .sensor-node-info { margin-left: auto; text-align: right; font-size: 11px; color: var(--text-muted); }
+        /* shrink incidents list spacing so it fits */
+        .incident-list { overflow-y: auto; flex: 1; padding-right: 2px; }
+        .incident-card { border-bottom: 1px solid #3a1a0a44; padding: 8px 0; }
+
+        .leaflet-popup-content-wrapper { background: #1e0a08f5 !important; color: white !important; border-radius: 12px !important; border: 2px solid var(--accent) !important; }
+        .leaflet-popup-tip { background: #1e0a08 !important; }
+        .popup-title { font-family: 'Cinzel', serif; font-size: 13px; margin-bottom: 8px; color: #ff9055; }
+        .popup-coords { font-size: 12px; color: #7a4a3a; margin-bottom: 12px; }
+        .popup-input { width: 100%; background: #2a0a0566; border: 1px solid #4a1a0a; border-radius: 6px; padding: 7px 9px; color: white; font-family: 'Rajdhani', sans-serif; font-size: 13px; outline: none; margin-bottom: 8px; }
+        .popup-input:focus { border-color: var(--accent); }
+        .popup-actions { display: flex; gap: 8px; }
+        .popup-save { flex: 1; background: #8b2200; border: none; color: white; padding: 7px; border-radius: 6px; cursor: pointer; font-weight: 600; font-family: 'Rajdhani', sans-serif; transition: 0.2s; }
+        .popup-save:hover { background: var(--accent); }
+        .popup-cancel { background: transparent; border: 1px solid #4a1a0a44; color: #7a4a3a; padding: 7px 12px; border-radius: 6px; cursor: pointer; font-family: 'Rajdhani', sans-serif; }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="main-header">
+    <div class="header-logo">
+        <img src="icons/logo.png" alt="FLAMES">
+        <h1>F.L.A.M.E.S.</h1>
+    </div>
+    <div class="header-right">
+        <div class="ws-indicator">
+            <div class="ws-dot" id="ws-dot"></div>
+            <span id="ws-label">Connecting…</span>
+        </div>
+        <div class="username-badge" id="username-badge">—</div>
+        <button id="admin-btn" onclick="openAdminModal()" style="display:none;background:linear-gradient(135deg,#8b1a00,#c43d00);border:1px solid #e14f0055;color:white;padding:5px 14px;border-radius:8px;font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;cursor:pointer;transition:0.3s;" onmouseover="this.style.boxShadow='0 0 15px #e14f0055'" onmouseout="this.style.boxShadow='none'">⚙ ADMIN</button>
+        <button class="profile-icon-btn" id="profile-btn">
+            <img src="icons/Profile.png" alt="Profile">
+        </button>
+    </div>
+</div>
+
+<!-- SIDE PANEL -->
+<div id="side-panel" class="side-panel">
+    <div class="panel-header">
+        <h2>SETTINGS</h2>
+        <span class="close-btn" id="close-panel">✕</span>
+    </div>
+    <div class="panel-section">
+        <h3>Display</h3>
+        <div class="setting-item">
+            <span>Theme: <strong id="mode-text">Dark</strong></span>
+            <label class="theme-switch">
+                <input type="checkbox" id="mode-toggle" checked>
+                <div class="slider"></div>
+            </label>
+        </div>
+    </div>
+    <button class="logout-btn" id="logout-trigger">
+        <img src="icons/logout-icon.png" alt="logout">
+        <span>Log Out</span>
+    </button>
+</div>
+<div id="panel-overlay" class="panel-overlay"></div>
+
+<!-- DASHBOARD GRID -->
+<div class="dashboard-grid">
+    <!-- Sensor Bar -->
+    <div class="sensor-bar-cell">
+        <div class="sensor-bar" id="sensor-bar">
+            <div class="sensor-tile">
+                <img src="icons/temperature.png" alt="">
+                <div>
+                    <div class="sensor-tile-label">Temperature</div>
+                    <div class="sensor-tile-val" id="sb-temp">—</div>
+                </div>
+                <div class="sensor-node-info" id="sb-node-label">No node</div>
+            </div>
+            <div class="sensor-tile">
+                <img src="icons/humidity.png" alt="">
+                <div>
+                    <div class="sensor-tile-label">Humidity</div>
+                    <div class="sensor-tile-val" id="sb-hum">—</div>
+                </div>
+            </div>
+            <div class="sensor-tile">
+                <img src="icons/smoke.png" alt="">
+                <div>
+                    <div class="sensor-tile-label">Smoke</div>
+                    <div class="sensor-tile-val" id="sb-smoke">—</div>
+                </div>
+            </div>
+            <div class="sensor-tile">
+                <img src="icons/flame.png" alt="">
+                <div>
+                    <div class="sensor-tile-label">Flame</div>
+                    <div class="sensor-tile-val" id="sb-flame">—</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map -->
+    <div class="map-col">
+        <div class="flames-map-wrap">
+            <div id="flames-map"></div>
+            <button class="map-btn" id="home-btn" title="Home"><img src="icons/home.png" alt="Home"></button>
+            <button class="map-btn" id="locate-btn" title="My Location"><img src="icons/showmylocation.png" alt="Locate"></button>
+            <button class="map-btn" id="route-btn" title="Route Planner" style="border-radius:50%;"><img src="icons/RoutePlanner.png" alt="Route"></button>
+            <div class="route-menu" id="route-menu">
+                <button id="calc-route">Calculate</button>
+                <span class="route-divider">|</span>
+                <button id="clear-route">Clear</button>
+            </div>
+            <div id="route-info-box">
+                <span id="route-dist"><img src="icons/distance.png"> 0.00 km</span>
+                <span class="info-div">|</span>
+                <span id="route-time"><img src="icons/minutes.png"> 0 min</span>
+                <button id="close-info-btn">×</button>
+            </div>
+            <div class="zoom-group">
+                <button class="zoom-btn" id="zoom-in">+</button>
+                <div class="zoom-div"></div>
+                <button class="zoom-btn" id="zoom-out">−</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search -->
+    <div class="search-cell">
+        <div class="panel search-panel">
+            <div class="panel-title">
+                <span>Search Location</span>
+                <img src="icons/search-icon.png" alt="">
+            </div>
+            <div class="search-wrap">
+                <input type="text" id="mapSearchInput" placeholder="Search a place…" oninput="handleSearch(this.value)">
+                <span id="clearSearch" class="clr-btn" onclick="clearSearchInput()">×</span>
+                <img src="icons/search-icon.png" class="search-icon" id="search-icon-img" alt="">
+                <div id="suggestionsBox" class="suggestions-box"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pinned + Incidents -->
+    <div class="mid-right-cell">
+        <!-- Pinned Locations -->
+        <div class="panel pinned-panel">
+            <div class="panel-title">
+                <span>Pinned</span>
+                <img src="icons/pinned-location.png" alt="">
+            </div>
+            <div class="pinned-count-view" id="pinned-count-view">
+                <div>
+                    <div class="pinned-num" id="pinned-count">0</div>
+                    <div class="pinned-label">locations saved</div>
+                </div>
+                <button class="btn-small" id="view-all-btn" onclick="togglePinnedList()">View All</button>
+            </div>
+            <div class="pinned-list" id="pinned-list">
+                <button class="btn-small" style="margin-bottom:8px;" onclick="togglePinnedList()">Hide</button>
+                <div class="no-pinned" id="no-pinned-msg">No locations pinned yet.</div>
+            </div>
+        </div>
+        <!-- Live Incidents -->
+        <div class="panel incidents-panel">
+            <div class="incident-header-row">
+                <div class="panel-title" style="margin-bottom:0;">
+                    <span>Live Incidents</span>
+                </div>
+                <div class="incident-badge">
+                    <img src="icons/FireIncident.png" alt="fire">
+                    <span id="incident-count">5</span>
+                </div>
+            </div>
+            <div class="incident-list" id="incident-list">
+                <!-- Filled by JS -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- LEAFLET -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<!-- ADMIN MODAL (kept minimal - add your full admin content if needed) -->
+<div id="admin-modal" style="display:none;position:fixed;inset:0;z-index:30000;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);align-items:center;justify-content:center;">
+    <div style="background:linear-gradient(135deg,#1e0a08,#2d1209);border:1px solid #5a1a0a88;border-radius:16px;padding:28px 32px;width:520px;max-width:95vw;max-height:85vh;overflow-y:auto;box-shadow:0 0 60px #3a0a0088;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid #4a1a0a55;padding-bottom:14px;">
+            <h2 style="font-family:'Cinzel',serif;font-size:16px;color:#e8c4a0;letter-spacing:3px;">ADMIN PANEL</h2>
+            <span onclick="closeAdminModal()" style="font-size:22px;color:#9a6a5a;cursor:pointer;">✕</span>
+        </div>
+        <p style="text-align:center;color:#9a6a5a;">(Admin features placeholder)</p>
+    </div>
+</div>
+
+<script>
+// ====================== CONFIG ======================
+const API_BASE = () => localStorage.getItem('flames_api') || 'https://flamesapp.up.railway.app';
+const TOKEN    = () => localStorage.getItem('flames_token');
+const authHeader = () => ({ 'Authorization': `Bearer ${TOKEN()}` });
+
+// ====================== AUTH CHECK ======================
+if (!TOKEN()) window.location.href = 'login.html';
+
+(async () => {
+    try {
+        const res = await fetch(`${API_BASE()}/me`, { headers: authHeader() });
+        if (res.status === 401) { window.location.href = 'login.html'; return; }
+        const me = await res.json();
+        document.getElementById('username-badge').textContent = me.username || '—';
+        localStorage.setItem('flames_username', me.username);
+        checkAdminAccess();
+    } catch {
+        document.getElementById('username-badge').textContent = localStorage.getItem('flames_username') || '—';
+    }
+})();
+
+async function checkAdminAccess() {
+    try {
+        const res = await fetch(`${API_BASE()}/organizations`, { headers: authHeader() });
+        if (res.ok) document.getElementById('admin-btn').style.display = 'flex';
+    } catch {}
+}
+
+// ====================== THEME ======================
+const modeToggle = document.getElementById('mode-toggle');
+const modeText = document.getElementById('mode-text');
+function applyTheme(isDark) {
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    modeText.textContent = isDark ? 'Dark' : 'Light';
+    modeToggle.checked = isDark;
+}
+modeToggle.addEventListener('change', () => {
+    applyTheme(modeToggle.checked);
+    localStorage.setItem('flames_theme', modeToggle.checked ? 'dark' : 'light');
+});
+applyTheme(localStorage.getItem('flames_theme') !== 'light');
+
+// ====================== SIDE PANEL ======================
+document.getElementById('profile-btn').addEventListener('click', () => {
+    document.getElementById('side-panel').classList.add('active');
+    document.getElementById('panel-overlay').classList.add('active');
+});
+function closePanel() {
+    document.getElementById('side-panel').classList.remove('active');
+    document.getElementById('panel-overlay').classList.remove('active');
+}
+document.getElementById('close-panel').addEventListener('click', closePanel);
+document.getElementById('panel-overlay').addEventListener('click', closePanel);
+document.getElementById('logout-trigger').addEventListener('click', () => {
+    if (confirm('Are you sure you want to log out?')) window.location.href = 'index.html?action=logout';
+});
+
+// ====================== ADMIN MODAL ======================
+function openAdminModal() { document.getElementById('admin-modal').style.display = 'flex'; }
+function closeAdminModal() { document.getElementById('admin-modal').style.display = 'none'; }
+
+// ====================== MAP & NODES ======================
+const MAP_CENTER = [16.0435, 120.3351];
+const GATEWAY = { lat: 16.046962, lng: 120.342117 };
+
+const map = L.map('flames-map', { zoomControl: false, attributionControl: false })
+    .setView(MAP_CENTER, 14);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+// Map controls
+document.getElementById('home-btn').addEventListener('click', () => map.flyTo(MAP_CENTER, 14));
+document.getElementById('locate-btn').addEventListener('click', () => {
+    navigator.geolocation.getCurrentPosition(p => map.flyTo([p.coords.latitude, p.coords.longitude], 16), () => alert('Location access denied.'));
+});
+document.getElementById('zoom-in').addEventListener('click', () => map.zoomIn());
+document.getElementById('zoom-out').addEventListener('click', () => map.zoomOut());
+
+// Icons
+const greenIcon  = L.icon({ iconUrl: 'icons/StartingPoint.png', iconSize: [60,60], iconAnchor:[30,55], popupAnchor:[0,-60] });
+const redIcon    = L.icon({ iconUrl: 'icons/EndPoint.png',      iconSize: [60,60], iconAnchor:[30,55], popupAnchor:[0,-60] });
+const nodeIcon   = L.icon({ iconUrl: 'icons/Node.png',          iconSize: [50,50], iconAnchor:[18,18] });
+const gwIcon     = L.icon({ iconUrl: 'icons/Gateway.png',       iconSize: [40,40], iconAnchor:[20,20] });
+const fireIcon   = L.icon({ iconUrl: 'icons/FireIncident.png',  iconSize: [30,30], iconAnchor:[15,15] });
+
+// Gateway marker
+L.marker([GATEWAY.lat, GATEWAY.lng], { icon: gwIcon }).addTo(map).bindPopup('<b>🏠 Fire Station Gateway</b>');
+
+// Node state
+let nodeMarkers = {};
+let nodeData = {};
+let selectedNodeId = null;
+
+const OFFLINE_THRESHOLD_MINUTES = 5;
+const COLOR_RED = '#ff4757';
+const COLOR_GREEN = '#2ecc71';
+const COLOR_ORANGE = '#ff9f1c';
+const COLOR_NORMAL = '#ff904f';
+
+async function loadAndPlaceNodes(silent = false) {
+    try {
+        const res = await fetch(`${API_BASE()}/nodes`, {
+            headers: authHeader(),
+            cache: silent ? 'default' : 'no-cache'
+        });
+
+        if (res.status === 401) { window.location.href = 'login.html'; return; }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const nodes = await res.json();
+        console.log('Fetched nodes from API:', nodes);
+
+        if (!nodes || nodes.length === 0) {
+            console.warn('API returned empty or no nodes array');
+            if (!silent) alert('No sensor nodes available from server.');
+            return;
+        }
+
+        // Clean up removed nodes
+        Object.keys(nodeMarkers).forEach(id => {
+            if (!nodes.some(n => n.node_id === id)) {
+                map.removeLayer(nodeMarkers[id]);
+                delete nodeMarkers[id];
+                delete nodeData[id];
+            }
+        });
+
+        let skippedCount = 0;
+        const gatewayLat = 16.046962;
+        const gatewayLng = 120.342117;
+
+        nodes.forEach(n => {
+            const node_id = n.node_id;
+
+            let lat = parseFloat(n.latitude);
+            let lng = parseFloat(n.longitude);
+            const hasCurrentValid = !isNaN(lat) && lat !== 0 && lat != null && !isNaN(lng) && lng !== 0 && lng != null;
+
+            if (!hasCurrentValid) {
+                // Try previous known position
+                lat = nodeData[node_id]?.latitude;
+                lng = nodeData[node_id]?.longitude;
+            }
+
+            let isUsingFallback = false;
+
+            // Still no valid position → place near gateway with small random offset
+            if (lat == null || lng == null || isNaN(lat) || isNaN(lng)) {
+                // Random offset: 10–100 meters (~0.00009° to 0.0009° lat/lng)
+                const offsetMeters = 10 + Math.random() * 90;           // 10 to 100m
+                const angle = Math.random() * 2 * Math.PI;              // random direction
+                const offsetLat = (offsetMeters / 111000) * Math.cos(angle);
+                const offsetLng = (offsetMeters / (111000 * Math.cos(gatewayLat * Math.PI / 180))) * Math.sin(angle);
+
+                lat = gatewayLat + offsetLat;
+                lng = gatewayLng + offsetLng;
+
+                isUsingFallback = true;
+                console.log(`Node ${node_id} has no position → placed near gateway at ~${offsetMeters.toFixed(0)}m offset`);
+            }
+
+            // Update stored data with final (valid) position
+            const lastUpdated = n.updated_at || n.last_seen || new Date().toISOString();
+
+            nodeData[node_id] = { 
+                ...nodeData[node_id] || {},
+                ...n,
+                latitude: lat,
+                longitude: lng,
+                last_updated: lastUpdated,
+                isUsingFallbackPosition: isUsingFallback  // optional flag
+            };
+
+            const lastTime = new Date(lastUpdated);
+            const minutesAgo = (Date.now() - lastTime.getTime()) / 1000 / 60;
+            const isOffline = minutesAgo > OFFLINE_THRESHOLD_MINUTES;
+
+            const pred = (n.ai_prediction || "normal").toLowerCase();
+            const conf = n.confidence != null ? Number(n.confidence) : 0;
+
+            const isFire = pred === "fire";
+            const isHighConf = conf >= 0.70;
+            const isMediumConf = conf >= 0.40 && conf < 0.70;
+
+            const statusColor = isFire 
+                ? (isHighConf ? '#ff4757' : '#ff9f1c')   // red or orange
+                : '#2ecc71';                              // green = normal
+
+            const statusLabel = isFire 
+                ? (isHighConf ? '🔥 FIRE' : 'Possible Fire')
+                : 'Normal';
+
+            const lastOnlineStr = lastTime.toLocaleString([], {
+                month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+
+            // Optional: mark in popup if using fallback position
+            const positionNote = isUsingFallback 
+                ? `<div style="color:#ff9f1c;font-size:11px;margin-top:6px;">(Approximate position near gateway - awaiting real GPS)</div>`
+                : '';
+
+            const popupContent = `
+                <div class="popup-title">📡 ${node_id}</div>
+                ${isOffline ? `<div style="color:${COLOR_ORANGE};font-weight:600;margin:8px 0;">⚠ OFFLINE<br>Last online: ${lastOnlineStr}</div>` : ''}
+                ${positionNote}
+                <div style="font-size:13px;color:#9a6a5a;line-height:1.7;">
+                    Temp: <b style="color:${COLOR_NORMAL}">${n.temperature ?? '—'}°C</b><br>
+                    Hum:  <b style="color:${COLOR_NORMAL}">${n.humidity ?? '—'}%</b><br>
+                    Flame: <b style="color:${COLOR_NORMAL}">${n.flame ?? '—'}</b><br>
+                    Smoke: <b style="color:${COLOR_NORMAL}">${n.smoke ?? '—'} ppm</b><br>
+                    AI: <strong>${pred.toUpperCase()}</strong> (${(conf * 100).toFixed(1)}%)
+                    <b style="color:${statusColor}">${statusLabel}</b>
+                    ${!isOffline ? `<br><small>Last update: ${lastOnlineStr}</small>` : ''}
+                </div>
+            `;
+
+            if (nodeMarkers[node_id]) {
+                nodeMarkers[node_id].setLatLng([lat, lng]);
+                nodeMarkers[node_id].setPopupContent(popupContent);
+                nodeMarkers[node_id].getElement().style.opacity = isOffline ? 0.55 : 1.0;
+            } else {
+                const marker = L.marker([lat, lng], { 
+                    icon: nodeIcon,
+                    opacity: isOffline ? 0.55 : 1.0 
+                }).addTo(map);
+                marker.bindPopup(popupContent);
+                marker.on('click', () => {
+                    selectedNodeId = node_id;
+                    updateSensorBar(nodeData[node_id], node_id);
+                });
+                nodeMarkers[node_id] = marker;
+            }
+        });
+
+        if (skippedCount > 0 && !silent) {
+            console.warn(`${skippedCount} node(s) skipped (should be 0 now with gateway fallback)`);
+        }
+
+        if (selectedNodeId && nodeData[selectedNodeId]) {
+            updateSensorBar(nodeData[selectedNodeId], selectedNodeId);
+        }
+
+    } catch (err) {
+        console.error('Failed to load nodes:', err);
+        if (!silent) alert('Could not load sensor nodes. Check console for details.');
+    }
+}
+
+// Load nodes immediately
+loadAndPlaceNodes();
+
+// Periodic refresh
+setInterval(() => loadAndPlaceNodes(true), 15000);
+
+// ====================== WEBSOCKET ======================
+function connectWebSocket() {
+    const wsUrl = API_BASE().replace(/^http/, 'ws') + '/ws';
+    const ws = new WebSocket(wsUrl);
+
+    const dot   = document.getElementById('ws-dot');
+    const label = document.getElementById('ws-label');
+
+    ws.onopen = () => {
+        dot.className = 'ws-dot connected';
+        label.textContent = 'Live';
+    };
+
+    ws.onclose = () => {
+        dot.className = 'ws-dot error';
+        label.textContent = 'Disconnected';
+        setTimeout(connectWebSocket, 5000);
+    };
+
+    ws.onerror = () => {
+        dot.className = 'ws-dot error';
+        label.textContent = 'Error';
+    };
+
+    ws.onmessage = (event) => {
+        try {
+            JSON.parse(event.data);
+            loadAndPlaceNodes(true);
+        } catch {}
+    };
+}
+
+connectWebSocket();
+
+// ====================== SENSOR BAR ======================
+function updateSensorBar(d, nodeId) {
+    document.getElementById('sb-temp').textContent = d.temperature != null ? `${d.temperature}°C` : '—';
+    document.getElementById('sb-hum').textContent = d.humidity != null ? `${d.humidity}%` : '—';
+    document.getElementById('sb-smoke').textContent = d.smoke != null ? `${d.smoke} ppm` : '—';
+    document.getElementById('sb-flame').textContent = d.flame != null ? d.flame : '—';
+
+    // Reset to neutral/default style
+    document.getElementById('sb-temp').className = 'sensor-tile-val';
+    document.getElementById('sb-hum').className = 'sensor-tile-val';
+    document.getElementById('sb-smoke').className = 'sensor-tile-val';
+    document.getElementById('sb-flame').className = 'sensor-tile-val';
+
+    // ML-based highlighting only
+    const pred = (d.ai_prediction || "normal").toLowerCase();
+    const conf = d.confidence != null ? Number(d.confidence) : 0;
+
+    if (pred === "fire") {
+        if (conf >= 0.70) {
+            document.getElementById('sb-smoke').className += ' alert';
+            document.getElementById('sb-flame').className += ' alert';
+        } else if (conf >= 0.40) {
+            document.getElementById('sb-smoke').className += ' fire-medium';
+            document.getElementById('sb-flame').className += ' fire-medium';
+        }
+    }
+
+    const lastUpdated = d.last_updated ? new Date(d.last_updated) : null;
+    const isOffline = lastUpdated && (Date.now() - lastUpdated.getTime()) / 1000 / 60 > OFFLINE_THRESHOLD_MINUTES;
+
+    document.getElementById('sb-node-label').innerHTML = 
+        nodeId 
+            ? `${nodeId}${isOffline ? ' <small style="color:#ff9f1c;">(offline)</small>' : ''}`
+            : 'No node';
+
+    const offlineStyle = isOffline ? 'opacity:0.6; font-style:italic;' : '';
+    document.getElementById('sb-temp').style = offlineStyle;
+    document.getElementById('sb-hum').style = offlineStyle;
+    document.getElementById('sb-smoke').style = offlineStyle;
+    document.getElementById('sb-flame').style = offlineStyle;
+}
+
+// ====================== PINNED LOCATIONS ======================
+
+function renderPinned() {
+    document.getElementById('pinned-count').textContent = pinnedLocations.length;
+    const list = document.getElementById('pinned-list');
+    const noMsg = document.getElementById('no-pinned-msg');
+    list.querySelectorAll('.pinned-item').forEach(i => i.remove());
+    noMsg.style.display = pinnedLocations.length ? 'none' : 'block';
+
+    pinnedLocations.forEach((pin, i) => {
+        const item = document.createElement('div');
+        item.className = 'pinned-item';
+        item.innerHTML = `
+            <div>
+                <div class="pinned-item-name">${pin.name || 'Location ' + (i+1)}</div>
+                <div class="pinned-item-coords">${pin.lat}, ${pin.lng}</div>
+            </div>
+            <div class="pinned-item-actions">
+                <button class="btn-icon-sm" onclick="flyToPin(${i})" title="Go to">📍</button>
+                <button class="btn-icon-sm" onclick="removePin(${i})" title="Remove" style="color:#ff4757">✕</button>
+            </div>`;
+        list.appendChild(item);
+
+        if (pinnedMarkers[i]) map.removeLayer(pinnedMarkers[i]);
+        pinnedMarkers[i] = L.marker([pin.lat, pin.lng]).addTo(map).bindPopup(`<b>${pin.name || 'Pinned'}</b><br>${pin.lat}, ${pin.lng}`);
+    });
+}
+
+function savePin(lat, lng) {
+    const name = document.getElementById('pin-name')?.value.trim() || '';
+    pinnedLocations.push({ lat, lng, name });
+    localStorage.setItem('flames_pinned', JSON.stringify(pinnedLocations));
+    map.closePopup();
+    renderPinned();
+}
+
+function removePin(i) {
+    if (pinnedMarkers[i]) { map.removeLayer(pinnedMarkers[i]); delete pinnedMarkers[i]; }
+    pinnedLocations.splice(i, 1);
+    localStorage.setItem('flames_pinned', JSON.stringify(pinnedLocations));
+    renderPinned();
+}
+
+function flyToPin(i) { map.flyTo([pinnedLocations[i].lat, pinnedLocations[i].lng], 16); }
+
+let pinnedListVisible = false;
+function togglePinnedList() {
+    pinnedListVisible = !pinnedListVisible;
+    document.getElementById('pinned-list').classList.toggle('visible', pinnedListVisible);
+    document.getElementById('pinned-count-view').style.display = pinnedListVisible ? 'none' : 'flex';
+}
+renderPinned();
+
+
+// Map RIGHT-CLICK → pin popup
+let pendingPopup = null;
+
+map.on('contextmenu', function(e) {
+    // Prevent the browser's default right-click menu
+    e.originalEvent.preventDefault();
+
+    // Close any existing pin popup
+    if (pendingPopup) {
+        map.closePopup(pendingPopup);
+        pendingPopup = null;
+        // Optional: return;   ← uncomment if you don't want to open new one immediately
+    }
+
+    const lat = e.latlng.lat.toFixed(6);
+    const lng = e.latlng.lng.toFixed(6);
+
+    const popup = L.popup({ maxWidth: 260 })
+        .setLatLng(e.latlng)
+        .setContent(`
+            <div class="popup-title">📍 Pin this location?</div>
+            <div class="popup-coords">${lat}, ${lng}</div>
+            <input class="popup-input" id="pin-name" placeholder="Location name (optional)">
+            <div class="popup-actions">
+                <button class="popup-save" onclick="savePin(${lat}, ${lng})">Save</button>
+                <button class="popup-cancel" onclick="map.closePopup()">Cancel</button>
+            </div>
+        `)
+        .addTo(map);
+
+    pendingPopup = popup;
+
+    popup.on('remove', () => {
+        pendingPopup = null;
+    });
+});
+
+// ====================== SEARCH ======================
+let searchTimeout;
+async function handleSearch(val) {
+    const clrBtn = document.getElementById('clearSearch');
+    const searchIcon = document.getElementById('search-icon-img');
+    const box = document.getElementById('suggestionsBox');
+    clrBtn.style.display = val ? 'block' : 'none';
+    searchIcon.style.display = val ? 'none' : 'block';
+    if (!val) { box.style.display = 'none'; return; }
+
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(async () => {
+        try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}&limit=5&countrycodes=ph`);
+            const data = await res.json();
+            box.innerHTML = '';
+            if (!data.length) { box.style.display = 'none'; return; }
+            data.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'suggestion-item';
+                el.textContent = item.display_name;
+                el.onclick = () => {
+                    map.flyTo([item.lat, item.lon], 16);
+                    document.getElementById('mapSearchInput').value = item.display_name;
+                    box.style.display = 'none';
+                    clrBtn.style.display = 'block';
+                    searchIcon.style.display = 'none';
+                };
+                box.appendChild(el);
+            });
+            box.style.display = 'block';
+        } catch {}
+    }, 400);
+}
+
+function clearSearchInput() {
+    document.getElementById('mapSearchInput').value = '';
+    document.getElementById('suggestionsBox').style.display = 'none';
+    document.getElementById('clearSearch').style.display = 'none';
+    document.getElementById('search-icon-img').style.display = 'block';
+}
+
+// ====================== ROUTE PLANNER ======================
+let routingControl = null, waypoints = [], routeMarkers = [];
+const ORS_API_KEY = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImEyYTEzN2QzOGRlNzQzNzQ5MTMwZTg1NzVkMTJlMzFiIiwiaCI6Im11cm11cjY0In0=';
+
+document.getElementById('route-btn').addEventListener('click', () => {
+    document.getElementById('route-menu').classList.toggle('visible');
+});
+
+document.getElementById('calc-route').addEventListener('click', () => {
+    if (waypoints.length === 2) {
+        calculateRoute(waypoints[0], waypoints[1]);
+        document.getElementById('route-menu').classList.remove('visible');
+    } else {
+        alert('Click to place Start Point (green), then End Point (red).');
+        waypoints = [];
+        routeMarkers.forEach(m => map.removeLayer(m));
+        routeMarkers = [];
+        if (routingControl) { map.removeLayer(routingControl); routingControl = null; }
+    }
+});
+
+document.getElementById('clear-route').addEventListener('click', () => {
+    if (routingControl) { map.removeLayer(routingControl); routingControl = null; }
+    routeMarkers.forEach(m => map.removeLayer(m));
+    routeMarkers = []; waypoints = [];
+    document.getElementById('route-info-box').style.display = 'none';
+    document.getElementById('route-menu').classList.remove('visible');
+});
+
+document.getElementById('close-info-btn').addEventListener('click', () => {
+    if (routingControl) { map.removeLayer(routingControl); routingControl = null; }
+    routeMarkers.forEach(m => map.removeLayer(m));
+    routeMarkers = []; waypoints = [];
+    document.getElementById('route-info-box').style.display = 'none';
+});
+
+map.on('click', function(e) {
+    if (waypoints.length < 2) {
+        waypoints.push(e.latlng);
+        const marker = L.marker(e.latlng, { icon: waypoints.length === 1 ? greenIcon : redIcon }).addTo(map);
+        routeMarkers.push(marker);
+    }
+});
+
+async function calculateRoute(start, end) {
+    const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${ORS_API_KEY}&start=${start.lng},${start.lat}&end=${end.lng},${end.lat}`;
+    try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Routing API error');
+        const data = await res.json();
+        const coords = data.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
+        const summary = data.features[0].properties.summary;
+
+        if (routingControl) map.removeLayer(routingControl);
+        routingControl = L.polyline(coords, { color: '#0055ff', weight: 4, opacity: 0.9 }).addTo(map);
+
+        const dist = (summary.distance / 1000).toFixed(2);
+        const time = Math.round(summary.duration / 60);
+
+        document.getElementById('route-info-box').style.display = 'flex';
+        document.getElementById('route-dist').innerHTML = `<img src="icons/distance.png"> ${dist} km`;
+        document.getElementById('route-time').innerHTML = `<img src="icons/minutes.png"> ~${time} min`;
+
+        map.fitBounds(routingControl.getBounds());
+    } catch {
+        alert('Routing failed. No road available.');
+    }
+}
+
+function routeToIncident(lat, lng) {
+    waypoints = [GATEWAY, { lat, lng }];
+    const m1 = L.marker([GATEWAY.lat, GATEWAY.lng], { icon: greenIcon }).addTo(map);
+    const m2 = L.marker([lat, lng], { icon: redIcon }).addTo(map);
+    routeMarkers.push(m1, m2);
+    calculateRoute(GATEWAY, { lat, lng });
+    map.flyTo([lat, lng], 14);
+}
+
+// ====================== REAL LIVE INCIDENTS ======================
+async function loadLiveIncidents(silent = false) {
+    try {
+        const res = await fetch(`${API_BASE()}/incidents/active`, {
+            headers: authHeader(),
+            cache: 'no-cache'
+        });
+
+        if (res.status === 401) { window.location.href = 'login.html'; return; }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const incidents = await res.json();
+        console.log('Real incidents loaded:', incidents);
+
+        const listEl = document.getElementById('incident-list');
+        listEl.innerHTML = '';
+
+        if (incidents.length === 0) {
+            listEl.innerHTML = '<div class="node-placeholder">No active incidents right now</div>';
+        } else {
+            incidents.forEach(inc => {
+                const confColor = inc.confidence_pct >= 70 ? 'var(--green)' :
+                                 (inc.confidence_pct >= 40 ? 'var(--yellow)' : 'var(--orange-offline)');
+
+                const cardHTML = `
+                    <div class="incident-card">
+                        <div class="incident-title">${inc.location_name || `Node ${inc.node_id}`}</div>
+                        <div class="incident-meta">
+                            Status: <span class="${inc.status_class}">${inc.status}</span>
+                        </div>
+                        <div class="incident-meta">
+                            AI Prediction: <strong>${inc.ai_prediction}</strong> 
+                            <span style="color:${confColor}; font-weight:600;">
+                                (${inc.confidence_pct}%)
+                            </span>
+                        </div>
+                        <div class="incident-meta">Last reading: ${inc.timestamp}</div>
+                        ${inc.assigned_team ? `<div class="incident-meta">Team: ${inc.assigned_team}</div>` : ''}
+                        <button class="btn-route" onclick="routeToIncident(${inc.latitude}, ${inc.longitude})">
+                            🔥 Show on Map & Route
+                        </button>
+                    </div>
+                `;
+                listEl.innerHTML += cardHTML;
+            });
+        }
+
+        document.getElementById('incident-count').textContent = incidents.length;
+
+    } catch (err) {
+        console.error('Failed to load incidents:', err);
+        if (!silent) {
+            document.getElementById('incident-list').innerHTML = 
+                '<div class="node-placeholder">Error loading incidents</div>';
+        }
+    }
+}
+
+// Load immediately + refresh every 20 seconds
+loadLiveIncidents();
+setInterval(() => loadLiveIncidents(true), 20000);
+
+</script>
+</body>
+</html>

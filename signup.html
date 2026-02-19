@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>F.L.A.M.E.S. | Sign Up</title>
+    <link rel="icon" type="image/png" href="icons/heading-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Rajdhani:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            min-height: 100vh;
+            background: #0d0302;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Rajdhani', sans-serif; overflow: hidden;
+        }
+        .ember-bg {
+            position: fixed; inset: 0; pointer-events: none; z-index: 0;
+            background: radial-gradient(ellipse at 50% 80%, #4a0e0088 0%, transparent 60%),
+                        radial-gradient(ellipse at 20% 50%, #3a070088 0%, transparent 50%);
+        }
+        .ember-particle {
+            position: fixed; border-radius: 50%; pointer-events: none; z-index: 0;
+            animation: floatUp linear infinite;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) translateX(0) scale(1); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 0.6; }
+            100% { transform: translateY(-100px) translateX(var(--dx)) scale(0.3); opacity: 0; }
+        }
+        .container { position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 24px; }
+        .logo-section { text-align: center; }
+        .logo-section img { width: 70px; filter: drop-shadow(0 0 20px #e14f00aa); animation: logoPulse 3s ease-in-out infinite; }
+        @keyframes logoPulse { 0%, 100% { filter: drop-shadow(0 0 15px #e14f00aa); } 50% { filter: drop-shadow(0 0 35px #ff6600cc); } }
+        .logo-section h1 {
+            font-family: 'Cinzel', serif; font-size: 20px; letter-spacing: 6px; font-weight: 700;
+            background: linear-gradient(to bottom, #ff7733, #8b1a00);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-top: 6px;
+        }
+        .card {
+            background: linear-gradient(135deg, #1e0a08ee, #2d1209ee);
+            border: 1px solid #5a1a0a55; border-top: 1px solid #8b3a1a44;
+            border-radius: 16px; padding: 32px 38px; width: 350px;
+            box-shadow: 0 0 60px #3a0a0066, 0 20px 60px #00000088, inset 0 1px 0 #8b3a1a22;
+        }
+        .card h2 { font-family: 'Cinzel', serif; font-size: 17px; color: #e8c4a0; text-align: center; margin-bottom: 24px; letter-spacing: 3px; }
+        .field { margin-bottom: 15px; }
+        .field label { display: block; font-size: 11px; color: #9a6a5a; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; font-weight: 500; }
+        .field input {
+            width: 100%; background: #12060588; border: 1px solid #4a1a0a; border-radius: 8px;
+            padding: 11px 14px; color: #f0d0b8; font-family: 'Rajdhani', sans-serif; font-size: 15px; outline: none; transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .field input:focus { border-color: #e14f00; box-shadow: 0 0 15px #e14f0033; }
+        .field input::placeholder { color: #5a3a2a; }
+        .invite-hint { font-size: 11px; color: #6a4a3a; margin-top: 5px; }
+        .error-msg, .success-msg {
+            font-size: 13px; text-align: center; margin-bottom: 14px;
+            border-radius: 6px; padding: 9px; display: none;
+        }
+        .error-msg { color: #ff5555; background: #3a00001a; border: 1px solid #5a000033; }
+        .success-msg { color: #55ee88; background: #00300a1a; border: 1px solid #00500c33; }
+        .btn-signup {
+            width: 100%; padding: 13px;
+            background: linear-gradient(135deg, #8b1a00, #c43d00, #8b1a00);
+            background-size: 200% 100%; background-position: 100% 0;
+            border: 1px solid #e14f0055; border-radius: 8px;
+            color: #fff; font-family: 'Cinzel', serif; font-size: 13px;
+            letter-spacing: 3px; cursor: pointer; font-weight: 600; transition: all 0.4s;
+        }
+        .btn-signup:hover { background-position: 0 0; box-shadow: 0 0 25px #e14f0055; }
+        .btn-signup:disabled { opacity: 0.5; cursor: not-allowed; }
+        .spinner { display: none; width: 16px; height: 16px; border: 2px solid #ffffff44; border-top: 2px solid #fff; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .divider { width: 100%; height: 1px; background: linear-gradient(to right, transparent, #4a1a0a, transparent); margin: 18px 0; }
+        .links { text-align: center; font-size: 13px; color: #7a4a3a; }
+        .links a { color: #e17040; text-decoration: none; font-weight: 500; }
+        .links a:hover { color: #ff8855; }
+    </style>
+</head>
+<body>
+<div class="ember-bg"></div>
+<div class="container">
+    <div class="logo-section">
+        <img src="icons/logo.png" alt="FLAMES">
+        <h1>F.L.A.M.E.S.</h1>
+    </div>
+    <div class="card">
+        <h2>CREATE ACCOUNT</h2>
+        <div class="error-msg" id="error-msg"></div>
+        <div class="success-msg" id="success-msg"></div>
+        <div class="field"><label>Username</label><input type="text" id="username" placeholder="Choose a username"></div>
+        <div class="field"><label>Email <span style="color:#5a4a3a">(optional)</span></label><input type="email" id="email" placeholder="your@email.com"></div>
+        <div class="field"><label>Password</label><input type="password" id="password" placeholder="Create a password"></div>
+        <div class="field">
+            <label>Organization Invite Code</label>
+            <input type="text" id="invite_code" placeholder="Enter your invite code" style="text-transform:uppercase">
+            <div class="invite-hint">Required — contact your organization admin for a code.</div>
+        </div>
+        <button class="btn-signup" id="signup-btn" onclick="doSignup()">
+            <span id="btn-text">CREATE ACCOUNT</span>
+            <div class="spinner" id="spinner"></div>
+        </button>
+        <div class="divider"></div>
+        <div class="links">Already have an account? <a href="login.html">Sign in</a></div>
+    </div>
+</div>
+
+<script>
+    for (let i = 0; i < 15; i++) {
+        const p = document.createElement('div');
+        p.className = 'ember-particle';
+        const size = Math.random() * 4 + 2;
+        p.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;bottom:-10px;--dx:${(Math.random()-0.5)*120}px;background:hsl(${Math.random()*30+10},100%,${Math.random()*30+50}%);animation-duration:${Math.random()*4+3}s;animation-delay:${Math.random()*5}s;`;
+        document.body.appendChild(p);
+    }
+
+    const API = localStorage.getItem('flames_api') || 'https://flamesapp.up.railway.app';
+
+    async function doSignup() {
+        const username = document.getElementById('username').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const invite_code = document.getElementById('invite_code').value.trim().toUpperCase();
+        const errEl = document.getElementById('error-msg');
+        const sucEl = document.getElementById('success-msg');
+        const btn = document.getElementById('signup-btn');
+
+        if (!username || !password || !invite_code) { showError('Username, password, and invite code are required.'); return; }
+        if (password.length < 6) { showError('Password must be at least 6 characters.'); return; }
+
+        btn.disabled = true;
+        document.getElementById('btn-text').style.display = 'none';
+        document.getElementById('spinner').style.display = 'block';
+        errEl.style.display = 'none'; sucEl.style.display = 'none';
+
+        try {
+            const res = await fetch(`${API}/signup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, email: email || null, password, invite_code })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || 'Signup failed');
+
+            sucEl.textContent = `Account created! Welcome to ${data.organization}. Redirecting to login...`;
+            sucEl.style.display = 'block';
+            setTimeout(() => window.location.href = 'login.html', 2500);
+        } catch (err) {
+            showError(err.message);
+        } finally {
+            btn.disabled = false;
+            document.getElementById('btn-text').style.display = 'block';
+            document.getElementById('spinner').style.display = 'none';
+        }
+    }
+
+    function showError(msg) {
+        const el = document.getElementById('error-msg');
+        el.textContent = msg; el.style.display = 'block';
+    }
+</script>
+</body>
+</html>
