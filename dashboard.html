@@ -128,10 +128,93 @@
             gap: 10px;
             min-height: 0;
         }
+         /* ===== TABLET (max 1100px) ===== */
         @media (max-width: 1100px) {
-            .dashboard-grid { position: relative; display: flex; flex-direction: column; height: auto; top: 0; }
-            .flames-map-wrap { height: 60vw; min-height: 300px; }
-            .mid-right-cell { grid-template-columns: 1fr; }
+            .dashboard-grid {
+                position: relative; top: 0;
+                display: flex; flex-direction: column;
+                height: auto; padding: 10px;
+            }
+            .flames-map-wrap { height: 55vw; min-height: 280px; }
+            .mid-right-cell { grid-template-columns: 1fr 1fr; }
+            .sensor-tile { padding: 14px 12px; }
+        }
+
+        /* ===== MOBILE (max 768px) ===== */
+        @media (max-width: 768px) {
+            #main-header {
+                height: auto; min-height: 56px;
+                padding: 8px 12px;
+                flex-wrap: wrap; gap: 6px;
+            }
+            .header-logo img { width: 32px; }
+            .header-logo h1 { font-size: 14px; letter-spacing: 2px; }
+            .username-badge { font-size: 11px; padding: 3px 10px; }
+            .ws-indicator { font-size: 11px; }
+            .ws-dot { width: 7px; height: 7px; }
+            .profile-icon-btn img { width: 30px; height: 30px; }
+            #admin-btn { font-size: 10px !important; padding: 4px 10px !important; }
+
+            .dashboard-grid {
+                position: relative; top: 0;
+                display: flex; flex-direction: column;
+                height: auto; padding: 8px; gap: 8px;
+            }
+
+            .sensor-bar {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+            .sensor-tile {
+                padding: 12px 10px;
+                min-width: unset;
+                flex: unset;
+            }
+            .sensor-tile img { width: 18px; }
+            .sensor-tile-label { font-size: 9px; }
+            .sensor-tile-val { font-size: 15px; }
+            .sensor-node-info { font-size: 10px; }
+
+            .map-col { width: 100%; }
+            .flames-map-wrap { height: 55vw; min-height: 240px; }
+            #flames-map { min-height: 240px; }
+
+            .search-cell, .mid-right-cell { width: 100%; }
+            .mid-right-cell {
+                display: flex; flex-direction: column; gap: 8px;
+            }
+
+            .panel { padding: 12px; }
+            .panel-title { font-size: 10px; margin-bottom: 8px; }
+            .pinned-num { font-size: 28px; }
+
+            .incident-title { font-size: 13px; }
+            .incident-meta { font-size: 11px; }
+            .btn-route { font-size: 12px; padding: 6px; }
+            .incident-badge { font-size: 12px; }
+
+            #route-info-box {
+                left: 8px; right: 8px; transform: none;
+                width: auto; font-size: 12px;
+                padding: 8px 10px; gap: 8px;
+            }
+            #route-dist img, #route-time img { width: 16px; }
+
+            .side-panel { width: 100%; right: -100%; }
+        }
+        
+        /* ===== SMALL MOBILE (max 480px) ===== */
+        @media (max-width: 480px) {
+            .header-logo h1 { font-size: 12px; letter-spacing: 1px; }
+            .header-logo img { width: 28px; }
+            .username-badge { display: none; }
+            .ws-indicator span { display: none; }
+            .sensor-bar { grid-template-columns: 1fr 1fr; gap: 6px; }
+            .sensor-tile { padding: 10px 8px; }
+            .sensor-tile-val { font-size: 13px; }
+            .flames-map-wrap { height: 60vw; min-height: 200px; }
+            #flames-map { min-height: 200px; }
         }
         /* ===== PANELS ===== */
         .panel {
