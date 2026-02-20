@@ -1338,7 +1338,7 @@ document.getElementById('zoom-out').addEventListener('click', () => map.zoomOut(
 const greenIcon  = L.icon({ iconUrl: 'icons/StartingPoint.png', iconSize: [60,60], iconAnchor:[30,55], popupAnchor:[0,-60] });
 const redIcon    = L.icon({ iconUrl: 'icons/EndPoint.png',      iconSize: [60,60], iconAnchor:[30,55], popupAnchor:[0,-60] });
 const nodeIcon   = L.icon({ iconUrl: 'icons/Node.png',          iconSize: [50,50], iconAnchor:[18,18] });
-const gwIcon     = L.icon({ iconUrl: 'icons/Gateway.png',       iconSize: [40,40], iconAnchor:[20,20] });
+const gwIcon     = L.icon({ iconUrl: 'icons/Gateway.png',       iconSize: [55,55], iconAnchor:[20,20] });
 const fireIcon   = L.icon({ iconUrl: 'icons/FireIncident.png',  iconSize: [30,30], iconAnchor:[15,15] });
 
 L.marker([GATEWAY.lat, GATEWAY.lng], { icon: gwIcon }).addTo(map).bindPopup('<b>🏠 F.L.A.M.E.S. Gateway</b>');
