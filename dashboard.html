@@ -1624,21 +1624,58 @@ map.on('click', function(e) {
     }
 });
 async function calculateRoute(start, end) {
-    const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${ORS_API_KEY}&start=${start.lng},${start.lat}&end=${end.lng},${end.lat}`;
+
+    // // CH ALGORITHM PART START
+    // To ensure we use the Contraction Hierarchies (CH) optimized graph,
+    // we use the POST /geojson endpoint with a simple fastest-path request.
+    const url = `https://api.openrouteservice.org/v2/directions/driving-car/geojson`;
+    
+    const requestBody = {
+        "coordinates": [[start.lng, start.lat], [end.lng, end.lat]],
+        "preference": "fastest", // Required for CH triggers
+        "units": "m"
+    };
+    // // CH ALGORITHM PART END
+  
+
     try {
-        const res = await fetch(url);
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': ORS_API_KEY // Standard Auth for POST
+            },
+            body: JSON.stringify(requestBody)
+        });
+
         if (!res.ok) throw new Error('Routing API error');
+        
         const data = await res.json();
+        
+        // Leaflet expects [lat, lng], GeoJSON provides [lng, lat]
         const coords = data.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
         const summary = data.features[0].properties.summary;
+        
         if (routingControl) map.removeLayer(routingControl);
-        routingControl = L.polyline(coords, { color: '#0055ff', weight: 4, opacity: 0.9 }).addTo(map);
-        const dist = (summary.distance / 1000).toFixed(2), time = Math.round(summary.duration / 60);
+        
+        routingControl = L.polyline(coords, { 
+            color: '#0055ff', 
+            weight: 4, 
+            opacity: 0.9 
+        }).addTo(map);
+        
+        const dist = (summary.distance / 1000).toFixed(2);
+        const time = Math.round(summary.duration / 60);
+        
         document.getElementById('route-info-box').style.display = 'flex';
         document.getElementById('route-dist').innerHTML = `<img src="icons/distance.png"> ${dist} km`;
         document.getElementById('route-time').innerHTML = `<img src="icons/minutes.png"> ~${time} min`;
+        
         map.fitBounds(routingControl.getBounds());
-    } catch { alert('Routing failed. No road available.'); }
+    } catch (err) {
+        console.error('Routing Error:', err);
+        alert('Routing failed. No road available.');
+    }
 }
 function routeToIncident(lat, lng) {
     waypoints = [GATEWAY, { lat, lng }];
