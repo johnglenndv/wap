@@ -1624,57 +1624,58 @@ map.on('click', function(e) {
     }
 });
 async function calculateRoute(start, end) {
-
+    // ////////////////////////////////////////////////////////////////////
     // // CH ALGORITHM PART START
-    // To ensure we use the Contraction Hierarchies (CH) optimized graph,
-    // we use the POST /geojson endpoint with a simple fastest-path request.
+    // Using POST /geojson with simple parameters to trigger the 
+    // Contraction Hierarchies (CH) pre-calculated shortcut graph.
     const url = `https://api.openrouteservice.org/v2/directions/driving-car/geojson`;
     
     const requestBody = {
         "coordinates": [[start.lng, start.lat], [end.lng, end.lat]],
-        "preference": "fastest", // Required for CH triggers
+        "preference": "fastest",
         "units": "m"
     };
     // // CH ALGORITHM PART END
-  
+    // ////////////////////////////////////////////////////////////////////
 
     try {
         const res = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': ORS_API_KEY // Standard Auth for POST
+                'Authorization': ORS_API_KEY
             },
             body: JSON.stringify(requestBody)
         });
 
         if (!res.ok) throw new Error('Routing API error');
-        
         const data = await res.json();
         
-        // Leaflet expects [lat, lng], GeoJSON provides [lng, lat]
+        // Log calculation speed to verify CH performance
+        console.log(`🔥 Fire Truck Route Found (CH Algorithm): ${data.metadata.query.processing_time}ms`);
+        
         const coords = data.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
         const summary = data.features[0].properties.summary;
         
         if (routingControl) map.removeLayer(routingControl);
         
+        // Priority styling for Fire Truck (Emergency Red-Orange)
         routingControl = L.polyline(coords, { 
-            color: '#0055ff', 
-            weight: 4, 
-            opacity: 0.9 
+            color: '#ff3300', 
+            weight: 6, 
+            opacity: 0.9,
+            dashArray: '1, 10' // Optional: Gives a pulse/urgent look
         }).addTo(map);
         
-        const dist = (summary.distance / 1000).toFixed(2);
-        const time = Math.round(summary.duration / 60);
+        const dist = (summary.distance / 1000).toFixed(2), time = Math.round(summary.duration / 60);
         
         document.getElementById('route-info-box').style.display = 'flex';
         document.getElementById('route-dist').innerHTML = `<img src="icons/distance.png"> ${dist} km`;
         document.getElementById('route-time').innerHTML = `<img src="icons/minutes.png"> ~${time} min`;
         
         map.fitBounds(routingControl.getBounds());
-    } catch (err) {
-        console.error('Routing Error:', err);
-        alert('Routing failed. No road available.');
+    } catch { 
+        alert('Routing failed. No road available.'); 
     }
 }
 function routeToIncident(lat, lng) {
