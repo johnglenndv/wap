@@ -10,7 +10,8 @@
             min-height: 100vh;
             background: #0d0302;
             display: flex; align-items: center; justify-content: center;
-            font-family: Arial, sans-serif; overflow: hidden;
+            font-family: Arial, sans-serif; overflow-x: hidden; overflow-y: auto;
+            padding: 16px;
         }
         .ember-bg {
             position: fixed; inset: 0; pointer-events: none; z-index: 0;
@@ -27,7 +28,7 @@
             90% { opacity: 0.6; }
             100% { transform: translateY(-100px) translateX(var(--dx)) scale(0.3); opacity: 0; }
         }
-        .container { position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 24px; }
+        .container { position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 24px; width: 100%; max-width: 390px; }
         .logo-section { text-align: center; }
         .logo-section img { width: 70px; filter: drop-shadow(0 0 20px #e14f00aa); animation: logoPulse 3s ease-in-out infinite; }
         @keyframes logoPulse { 0%, 100% { filter: drop-shadow(0 0 15px #e14f00aa); } 50% { filter: drop-shadow(0 0 35px #ff6600cc); } }
@@ -39,8 +40,13 @@
         .card {
             background: linear-gradient(135deg, #1e0a08ee, #2d1209ee);
             border: 1px solid #5a1a0a55; border-top: 1px solid #8b3a1a44;
-            border-radius: 16px; padding: 32px 38px; width: 350px;
+            border-radius: 16px; padding: 32px 38px; width: 100%;
             box-shadow: 0 0 60px #3a0a0066, 0 20px 60px #00000088, inset 0 1px 0 #8b3a1a22;
+        }
+        @media (max-width: 480px) {
+            .card { padding: 24px 18px; }
+            .logo-section img { width: 55px; }
+            .logo-section h1 { font-size: 17px; letter-spacing: 4px; }
         }
         .card h2 { font-family: 'Cinzel', serif; font-size: 17px; color: #e8c4a0; text-align: center; margin-bottom: 24px; letter-spacing: 3px; }
         .field { margin-bottom: 15px; }

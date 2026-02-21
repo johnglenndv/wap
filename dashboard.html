@@ -44,6 +44,7 @@
             font-family: Arial, sans-serif;
             color: var(--text);
             transition: background 0.3s, color 0.3s;
+            overflow-x: hidden;
         }
         /* On mobile, body must scroll since grid becomes flow layout */
         @media (max-width: 1100px) {
@@ -118,17 +119,16 @@
         /* ===== LAYOUT GRID ===== */
         .dashboard-grid {
             position: absolute; top: 64px; left: 0; right: 0; bottom: 0;
-            padding: 15px;
+            padding: 12px;
             display: grid;
             grid-template-columns: 60% 1fr;
             grid-template-rows: auto 1fr;
             gap: 10px;
-            /* Prevent body scroll on desktop — grid fills viewport */
             overflow: hidden;
         }
-        .sensor-bar-cell { grid-column: 1; grid-row: 1; }
+        .sensor-bar-cell { grid-column: 1; grid-row: 1; min-width: 0; }
         .sensor-bar { margin-top: 0 !important; }
-        .map-col { grid-column: 1; grid-row: 2; position: relative; }
+        .map-col { grid-column: 1; grid-row: 2; position: relative; min-width: 0; min-height: 0; }
         .search-cell { grid-column: 2; grid-row: 1; }
         .mid-right-cell {
             grid-column: 2; grid-row: 2;
@@ -146,6 +146,7 @@
             flex-direction: column;
             gap: 10px;
             min-height: 0;
+            min-width: 0;
             overflow: hidden;
         }
 
@@ -185,18 +186,27 @@
             to   { opacity: 1; transform: translateX(0); }
         }
 
+        /* ===== MEDIUM DESKTOP (max 1280px) ===== */
+        @media (max-width: 1280px) and (min-width: 1101px) {
+            .sensor-tile { padding: 10px 12px; }
+            .sensor-tile-val { font-size: 15px; }
+            .sensor-tile-label { font-size: 9px; }
+        }
+
         /* ===== TABLET (max 1100px) ===== */
         @media (max-width: 1100px) {
+            html, body { height: auto; overflow: auto; overflow-x: hidden; }
             .dashboard-grid {
                 position: relative; top: 0;
                 display: flex; flex-direction: column;
                 height: auto; padding: 10px; gap: 10px;
                 overflow: visible;
             }
-            .right-col-wrapper { grid-column: unset; grid-row: unset; min-height: 500px; }
+            .right-col-wrapper { grid-column: unset; grid-row: unset; min-height: 500px; overflow: visible; }
             .right-mid-row { grid-template-columns: 1fr 1fr; }
             .flames-map-wrap { height: 55vw; min-height: 300px; }
-            .sensor-tile { padding: 14px 12px; }
+            .sensor-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+            .sensor-tile { min-width: unset; flex: unset; padding: 14px 12px; }
         }
 
         /* ===== MOBILE (max 768px) ===== */
@@ -209,7 +219,7 @@
             }
             .header-logo img { width: 30px; }
             .header-logo h1 { font-size: 13px; letter-spacing: 2px; }
-            .username-badge { font-size: 11px; padding: 3px 10px; }
+            .username-badge { font-size: 11px; padding: 3px 8px; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
             .ws-indicator { font-size: 11px; }
             .ws-dot { width: 7px; height: 7px; }
             .profile-icon-btn img { width: 30px; height: 30px; }
@@ -224,10 +234,10 @@
 
             /* Sensor bar → 2x2 grid */
             .sensor-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-            .sensor-tile { padding: 12px 10px; min-width: unset; flex: unset; }
-            .sensor-tile img { width: 18px; }
-            .sensor-tile-label { font-size: 9px; }
-            .sensor-tile-val { font-size: 15px; }
+            .sensor-tile { padding: 10px 10px; min-width: unset; flex: unset; gap: 7px; }
+            .sensor-tile img { width: 16px; }
+            .sensor-tile-label { font-size: 8px; letter-spacing: 1px; }
+            .sensor-tile-val { font-size: 14px; }
             .sensor-node-info {
                 margin-left: auto; text-align: right; font-size: 10px;
                 white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -240,7 +250,7 @@
             #flames-map { min-height: 260px; }
 
             /* Right column */
-            .right-col-wrapper { width: 100%; min-height: unset; }
+            .right-col-wrapper { width: 100%; min-height: unset; overflow: visible; }
             .right-default-view { min-height: unset; }
             .right-mid-row { grid-template-columns: 1fr 1fr; gap: 8px; }
             .pinned-panel { min-height: 120px; }
@@ -298,21 +308,23 @@
             .hp-chart-tabs { gap: 3px; margin-bottom: 5px; }
             .hp-chart-tab { padding: 3px 8px; font-size: 9px; letter-spacing: 0.5px; }
             .hp-chart { height: 60px; }
-            .hp-table-wrap { padding: 0 14px 14px; }
+            .hp-table-wrap { padding: 0 10px 12px; overflow-x: auto; }
+            .hp-table-body-scroll { overflow-x: auto; }
+            .hp-table { min-width: 460px; font-size: 11px; }
+            .hp-table tbody td { padding: 6px 6px; }
+            .hp-table td.hp-time { font-size: 9px; }
             .hp-table-header {
+                min-width: 460px;
                 grid-template-columns: 22px 86px 46px 40px 46px 40px 52px 42px 36px;
                 padding: 6px 6px;
                 margin-top: 8px;
             }
             .hp-table-header span { font-size: 8px; letter-spacing: 0.8px; }
-            .hp-table { font-size: 11px; }
-            .hp-table tbody td { padding: 6px 6px; }
-            .hp-table td.hp-time { font-size: 9px; }
         }
 
         /* ===== SMALL MOBILE (max 480px) ===== */
         @media (max-width: 480px) {
-            .header-logo h1 { font-size: 12px; letter-spacing: 1px; }
+            .header-logo h1 { font-size: 11px; letter-spacing: 1px; }
             .header-logo img { width: 26px; }
             .username-badge { display: none; }
             .ws-indicator span { display: none; }
@@ -512,21 +524,22 @@
 
         /* SENSOR BAR */
         .sensor-bar {
-            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+            display: flex; align-items: stretch; gap: 8px; flex-wrap: wrap;
         }
         .sensor-tile {
-            flex: 1; min-width: 120px;
+            flex: 1; min-width: 100px;
             background: var(--bg-panel);
             border: 1px solid var(--border);
             border-top: 1px solid var(--border-glow);
             border-radius: 12px;
-            padding: 30px 16px;
-            display: flex; align-items: center; gap: 10px;
+            padding: 12px 14px;
+            display: flex; align-items: center; gap: 8px;
             box-shadow: 0 4px 16px #00000033;
+            overflow: hidden;
         }
-        .sensor-tile img { width: 22px; opacity: 0.85; flex-shrink: 0; }
-        .sensor-tile-label { font-size: 10px; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; }
-        .sensor-tile-val { font-size: 18px; font-weight: 700; color: #ff904f; font-family: Arial, sans-serif; }
+        .sensor-tile img { width: 20px; opacity: 0.85; flex-shrink: 0; }
+        .sensor-tile-label { font-size: 9px; color: var(--text-dim); letter-spacing: 1.5px; text-transform: uppercase; white-space: nowrap; }
+        .sensor-tile-val { font-size: 16px; font-weight: 700; color: #ff904f; font-family: Arial, sans-serif; white-space: nowrap; }
         .sensor-tile-val.alert { color: var(--red); }
         .sensor-tile-val.ok { color: var(--green); }
         .sensor-node-info { margin-left: auto; text-align: right; font-size: 11px; color: var(--text-muted); }
@@ -1843,11 +1856,15 @@ function renderSparkline(rows) {
     const vals = [...rows].reverse().map(r => r[cfg.key]).filter(v => v != null && v !== undefined);
 
     if (vals.length < 2) {
-        svg.innerHTML = `<text x="400" y="38" text-anchor="middle" fill="#3a1a0a" font-size="12">Not enough data</text>`;
+        svg.setAttribute('viewBox', '0 0 800 70');
+        svg.setAttribute('preserveAspectRatio', 'none');
+        svg.innerHTML = `<text x="400" y="40" text-anchor="middle" fill="#5a3a2a" font-size="14" font-family="Arial,sans-serif">Not enough data</text>`;
         return;
     }
 
-    const W = 800, H = 70, PAD = 6;
+    const W = 800, H = 70, PAD = 8;
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.setAttribute('preserveAspectRatio', 'none');
     const rawMin = Math.min(...vals), rawMax = Math.max(...vals);
     const range = rawMax - rawMin;
     const min = rawMin - (range * 0.1 || 1);
@@ -1865,10 +1882,10 @@ function renderSparkline(rows) {
             <stop offset="100%" stop-color="${lineCol}" stop-opacity="0.02"/>
         </linearGradient></defs>
         <path d="${areaD}" fill="url(#hp-area-grad)"/>
-        <polyline points="${pts}" fill="none" stroke="${lineCol}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-        <circle cx="${px(vals.length - 1)}" cy="${py(vals[vals.length - 1])}" r="3.5" fill="${lineCol}" opacity="0.9"/>
-        <text x="${PAD + 2}" y="${H - 3}" fill="#4a2a1a" font-size="9">${rawMin.toFixed(1)}${cfg.unit}</text>
-        <text x="${PAD + 2}" y="13" fill="#4a2a1a" font-size="9">${rawMax.toFixed(1)}${cfg.unit}</text>`;
+        <polyline points="${pts}" fill="none" stroke="${lineCol}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+        <circle cx="${px(vals.length - 1)}" cy="${py(vals[vals.length - 1])}" r="4" fill="${lineCol}" opacity="0.9"/>
+        <text x="${PAD + 2}" y="${H - 4}" fill="#7a4a3a" font-size="11" font-family="Arial,sans-serif">${rawMin.toFixed(1)}${cfg.unit}</text>
+        <text x="${PAD + 2}" y="15" fill="#7a4a3a" font-size="11" font-family="Arial,sans-serif">${rawMax.toFixed(1)}${cfg.unit}</text>`;
 }
 
 function formatTimestamp(raw) {
