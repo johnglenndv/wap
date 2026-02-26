@@ -22,7 +22,6 @@
     --border:#c8a08844; --border-glow:#d4896044;
     --text:#2a1208; --text-dim:#7a4a35; --text-muted:#b88a70;
 }
-/* ===================== RESET ===================== */
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{height:100%;overflow:hidden;scrollbar-width:none;}
 html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:none;}
@@ -98,27 +97,17 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 
 /* ===================== DASHBOARD GRID ===================== */
 .dashboard-grid{
-    position:fixed;
-    top:var(--hdr);left:0;right:0;bottom:0;
-    padding:12px;
-    display:grid;
-    grid-template-columns:60% 1fr;
-    grid-template-rows:auto 1fr;
-    gap:10px;
-    overflow:hidden;
+    position:fixed;top:var(--hdr);left:0;right:0;bottom:0;
+    padding:12px;display:grid;
+    grid-template-columns:60% 1fr;grid-template-rows:auto 1fr;
+    gap:10px;overflow:hidden;
 }
 
 /* ===================== PANELS ===================== */
 .panel{
-    background:var(--bg-panel);
-    border:1px solid var(--border);
-    border-top:1px solid var(--border-glow);
-    border-radius:var(--radius);
-    padding:14px;
-    display:flex;flex-direction:column;
-    box-shadow:0 8px 30px #00000044,inset 0 1px 0 #8b3a1a22;
-    overflow:hidden;
-    min-height:0;
+    background:var(--bg-panel);border:1px solid var(--border);border-top:1px solid var(--border-glow);
+    border-radius:var(--radius);padding:14px;display:flex;flex-direction:column;
+    box-shadow:0 8px 30px #00000044,inset 0 1px 0 #8b3a1a22;overflow:hidden;min-height:0;
 }
 .panel-title{font-size:10px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
 .panel-title img{width:14px;opacity:.7;}
@@ -126,13 +115,7 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 /* ===================== SENSOR BAR ===================== */
 .sensor-bar-cell{grid-column:1;grid-row:1;}
 .sensor-bar{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;}
-.sensor-tile{
-    flex:1;min-width:0;
-    background:var(--bg-panel);border:1px solid var(--border);border-top:1px solid var(--border-glow);
-    border-radius:var(--radius);padding:12px 10px;
-    display:flex;align-items:center;gap:8px;
-    box-shadow:0 4px 16px #00000033;overflow:hidden;
-}
+.sensor-tile{flex:1;min-width:0;background:var(--bg-panel);border:1px solid var(--border);border-top:1px solid var(--border-glow);border-radius:var(--radius);padding:12px 10px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 16px #00000033;overflow:hidden;}
 .sensor-tile img{width:18px;opacity:.85;flex-shrink:0;}
 .sensor-tile-label{font-size:9px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap;}
 .sensor-tile-val{font-size:15px;font-weight:700;color:#ff904f;font-family:Arial,sans-serif;white-space:nowrap;}
@@ -206,8 +189,8 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 /* ===================== INCIDENTS ===================== */
 .incidents-panel{min-height:0;display:flex;flex-direction:column;}
 .node-placeholder{color:var(--text-muted);font-size:12px;text-align:center;padding:16px 0;}
-.incident-header-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-shrink:0;}
-.incident-badge{background:#5a0a00;border:1px solid #8b2a0055;border-radius:8px;padding:3px 9px;display:flex;align-items:center;gap:4px;font-weight:700;font-size:13px;}
+.incident-header-row{display:flex;justify-content:space-between;align-items:flex-start;gap:6px;margin-bottom:8px;flex-shrink:0;flex-wrap:wrap;}
+.incident-badge{background:#5a0a00;border:1px solid #8b2a0055;border-radius:8px;padding:3px 9px;display:flex;align-items:center;gap:4px;font-weight:700;font-size:13px;flex-shrink:0;}
 .incident-badge img{width:12px;}
 .incident-list{overflow:hidden;flex:1;display:flex;flex-direction:column;gap:0;}
 .incident-card{border-bottom:1px solid #3a1a0a44;padding:7px 0;flex-shrink:0;}
@@ -218,6 +201,7 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .txt-resolved{color:var(--green);font-weight:700;}
 .btn-route{width:100%;margin-top:6px;padding:6px;background:#c43d0066;border:1px solid var(--accent);color:white;border-radius:7px;font-family:Arial,sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:.3s;letter-spacing:.5px;}
 .btn-route:hover{background:var(--accent);box-shadow:0 0 15px #e14f0055;}
+#incidents-last-update{font-size:9px;color:greenyellow;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px;display:inline-block;vertical-align:middle;}
 
 /* ===================== HISTORY PANEL ===================== */
 .right-history-view{display:none;flex-direction:column;flex:1;min-height:0;animation:hv-in .3s cubic-bezier(.34,1.56,.64,1);}
@@ -228,17 +212,15 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .hp-back-btn{display:flex;align-items:center;gap:5px;background:transparent;border:1px solid #4a1a0a55;color:var(--text-dim);border-radius:7px;padding:4px 10px;font-size:11px;cursor:pointer;transition:.2s;font-family:Arial,sans-serif;}
 .hp-back-btn:hover{border-color:var(--accent);color:var(--text);background:#3a0a0433;}
 .hp-node-badge{font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;color:#ff7033;background:#3a0a0455;border:1px solid #c43d0055;border-radius:20px;padding:2px 10px;margin-left:auto;}
-/* WS live badge for history */
 .hp-live-badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;color:var(--green);letter-spacing:1px;margin-left:6px;}
 .hp-live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse-dot 1.5s ease infinite;}
+
+/* Controls — NO refresh button */
 .hp-controls{display:flex;align-items:center;gap:6px;padding:8px 14px 6px;border-bottom:1px solid #2a1a0a33;flex-shrink:0;flex-wrap:wrap;}
 .hp-limit-label{font-size:9px;color:#7a4a3a;letter-spacing:1px;text-transform:uppercase;}
 .hp-limit-btn{background:#2a0a0455;border:1px solid #4a1a0a55;color:#9a6a5a;padding:3px 10px;border-radius:5px;font-size:10px;cursor:pointer;transition:.2s;}
 .hp-limit-btn.active,.hp-limit-btn:hover{background:linear-gradient(135deg,#6b1200,#a03000);border-color:var(--accent);color:white;}
-.hp-refresh{margin-left:auto;background:none;border:1px solid #4a1a0a55;border-radius:5px;color:#9a6a5a;padding:3px 10px;font-size:10px;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:4px;}
-.hp-refresh:hover{border-color:var(--green);color:var(--green);}
-.hp-refresh-icon{display:inline-block;transition:transform .5s;}
-.hp-refresh.spinning .hp-refresh-icon{transform:rotate(360deg);}
+
 .hp-stats{display:flex;gap:5px;padding:6px 14px 0;flex-wrap:wrap;flex-shrink:0;}
 .hp-stat{background:#2a0a0444;border:1px solid #3a1a0a55;border-radius:7px;padding:4px 10px;font-size:10px;display:flex;align-items:center;gap:4px;}
 .hp-stat-label{color:#5a3a2a;font-size:8px;letter-spacing:1px;text-transform:uppercase;}
@@ -258,22 +240,47 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .hp-chart{height:62px;background:#12050344;border-radius:7px;border:1px solid #3a1a0a44;padding:5px 7px;position:relative;overflow:hidden;}
 .hp-chart svg{width:100%;height:100%;overflow:visible;}
 .hp-record-count{padding:3px 14px 0;font-size:10px;color:var(--text-muted);flex-shrink:0;}
-.hp-table-wrap{flex:1;display:flex;flex-direction:column;min-height:0;padding:0 14px 12px;}
-.hp-table-header{display:grid;grid-template-columns:24px 100px 54px 44px 50px 46px 58px 50px 40px;background:#120503;border:1px solid #3a1a0a55;border-radius:7px 7px 0 0;padding:6px 7px;flex-shrink:0;margin-top:8px;}
-.hp-table-header span{font-size:8px;letter-spacing:1px;text-transform:uppercase;color:#7a4a3a;font-weight:700;}
-.hp-table-body-scroll{flex:1;overflow:hidden;border:1px solid #3a1a0a44;border-top:none;border-radius:0 0 7px 7px;}
-.hp-table{width:100%;border-collapse:collapse;font-size:11px;}
-.hp-table thead{display:none;}
+
+/* ===== HISTORY TABLE =====
+   Single scrollable container. Real <thead> stays sticky so
+   headers always line up with data columns. min-width forces
+   horizontal scroll on narrow screens rather than squashing. */
+.hp-table-wrap{flex:1;min-height:0;padding:8px 14px 12px;display:flex;flex-direction:column;}
+.hp-table-scroll{
+    flex:1;overflow:auto;
+    border:1px solid #3a1a0a44;border-radius:7px;
+}
+.hp-table{
+    width:100%;border-collapse:collapse;font-size:11px;
+    min-width:520px; /* prevents squash; scrolls horizontally instead */
+}
+.hp-table thead tr{background:#120503;position:sticky;top:0;z-index:2;}
+.hp-table thead th{
+    padding:7px 8px;text-align:left;
+    font-size:8px;letter-spacing:1px;text-transform:uppercase;
+    color:#7a4a3a;font-weight:700;
+    border-bottom:1px solid #3a1a0a55;white-space:nowrap;
+}
 .hp-table tbody tr{border-bottom:1px solid #2a1a0a33;transition:background .15s;}
 .hp-table tbody tr:hover{background:#3a1a0a22;}
-.hp-table tbody td{padding:6px 7px;color:#c8a080;}
-.hp-table td.hp-num{color:#ff904f;font-weight:600;font-family:monospace;}
-.hp-table td.hp-time{color:#5a3a2a;font-size:9px;}
+.hp-table tbody td{padding:6px 8px;color:#c8a080;white-space:nowrap;}
+/* column sizing */
+.hp-table .c-num {width:28px;text-align:center;}
+.hp-table .c-ts  {min-width:112px;}
+.hp-table .c-val {width:60px;text-align:right;color:#ff904f;font-weight:600;font-family:monospace;}
+.hp-table .c-ai  {width:76px;}
+.hp-table .c-conf{width:52px;text-align:right;}
+.hp-table .c-rssi{width:44px;text-align:right;color:#5a3a2a;font-family:monospace;}
+.hp-table thead th.c-num {text-align:center;}
+.hp-table thead th.c-val,
+.hp-table thead th.c-conf,
+.hp-table thead th.c-rssi{text-align:right;}
+
 .hp-state{text-align:center;padding:24px 15px;color:#4a2a1a;font-size:12px;}
 .hp-spinner{width:22px;height:22px;border:3px solid #3a1a0a;border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 8px;}
 @keyframes spin{to{transform:rotate(360deg)}}
 .ai-badge{display:inline-block;font-size:8px;font-weight:700;padding:1px 5px;border-radius:5px;letter-spacing:.5px;}
-.ai-fire{background:#ff475722;color:#ff4757;border:1px solid #ff475544;}
+.ai-fire  {background:#ff475722;color:#ff4757;border:1px solid #ff475544;}
 .ai-normal{background:#2ecc7122;color:#2ecc71;border:1px solid #2ecc7144;}
 .ai-unknown{background:#f1c40f22;color:#f1c40f;border:1px solid #f1c40f44;}
 
@@ -301,8 +308,6 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 #admin-tabs-row{display:flex;gap:4px;padding:14px 26px 0;border-bottom:1px solid #4a1a0a44;}
 #admin-tabs-row button{padding:8px 20px;border:none;border-radius:8px 8px 0 0;font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;cursor:pointer;transition:.2s;}
 .admin-content{padding:22px 26px 24px;}
-
-/* admin inputs shared style */
 .adm-label{display:block;font-size:9px;color:#9a6a5a;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;}
 .adm-input{width:100%;background:#12060566;border:1px solid #4a1a0a;border-radius:7px;padding:9px 11px;color:#f0d0b8;font-size:13px;outline:none;transition:border-color .2s;}
 .adm-input:focus{border-color:var(--accent);}
@@ -328,8 +333,6 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .adm-copy-btn{background:#2a0a0466;border:1px solid #4a1a0a;color:#f0d0b8;padding:6px 16px;border-radius:6px;cursor:pointer;font-size:12px;transition:.2s;}
 .adm-copy-btn:hover{border-color:#e14f00;}
 #admin-toast{display:none;margin-top:14px;padding:9px 14px;border-radius:7px;font-size:12px;font-weight:600;text-align:center;}
-
-/* Orgs table */
 .adm-orgs-table-wrap{overflow:hidden;}
 .adm-orgs-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;}
 .adm-orgs-table thead th{text-align:left;padding:7px 8px;color:#9a6a5a;font-size:9px;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid #4a1a0a55;font-weight:700;}
@@ -338,9 +341,6 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .adm-orgs-table .col-id{width:40px;color:#5a3a2a;font-family:monospace;font-size:11px;}
 .adm-orgs-table .col-name{width:22%;color:#f0d0b8;font-weight:600;}
 .adm-orgs-table .col-code{width:18%;font-family:monospace;color:#ff9055;font-size:11px;}
-.adm-orgs-table .col-gw{} /* fills remaining */
-
-/* Gateway badge cell */
 .gw-cell-wrap{display:flex;flex-direction:column;gap:5px;}
 .gw-badges-row{display:flex;flex-wrap:wrap;gap:3px;min-height:20px;}
 .gw-badge{display:inline-flex;align-items:center;gap:3px;background:#3a0a0444;border:1px solid #5a2a1a44;border-radius:5px;padding:2px 6px 2px 7px;font-size:9px;color:#ff9055;}
@@ -355,19 +355,30 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 
 /* ===================== RESPONSIVE ===================== */
 @media (max-width:900px){
-    .dashboard-grid{
-        position:static;
-        padding-top:calc(var(--hdr) + 10px);
-        display:flex;flex-direction:column;
-        height:auto;overflow:visible;
-    }
+    .dashboard-grid{position:static;padding-top:calc(var(--hdr) + 10px);display:flex;flex-direction:column;height:auto;overflow:visible;}
     html,body{height:auto;overflow:auto;}
     .map-col{height:55vw;min-height:260px;}
     .right-col-wrapper{min-height:auto;}
     .right-mid-row{grid-template-columns:1fr 1fr;}
     .adm-grid-4{grid-template-columns:1fr 1fr;}
-    .adm-grid-4 > *:last-child{grid-column:1/-1;}
+    .adm-grid-4>*:last-child{grid-column:1/-1;}
+
+    /* History panel → full-screen overlay on tablet */
+    .right-history-view.visible{
+        position:fixed;inset:0;z-index:5000;
+        background:var(--bg-deep);
+        display:flex;flex-direction:column;
+    }
+    .right-history-view.visible .history-panel{
+        border-radius:0;border:none;height:100dvh;
+    }
+    .right-history-view.visible .hp-back-row{
+        padding-top:max(12px, env(safe-area-inset-top));
+    }
+    .hp-limit-btn{padding:6px 16px;font-size:11px;}
+    .hp-chart-tab{padding:4px 10px;font-size:10px;}
 }
+
 @media (max-width:600px){
     :root{--hdr:52px;}
     .header-logo h1{font-size:12px;letter-spacing:1.5px;}
@@ -379,13 +390,18 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
     .map-col{height:70vw;min-height:220px;}
     .right-mid-row{grid-template-columns:1fr;}
     .adm-grid-2,.adm-grid-3,.adm-grid-4{grid-template-columns:1fr;}
-    .adm-grid-4 > *:last-child{grid-column:1;}
+    .adm-grid-4>*:last-child{grid-column:1;}
     .admin-box{border-radius:10px;}
     .admin-content{padding:14px 14px 18px;}
     #admin-tabs-row{padding:10px 14px 0;}
     .adm-section{padding:14px;}
-    .right-history-view.visible{position:fixed;inset:0;top:0;z-index:5000;background:var(--bg-deep);}
-    .right-history-view.visible .history-panel{border-radius:0;border:none;height:100dvh;}
+    /* stats grid on small screens */
+    .hp-stats{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+    .hp-stat{font-size:9px;}
+    /* smaller table font on phones */
+    .hp-table{font-size:10px;}
+    .hp-table thead th{font-size:7px;padding:5px 6px;}
+    .hp-table tbody td{padding:5px 6px;}
 }
     </style>
 </head>
@@ -420,8 +436,7 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
         <div class="side-profile-username" id="side-username">—</div>
         <span class="side-profile-role" id="side-role-badge">MEMBER</span>
         <div class="side-profile-org">
-            <span>🏢</span>
-            <span>Organization:&nbsp;</span>
+            <span>🏢</span><span>Organization:&nbsp;</span>
             <span style="color:var(--text);font-weight:500;" id="side-org-name">—</span>
         </div>
     </div>
@@ -496,7 +511,6 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
     <!-- RIGHT COLUMN -->
     <div class="right-col-wrapper">
         <div class="right-default-view" id="right-default-view">
-            <!-- Search -->
             <div class="panel search-panel">
                 <div class="panel-title"><span>Search Location</span><img src="icons/search-icon.png" alt=""></div>
                 <div class="search-wrap">
@@ -506,7 +520,6 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
                     <div id="suggestionsBox" class="suggestions-box"></div>
                 </div>
             </div>
-            <!-- Pinned + Incidents -->
             <div class="right-mid-row">
                 <div class="panel pinned-panel">
                     <div class="panel-title"><span>Pinned</span><img src="icons/pinned-location.png" alt=""></div>
@@ -521,7 +534,10 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
                 </div>
                 <div class="panel incidents-panel">
                     <div class="incident-header-row">
-                        <div class="panel-title" style="margin-bottom:0;"><span>Live Incidents</span><span id="incidents-last-update" style="font-size:9px;color:greenyellow;margin-left:8px;"></span></div>
+                        <div class="panel-title" style="margin-bottom:0;">
+                            <span>Live Incidents</span>
+                            <span id="incidents-last-update" style="margin-left:8px;"></span>
+                        </div>
                         <div class="incident-badge"><img src="icons/FireIncident.png" alt="fire"><span id="incident-count">0</span></div>
                     </div>
                     <div class="incident-list" id="incident-list"></div>
@@ -538,14 +554,16 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
                     <span class="hp-live-badge" id="hp-live-badge" style="display:none;"><span class="hp-live-dot"></span>LIVE</span>
                     <span class="hp-node-badge" id="hp-node-id">—</span>
                 </div>
+
+                <!-- Refresh removed — WebSocket handles live updates -->
                 <div class="hp-controls">
                     <span class="hp-limit-label">Show:</span>
                     <button class="hp-limit-btn" onclick="setHistoryLimit(20)">20</button>
                     <button class="hp-limit-btn active" onclick="setHistoryLimit(50)">50</button>
                     <button class="hp-limit-btn" onclick="setHistoryLimit(100)">100</button>
                     <button class="hp-limit-btn" onclick="setHistoryLimit(200)">200</button>
-                    <button class="hp-refresh" onclick="refreshHistory()" id="hp-refresh-btn"><span class="hp-refresh-icon">⟳</span> Refresh</button>
                 </div>
+
                 <div class="hp-stats" id="hp-stats"></div>
                 <div class="hp-chart-wrap">
                     <div class="hp-chart-tabs">
@@ -562,12 +580,10 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
                     </div>
                 </div>
                 <div class="hp-record-count"><span id="hp-record-count">0 readings</span></div>
+
+                <!-- Table — thead inside the scroll container so it stays sticky & aligned -->
                 <div class="hp-table-wrap">
-                    <div class="hp-table-header">
-                        <span>#</span><span>Timestamp</span><span>Temp</span><span>Hum</span>
-                        <span>Smoke</span><span>Flame</span><span>AI</span><span>Conf.</span><span>RSSI</span>
-                    </div>
-                    <div class="hp-table-body-scroll" id="hp-table-body">
+                    <div class="hp-table-scroll" id="hp-table-body">
                         <div class="hp-state"><div class="hp-spinner"></div>Select a node to view its history</div>
                     </div>
                 </div>
@@ -588,26 +604,14 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
             <button id="admin-tab-orgs" onclick="switchAdminTab('orgs')">🏢 ORGANIZATIONS</button>
         </div>
         <div class="admin-content">
-            <!-- INVITE TAB -->
             <div id="admin-panel-invite">
                 <div class="adm-section">
                     <div class="adm-section-title"><span class="adm-section-title-bar"></span>Generate Invite Code</div>
                     <div class="adm-grid adm-grid-4">
-                        <div>
-                            <label class="adm-label">Organization</label>
-                            <select id="admin-invite-org-select" class="adm-select"><option value="">Select Organization</option></select>
-                        </div>
-                        <div>
-                            <label class="adm-label">Expires (days)</label>
-                            <input id="admin-invite-expires" type="number" value="30" class="adm-input">
-                        </div>
-                        <div>
-                            <label class="adm-label">Max Uses</label>
-                            <input id="admin-invite-max-uses" type="number" value="1" class="adm-input">
-                        </div>
-                        <div style="display:flex;align-items:flex-end;">
-                            <button class="adm-btn-primary" onclick="adminGenerateInvite()">Generate</button>
-                        </div>
+                        <div><label class="adm-label">Organization</label><select id="admin-invite-org-select" class="adm-select"><option value="">Select Organization</option></select></div>
+                        <div><label class="adm-label">Expires (days)</label><input id="admin-invite-expires" type="number" value="30" class="adm-input"></div>
+                        <div><label class="adm-label">Max Uses</label><input id="admin-invite-max-uses" type="number" value="1" class="adm-input"></div>
+                        <div style="display:flex;align-items:flex-end;"><button class="adm-btn-primary" onclick="adminGenerateInvite()">Generate</button></div>
                     </div>
                     <div class="adm-result-box" id="admin-invite-result">
                         <div class="adm-result-ok">✓ Code Generated</div>
@@ -619,37 +623,24 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
                 <div class="adm-section">
                     <div class="adm-section-title"><span class="adm-section-title-bar red"></span>Delete Invite Code</div>
                     <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:flex-end;">
-                        <div>
-                            <label class="adm-label">Invite Code</label>
-                            <input id="admin-delete-invite-input" type="text" placeholder="e.g. K7N4P8X2" class="adm-input" style="text-transform:uppercase;">
-                        </div>
+                        <div><label class="adm-label">Invite Code</label><input id="admin-delete-invite-input" type="text" placeholder="e.g. K7N4P8X2" class="adm-input" style="text-transform:uppercase;"></div>
                         <button class="adm-btn-danger" onclick="adminDeleteInvite()">Delete</button>
                     </div>
                 </div>
             </div>
-
-            <!-- ORGS TAB -->
             <div id="admin-panel-orgs" style="display:none;">
                 <div class="adm-section">
                     <div class="adm-section-title"><span class="adm-section-title-bar"></span>Create New Organization</div>
                     <div class="adm-grid adm-grid-2" style="margin-bottom:12px;">
-                        <div>
-                            <label class="adm-label">Organization Name</label>
-                            <input id="admin-create-org-name" type="text" placeholder="e.g. Dagupan BFP" class="adm-input">
-                        </div>
-                        <div>
-                            <label class="adm-label">Permanent Invite Code <span style="color:#5a3a2a;">(optional)</span></label>
-                            <input id="admin-create-org-invite-code" type="text" placeholder="e.g. BFP-DAGUPAN" class="adm-input" style="text-transform:uppercase;letter-spacing:1px;">
-                        </div>
+                        <div><label class="adm-label">Organization Name</label><input id="admin-create-org-name" type="text" placeholder="e.g. Dagupan BFP" class="adm-input"></div>
+                        <div><label class="adm-label">Permanent Invite Code <span style="color:#5a3a2a;">(optional)</span></label><input id="admin-create-org-invite-code" type="text" placeholder="e.g. BFP-DAGUPAN" class="adm-input" style="text-transform:uppercase;letter-spacing:1px;"></div>
                     </div>
                     <div style="margin-bottom:12px;">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
                             <label class="adm-label" style="margin-bottom:0;">Assign Gateways <span style="color:#5a3a2a;">(Ctrl/Cmd for multiple)</span></label>
                             <button onclick="adminLoadGatewaysForSelect()" style="padding:2px 8px;background:none;border:1px solid #4a1a0a55;border-radius:4px;color:#9a6a5a;font-size:9px;cursor:pointer;">⟳ Refresh</button>
                         </div>
-                        <select id="admin-create-org-gateways" multiple class="adm-select" style="min-height:70px;max-height:100px;padding:4px;">
-                            <option value="" disabled style="color:#5a3a2a;">Loading gateways…</option>
-                        </select>
+                        <select id="admin-create-org-gateways" multiple class="adm-select" style="min-height:70px;max-height:100px;padding:4px;"><option value="" disabled style="color:#5a3a2a;">Loading gateways…</option></select>
                     </div>
                     <button class="adm-btn-primary" onclick="adminCreateOrganization()">Create Organization</button>
                     <div class="adm-result-box" id="admin-create-org-result">
@@ -668,7 +659,6 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
                     </div>
                 </div>
             </div>
-
             <div id="admin-panel-denied" style="display:none;text-align:center;padding:36px 20px;">
                 <div style="font-size:44px;margin-bottom:12px;">🔒</div>
                 <div style="color:#e8c4a0;font-family:'Cinzel',serif;font-size:13px;letter-spacing:3px;margin-bottom:8px;">ACCESS RESTRICTED</div>
@@ -681,13 +671,11 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
-// ====================== CONFIG ======================
 const API_BASE = () => localStorage.getItem('flames_api') || 'https://flamesapp.up.railway.app';
 const TOKEN    = () => localStorage.getItem('flames_token');
 const authHeader = () => ({ 'Authorization': `Bearer ${TOKEN()}` });
 if (!TOKEN()) window.location.href = 'login.html';
 
-// ====================== USER INFO ======================
 (async () => {
     try {
         const res = await fetch(`${API_BASE()}/me`, { headers: authHeader() });
@@ -698,35 +686,23 @@ if (!TOKEN()) window.location.href = 'login.html';
         document.getElementById('side-org-name').textContent = me.organization_name || '—';
         const rb = document.getElementById('side-role-badge');
         if (me.is_admin) {
-            rb.textContent = 'ADMIN';
-            rb.style.background = 'linear-gradient(135deg,#5a0a00,#8b1a00)';
-            rb.style.borderColor = '#e14f0055';
-            rb.style.color = '#ff9055';
-            document.getElementById('admin-btn').style.display = 'flex';
-        } else {
-            rb.textContent = 'MEMBER';
-        }
+            rb.textContent='ADMIN'; rb.style.background='linear-gradient(135deg,#5a0a00,#8b1a00)';
+            rb.style.borderColor='#e14f0055'; rb.style.color='#ff9055';
+            document.getElementById('admin-btn').style.display='flex';
+        } else { rb.textContent='MEMBER'; }
         window._flamesIsAdmin = !!me.is_admin;
-    } catch {
-        document.getElementById('side-username').textContent = localStorage.getItem('flames_username') || '—';
-    }
+    } catch { document.getElementById('side-username').textContent = localStorage.getItem('flames_username') || '—'; }
 })();
 
-// ====================== THEME ======================
 const modeToggle = document.getElementById('mode-toggle');
 const modeText   = document.getElementById('mode-text');
 function applyTheme(isDark) {
-    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
-    modeText.textContent = isDark ? 'Dark' : 'Light';
-    modeToggle.checked = isDark;
+    document.documentElement.setAttribute('data-theme', isDark?'dark':'light');
+    modeText.textContent = isDark?'Dark':'Light'; modeToggle.checked = isDark;
 }
-modeToggle.addEventListener('change', () => {
-    applyTheme(modeToggle.checked);
-    localStorage.setItem('flames_theme', modeToggle.checked ? 'dark' : 'light');
-});
+modeToggle.addEventListener('change', () => { applyTheme(modeToggle.checked); localStorage.setItem('flames_theme', modeToggle.checked?'dark':'light'); });
 applyTheme(localStorage.getItem('flames_theme') !== 'light');
 
-// ====================== SIDE PANEL ======================
 document.getElementById('profile-btn').addEventListener('click', () => {
     document.getElementById('side-panel').classList.add('active');
     document.getElementById('panel-overlay').classList.add('active');
@@ -741,312 +717,196 @@ document.getElementById('logout-trigger').addEventListener('click', () => {
     if (confirm('Are you sure you want to log out?')) window.location.href = 'index.html?action=logout';
 });
 
-// ====================== ADMIN MODAL ======================
 function openAdminModal() {
-    document.getElementById('admin-modal').style.display = 'flex';
-    loadOrganizations();
-    adminLoadGatewaysForSelect();
-    switchAdminTab('invite');
+    document.getElementById('admin-modal').style.display='flex';
+    loadOrganizations(); adminLoadGatewaysForSelect(); switchAdminTab('invite');
 }
-function closeAdminModal() { document.getElementById('admin-modal').style.display = 'none'; }
-document.getElementById('admin-modal').addEventListener('click', e => { if (e.target === document.getElementById('admin-modal')) closeAdminModal(); });
-
+function closeAdminModal() { document.getElementById('admin-modal').style.display='none'; }
+document.getElementById('admin-modal').addEventListener('click', e => { if (e.target===document.getElementById('admin-modal')) closeAdminModal(); });
 function switchAdminTab(tab) {
-    document.getElementById('admin-panel-invite').style.display = tab === 'invite' ? 'block' : 'none';
-    document.getElementById('admin-panel-orgs').style.display   = tab === 'orgs'   ? 'block' : 'none';
+    document.getElementById('admin-panel-invite').style.display = tab==='invite'?'block':'none';
+    document.getElementById('admin-panel-orgs').style.display   = tab==='orgs'  ?'block':'none';
     ['invite','orgs'].forEach(t => {
-        const btn = document.getElementById(`admin-tab-${t}`);
-        if (!btn) return;
-        btn.style.background = t === tab ? 'linear-gradient(135deg,#8b1a00,#c43d00)' : '#2a0a0466';
-        btn.style.color = t === tab ? 'white' : '#9a6a5a';
+        const btn = document.getElementById(`admin-tab-${t}`); if (!btn) return;
+        btn.style.background = t===tab?'linear-gradient(135deg,#8b1a00,#c43d00)':'#2a0a0466';
+        btn.style.color = t===tab?'white':'#9a6a5a';
     });
-    if (tab === 'orgs') adminLoadGatewaysForSelect();
+    if (tab==='orgs') adminLoadGatewaysForSelect();
 }
 
 let _allGateways = [];
-
 async function loadOrganizations() {
     try {
-        const [gwRes, orgRes] = await Promise.all([
-            fetch(`${API_BASE()}/gateways`, { headers: authHeader(), cache: 'no-cache' }),
-            fetch(`${API_BASE()}/organizations`, { headers: authHeader() })
+        const [gwRes,orgRes] = await Promise.all([
+            fetch(`${API_BASE()}/gateways`,{headers:authHeader(),cache:'no-cache'}),
+            fetch(`${API_BASE()}/organizations`,{headers:authHeader()})
         ]);
         if (gwRes.ok) _allGateways = await gwRes.json();
         if (!orgRes.ok) throw new Error('Failed');
         const orgs = await orgRes.json();
-
-        // Populate invite org select
         const sel = document.getElementById('admin-invite-org-select');
-        sel.innerHTML = '<option value="">Select Organization</option>';
-        orgs.forEach(o => {
-            const opt = document.createElement('option');
-            opt.value = o.id; opt.textContent = `${o.name} (ID: ${o.id})`;
-            sel.appendChild(opt);
-        });
-
+        sel.innerHTML='<option value="">Select Organization</option>';
+        orgs.forEach(o => { const opt=document.createElement('option'); opt.value=o.id; opt.textContent=`${o.name} (ID: ${o.id})`; sel.appendChild(opt); });
         const wrap = document.getElementById('admin-orgs-table');
-        if (!orgs.length) { wrap.innerHTML = '<div style="color:#5a3a2a;text-align:center;padding:18px;">No organizations found.</div>'; return; }
-
-        wrap.innerHTML = `<table class="adm-orgs-table">
-            <thead><tr>
-                <th class="col-id">ID</th>
-                <th class="col-name">Name</th>
-                <th class="col-code">Invite Code</th>
-                <th class="col-gw">Gateways</th>
-            </tr></thead>
-            <tbody>
-            ${orgs.map(o => `<tr id="org-row-${o.id}">
-                <td class="col-id">${o.id}</td>
-                <td class="col-name">${o.name}</td>
-                <td class="col-code">${o.invite_code || '<span style="color:#5a3a2a;">—</span>'}</td>
-                <td class="col-gw" id="org-gw-cell-${o.id}"><div style="color:#5a3a2a;font-size:10px;">…</div></td>
-            </tr>`).join('')}
-            </tbody>
-        </table>`;
-
-        orgs.forEach(o => renderOrgGatewayCell(o.id, o.name));
+        if (!orgs.length) { wrap.innerHTML='<div style="color:#5a3a2a;text-align:center;padding:18px;">No organizations found.</div>'; return; }
+        wrap.innerHTML=`<table class="adm-orgs-table"><thead><tr><th class="col-id">ID</th><th class="col-name">Name</th><th class="col-code">Invite Code</th><th class="col-gw">Gateways</th></tr></thead><tbody>${orgs.map(o=>`<tr id="org-row-${o.id}"><td class="col-id">${o.id}</td><td class="col-name">${o.name}</td><td class="col-code">${o.invite_code||'<span style="color:#5a3a2a;">—</span>'}</td><td class="col-gw" id="org-gw-cell-${o.id}"><div style="color:#5a3a2a;font-size:10px;">…</div></td></tr>`).join('')}</tbody></table>`;
+        orgs.forEach(o=>renderOrgGatewayCell(o.id));
     } catch(err) { console.error(err); }
 }
-
-function renderOrgGatewayCell(orgId, orgName) {
-    const cell = document.getElementById(`org-gw-cell-${orgId}`);
-    if (!cell) return;
-    const assigned   = _allGateways.filter(g => g.org_id === orgId);
-    const unassigned = _allGateways.filter(g => !g.org_id);
-    const badgesHtml = assigned.length
-        ? assigned.map(g => `<span class="gw-badge">${g.gateway_id}${g.location_name ? ' · ' + g.location_name : ''}<button class="gw-badge-remove" title="Remove" onclick="adminDisassociateGateway('${g.gateway_id}',${orgId})">✕</button></span>`).join('')
-        : '<span class="gw-none">No gateways</span>';
-    const optHtml = unassigned.length
-        ? unassigned.map(g => `<option value="${g.gateway_id}">${g.gateway_id}${g.location_name ? ' – ' + g.location_name : ''}</option>`).join('')
-        : '<option value="" disabled>No unassigned</option>';
-    cell.innerHTML = `<div class="gw-cell-wrap">
-        <div class="gw-badges-row">${badgesHtml}</div>
-        <div class="gw-assign-row">
-            <select class="gw-assign-select" id="gw-select-${orgId}">
-                <option value="">— Assign gateway —</option>${optHtml}
-            </select>
-            <button class="gw-assign-btn" onclick="adminAssignGateway(${orgId})">+ Assign</button>
-        </div>
-    </div>`;
+function renderOrgGatewayCell(orgId) {
+    const cell=document.getElementById(`org-gw-cell-${orgId}`); if (!cell) return;
+    const assigned=_allGateways.filter(g=>g.org_id===orgId), unassigned=_allGateways.filter(g=>!g.org_id);
+    const badgesHtml=assigned.length?assigned.map(g=>`<span class="gw-badge">${g.gateway_id}${g.location_name?' · '+g.location_name:''}<button class="gw-badge-remove" onclick="adminDisassociateGateway('${g.gateway_id}',${orgId})">✕</button></span>`).join(''):'<span class="gw-none">No gateways</span>';
+    const optHtml=unassigned.length?unassigned.map(g=>`<option value="${g.gateway_id}">${g.gateway_id}${g.location_name?' – '+g.location_name:''}</option>`).join(''):'<option value="" disabled>No unassigned</option>';
+    cell.innerHTML=`<div class="gw-cell-wrap"><div class="gw-badges-row">${badgesHtml}</div><div class="gw-assign-row"><select class="gw-assign-select" id="gw-select-${orgId}"><option value="">— Assign gateway —</option>${optHtml}</select><button class="gw-assign-btn" onclick="adminAssignGateway(${orgId})">+ Assign</button></div></div>`;
 }
-
 async function adminAssignGateway(orgId) {
-    const sel = document.getElementById(`gw-select-${orgId}`);
-    const gwId = sel ? sel.value : '';
-    if (!gwId) { adminToast('Select a gateway', 'error'); return; }
+    const sel=document.getElementById(`gw-select-${orgId}`); const gwId=sel?sel.value:'';
+    if (!gwId){adminToast('Select a gateway','error');return;}
     try {
-        const res = await fetch(`${API_BASE()}/gateways/${encodeURIComponent(gwId)}/assign-org`, {
-            method:'PATCH', headers:{...authHeader(),'Content-Type':'application/json'},
-            body: JSON.stringify({ org_id: orgId })
-        });
-        if (!res.ok) throw new Error((await res.json()).detail || 'Failed');
-        const gw = _allGateways.find(g => g.gateway_id === gwId);
-        if (gw) gw.org_id = orgId;
-        const orgsRes = await fetch(`${API_BASE()}/organizations`, { headers: authHeader() });
-        const orgs = orgsRes.ok ? await orgsRes.json() : [];
-        orgs.forEach(o => renderOrgGatewayCell(o.id, o.name));
-        adminToast(`"${gwId}" assigned to org ${orgId}`, 'success');
-        loadGatewaysOnMap(true);
-    } catch(err) { adminToast(err.message, 'error'); }
+        const res=await fetch(`${API_BASE()}/gateways/${encodeURIComponent(gwId)}/assign-org`,{method:'PATCH',headers:{...authHeader(),'Content-Type':'application/json'},body:JSON.stringify({org_id:orgId})});
+        if (!res.ok) throw new Error((await res.json()).detail||'Failed');
+        const gw=_allGateways.find(g=>g.gateway_id===gwId); if(gw) gw.org_id=orgId;
+        const orgsRes=await fetch(`${API_BASE()}/organizations`,{headers:authHeader()});
+        const orgs=orgsRes.ok?await orgsRes.json():[];
+        orgs.forEach(o=>renderOrgGatewayCell(o.id));
+        adminToast(`"${gwId}" assigned to org ${orgId}`,'success'); loadGatewaysOnMap(true);
+    } catch(err){adminToast(err.message,'error');}
 }
-
-async function adminDisassociateGateway(gwId, orgId) {
+async function adminDisassociateGateway(gwId,orgId) {
     if (!confirm(`Remove gateway "${gwId}" from this organization?`)) return;
     try {
-        const res = await fetch(`${API_BASE()}/gateways/${encodeURIComponent(gwId)}/disassociate-org`, {
-            method:'PATCH', headers: authHeader()
-        });
-        if (!res.ok) throw new Error((await res.json()).detail || 'Failed');
-        const gw = _allGateways.find(g => g.gateway_id === gwId);
-        if (gw) gw.org_id = null;
-        const orgsRes = await fetch(`${API_BASE()}/organizations`, { headers: authHeader() });
-        const orgs = orgsRes.ok ? await orgsRes.json() : [];
-        orgs.forEach(o => renderOrgGatewayCell(o.id, o.name));
-        adminToast(`"${gwId}" removed from organization`, 'success');
-        loadGatewaysOnMap(true);
-    } catch(err) { adminToast(err.message, 'error'); }
+        const res=await fetch(`${API_BASE()}/gateways/${encodeURIComponent(gwId)}/disassociate-org`,{method:'PATCH',headers:authHeader()});
+        if (!res.ok) throw new Error((await res.json()).detail||'Failed');
+        const gw=_allGateways.find(g=>g.gateway_id===gwId); if(gw) gw.org_id=null;
+        const orgsRes=await fetch(`${API_BASE()}/organizations`,{headers:authHeader()});
+        const orgs=orgsRes.ok?await orgsRes.json():[];
+        orgs.forEach(o=>renderOrgGatewayCell(o.id));
+        adminToast(`"${gwId}" removed from organization`,'success'); loadGatewaysOnMap(true);
+    } catch(err){adminToast(err.message,'error');}
 }
-
 async function adminGenerateInvite() {
-    const orgId   = document.getElementById('admin-invite-org-select').value;
-    const expires = parseInt(document.getElementById('admin-invite-expires').value) || 30;
-    const maxUses = parseInt(document.getElementById('admin-invite-max-uses').value) || 1;
-    if (!orgId) { adminToast('Please select an organization', 'error'); return; }
+    const orgId=document.getElementById('admin-invite-org-select').value;
+    const expires=parseInt(document.getElementById('admin-invite-expires').value)||30;
+    const maxUses=parseInt(document.getElementById('admin-invite-max-uses').value)||1;
+    if (!orgId){adminToast('Please select an organization','error');return;}
     try {
-        const res = await fetch(`${API_BASE()}/organizations/${orgId}/invite-codes`, {
-            method:'POST', headers:{...authHeader(),'Content-Type':'application/json'},
-            body: JSON.stringify({ expires_days: expires, max_uses: maxUses })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Failed');
-        document.getElementById('admin-invite-code-display').textContent = data.code;
-        const expDate = data.expires_at ? new Date(data.expires_at).toLocaleDateString() : 'Never';
-        document.getElementById('admin-invite-meta').textContent = `Expires: ${expDate} • Max uses: ${data.max_uses === 0 ? 'Unlimited' : data.max_uses}`;
-        document.getElementById('admin-copy-code-btn').dataset.code = data.code;
-        document.getElementById('admin-invite-result').style.display = 'block';
-        adminToast('Invite code generated!', 'success');
-    } catch(err) { adminToast(err.message, 'error'); }
+        const res=await fetch(`${API_BASE()}/organizations/${orgId}/invite-codes`,{method:'POST',headers:{...authHeader(),'Content-Type':'application/json'},body:JSON.stringify({expires_days:expires,max_uses:maxUses})});
+        const data=await res.json(); if (!res.ok) throw new Error(data.detail||'Failed');
+        document.getElementById('admin-invite-code-display').textContent=data.code;
+        const expDate=data.expires_at?new Date(data.expires_at).toLocaleDateString():'Never';
+        document.getElementById('admin-invite-meta').textContent=`Expires: ${expDate} • Max uses: ${data.max_uses===0?'Unlimited':data.max_uses}`;
+        document.getElementById('admin-copy-code-btn').dataset.code=data.code;
+        document.getElementById('admin-invite-result').style.display='block';
+        adminToast('Invite code generated!','success');
+    } catch(err){adminToast(err.message,'error');}
 }
-function adminCopyCode() {
-    const code = document.getElementById('admin-copy-code-btn').dataset.code;
-    if (code) { navigator.clipboard.writeText(code); adminToast('Code copied!', 'success'); }
-}
-async function adminDeleteInvite() {
-    const code = (document.getElementById('admin-delete-invite-input').value || '').trim().toUpperCase();
-    if (!code) { adminToast('Enter an invite code', 'error'); return; }
+function adminCopyCode(){const code=document.getElementById('admin-copy-code-btn').dataset.code;if(code){navigator.clipboard.writeText(code);adminToast('Code copied!','success');}}
+async function adminDeleteInvite(){
+    const code=(document.getElementById('admin-delete-invite-input').value||'').trim().toUpperCase();
+    if (!code){adminToast('Enter an invite code','error');return;}
     if (!confirm(`Delete "${code}"?`)) return;
-    try {
-        const res = await fetch(`${API_BASE()}/invite-codes/${code}`, { method:'DELETE', headers: authHeader() });
-        if (!res.ok) throw new Error(await res.text());
-        adminToast(`Code "${code}" deleted`, 'success');
-        document.getElementById('admin-delete-invite-input').value = '';
-    } catch(err) { adminToast(err.message, 'error'); }
+    try{const res=await fetch(`${API_BASE()}/invite-codes/${code}`,{method:'DELETE',headers:authHeader()});if(!res.ok) throw new Error(await res.text());adminToast(`Code "${code}" deleted`,'success');document.getElementById('admin-delete-invite-input').value='';}
+    catch(err){adminToast(err.message,'error');}
 }
-async function adminLoadGatewaysForSelect() {
-    const sel = document.getElementById('admin-create-org-gateways');
-    if (!sel) return;
-    sel.innerHTML = '<option value="" disabled style="color:#5a3a2a;">Loading…</option>';
-    try {
-        const res = await fetch(`${API_BASE()}/gateways`, { headers: authHeader() });
-        if (!res.ok) throw new Error('Failed');
-        const gws = await res.json();
-        _allGateways = gws;
-        if (!gws.length) { sel.innerHTML = '<option value="" disabled style="color:#5a3a2a;">No gateways registered</option>'; return; }
-        sel.innerHTML = gws.map(g => {
-            const loc = g.location_name ? ` — ${g.location_name}` : '';
-            return `<option value="${g.gateway_id}">${g.gateway_id}${loc}</option>`;
-        }).join('');
-    } catch { sel.innerHTML = '<option value="" disabled style="color:#ff4757;">Failed to load gateways</option>'; }
+async function adminLoadGatewaysForSelect(){
+    const sel=document.getElementById('admin-create-org-gateways');if(!sel)return;
+    sel.innerHTML='<option value="" disabled style="color:#5a3a2a;">Loading…</option>';
+    try{const res=await fetch(`${API_BASE()}/gateways`,{headers:authHeader()});if(!res.ok)throw new Error('Failed');const gws=await res.json();_allGateways=gws;if(!gws.length){sel.innerHTML='<option value="" disabled style="color:#5a3a2a;">No gateways registered</option>';return;}sel.innerHTML=gws.map(g=>`<option value="${g.gateway_id}">${g.gateway_id}${g.location_name?` — ${g.location_name}`:''}</option>`).join('');}
+    catch{sel.innerHTML='<option value="" disabled style="color:#ff4757;">Failed to load gateways</option>';}
 }
-async function adminCreateOrganization() {
-    const name = document.getElementById('admin-create-org-name').value.trim();
-    const inviteCode = document.getElementById('admin-create-org-invite-code').value.trim().toUpperCase() || null;
-    const gwSelect = document.getElementById('admin-create-org-gateways');
-    const selectedGateways = Array.from(gwSelect.selectedOptions).map(o => o.value);
-    if (!name) { adminToast('Enter organization name', 'error'); return; }
-    try {
-        const res = await fetch(`${API_BASE()}/organizations`, {
-            method:'POST', headers:{...authHeader(),'Content-Type':'application/json'},
-            body: JSON.stringify({ name, invite_code: inviteCode })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Failed');
-        const newOrgId = data.id;
-        const gwErrors = [];
-        for (const gwId of selectedGateways) {
-            try {
-                const gwRes = await fetch(`${API_BASE()}/gateways/${gwId}/assign-org`, {
-                    method:'PATCH', headers:{...authHeader(),'Content-Type':'application/json'},
-                    body: JSON.stringify({ org_id: newOrgId })
-                });
-                if (!gwRes.ok) gwErrors.push(gwId);
-            } catch { gwErrors.push(gwId); }
-        }
-        document.getElementById('admin-create-org-name-display').textContent = name;
-        let meta = `ID: ${newOrgId}`;
-        if (inviteCode) meta += ` • Code: ${inviteCode}`;
-        if (selectedGateways.length) meta += ` • ${selectedGateways.length - gwErrors.length}/${selectedGateways.length} gateways assigned`;
-        document.getElementById('admin-create-org-meta').textContent = meta;
-        document.getElementById('admin-create-org-result').style.display = 'block';
-        adminToast(gwErrors.length ? `Org created but failed to assign: ${gwErrors.join(', ')}` : 'Organization created!', gwErrors.length ? 'info' : 'success');
-        loadOrganizations();
-        loadGatewaysOnMap(true);
-    } catch(err) { adminToast(err.message, 'error'); }
+async function adminCreateOrganization(){
+    const name=document.getElementById('admin-create-org-name').value.trim();
+    const inviteCode=document.getElementById('admin-create-org-invite-code').value.trim().toUpperCase()||null;
+    const gwSelect=document.getElementById('admin-create-org-gateways');
+    const selectedGateways=Array.from(gwSelect.selectedOptions).map(o=>o.value);
+    if(!name){adminToast('Enter organization name','error');return;}
+    try{
+        const res=await fetch(`${API_BASE()}/organizations`,{method:'POST',headers:{...authHeader(),'Content-Type':'application/json'},body:JSON.stringify({name,invite_code:inviteCode})});
+        const data=await res.json();if(!res.ok)throw new Error(data.detail||'Failed');
+        const newOrgId=data.id;const gwErrors=[];
+        for(const gwId of selectedGateways){try{const gwRes=await fetch(`${API_BASE()}/gateways/${gwId}/assign-org`,{method:'PATCH',headers:{...authHeader(),'Content-Type':'application/json'},body:JSON.stringify({org_id:newOrgId})});if(!gwRes.ok)gwErrors.push(gwId);}catch{gwErrors.push(gwId);}}
+        document.getElementById('admin-create-org-name-display').textContent=name;
+        let meta=`ID: ${newOrgId}`;if(inviteCode)meta+=` • Code: ${inviteCode}`;if(selectedGateways.length)meta+=` • ${selectedGateways.length-gwErrors.length}/${selectedGateways.length} gateways assigned`;
+        document.getElementById('admin-create-org-meta').textContent=meta;
+        document.getElementById('admin-create-org-result').style.display='block';
+        adminToast(gwErrors.length?`Org created but failed to assign: ${gwErrors.join(', ')}`:'Organization created!',gwErrors.length?'info':'success');
+        loadOrganizations();loadGatewaysOnMap(true);
+    }catch(err){adminToast(err.message,'error');}
 }
-function adminToast(msg, type = 'info') {
-    const el = document.getElementById('admin-toast');
-    el.textContent = msg;
-    const c = {success:{bg:'#0a160a',border:'#2ecc7155',color:'#2ecc71'},error:{bg:'#160a0a',border:'#ff475755',color:'#ff4757'},info:{bg:'#120e04',border:'#f1c40f55',color:'#f1c40f'}}[type];
-    Object.assign(el.style, {background:c.bg, border:`1px solid ${c.border}`, color:c.color, display:'block', padding:'9px 14px', borderRadius:'7px', fontSize:'12px', fontWeight:'600', textAlign:'center', marginTop:'12px'});
-    clearTimeout(el._t);
-    el._t = setTimeout(() => el.style.display = 'none', 3500);
+function adminToast(msg,type='info'){
+    const el=document.getElementById('admin-toast');el.textContent=msg;
+    const c={success:{bg:'#0a160a',border:'#2ecc7155',color:'#2ecc71'},error:{bg:'#160a0a',border:'#ff475755',color:'#ff4757'},info:{bg:'#120e04',border:'#f1c40f55',color:'#f1c40f'}}[type];
+    Object.assign(el.style,{background:c.bg,border:`1px solid ${c.border}`,color:c.color,display:'block',padding:'9px 14px',borderRadius:'7px',fontSize:'12px',fontWeight:'600',textAlign:'center',marginTop:'12px'});
+    clearTimeout(el._t);el._t=setTimeout(()=>el.style.display='none',3500);
 }
 
-// ====================== MAP ======================
-const MAP_CENTER = [16.0435, 120.3351];
-const map = L.map('flames-map', { zoomControl:false, attributionControl:false }).setView(MAP_CENTER, 14);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(map);
-document.getElementById('home-btn').addEventListener('click', () => map.flyTo(MAP_CENTER, 14));
-document.getElementById('locate-btn').addEventListener('click', () => {
-    navigator.geolocation.getCurrentPosition(p => map.flyTo([p.coords.latitude, p.coords.longitude], 16), () => alert('Location access denied.'));
-});
-document.getElementById('zoom-in').addEventListener('click', () => map.zoomIn());
-document.getElementById('zoom-out').addEventListener('click', () => map.zoomOut());
+// MAP
+const MAP_CENTER=[16.0435,120.3351];
+const map=L.map('flames-map',{zoomControl:false,attributionControl:false}).setView(MAP_CENTER,14);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+document.getElementById('home-btn').addEventListener('click',()=>map.flyTo(MAP_CENTER,14));
+document.getElementById('locate-btn').addEventListener('click',()=>navigator.geolocation.getCurrentPosition(p=>map.flyTo([p.coords.latitude,p.coords.longitude],16),()=>alert('Location access denied.')));
+document.getElementById('zoom-in').addEventListener('click',()=>map.zoomIn());
+document.getElementById('zoom-out').addEventListener('click',()=>map.zoomOut());
 
-const greenIcon = L.icon({ iconUrl:'icons/StartingPoint.png', iconSize:[60,60], iconAnchor:[30,55], popupAnchor:[0,-60] });
-const redIcon   = L.icon({ iconUrl:'icons/EndPoint.png',      iconSize:[60,60], iconAnchor:[30,55], popupAnchor:[0,-60] });
-const nodeIcon  = L.icon({ iconUrl:'icons/Node.png',          iconSize:[50,50], iconAnchor:[18,18] });
-const gwIcon    = L.icon({ iconUrl:'icons/Gateway.png',       iconSize:[55,55], iconAnchor:[20,20] });
+const greenIcon=L.icon({iconUrl:'icons/StartingPoint.png',iconSize:[60,60],iconAnchor:[30,55],popupAnchor:[0,-60]});
+const redIcon  =L.icon({iconUrl:'icons/EndPoint.png',iconSize:[60,60],iconAnchor:[30,55],popupAnchor:[0,-60]});
+const nodeIcon =L.icon({iconUrl:'icons/Node.png',iconSize:[50,50],iconAnchor:[18,18]});
+const gwIcon   =L.icon({iconUrl:'icons/Gateway.png',iconSize:[55,55],iconAnchor:[20,20]});
 
-let gatewayMarkers = {}, gatewayData = [];
-async function loadGatewaysOnMap(silent = false) {
-    try {
-        const res = await fetch(`${API_BASE()}/gateways`, { headers: authHeader(), cache:'no-cache' });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const gateways = await res.json();
-        gatewayData = gateways;
-        Object.keys(gatewayMarkers).forEach(id => {
-            if (!gateways.some(g => g.gateway_id === id)) { map.removeLayer(gatewayMarkers[id]); delete gatewayMarkers[id]; }
+let gatewayMarkers={},gatewayData=[];
+async function loadGatewaysOnMap(silent=false){
+    try{
+        const res=await fetch(`${API_BASE()}/gateways`,{headers:authHeader(),cache:'no-cache'});
+        if(!res.ok)throw new Error(`HTTP ${res.status}`);
+        const gateways=await res.json();gatewayData=gateways;
+        Object.keys(gatewayMarkers).forEach(id=>{if(!gateways.some(g=>g.gateway_id===id)){map.removeLayer(gatewayMarkers[id]);delete gatewayMarkers[id];}});
+        gateways.forEach(gw=>{
+            const lat=parseFloat(gw.latitude),lng=parseFloat(gw.longitude);
+            if(isNaN(lat)||isNaN(lng)||(lat===0&&lng===0))return;
+            const popup=`<b>🏠 ${gw.gateway_id}</b>${gw.location_name?`<br><span style="color:#9a6a5a;">${gw.location_name}</span>`:''}`;
+            if(gatewayMarkers[gw.gateway_id]){gatewayMarkers[gw.gateway_id].setLatLng([lat,lng]).setPopupContent(popup);}
+            else{gatewayMarkers[gw.gateway_id]=L.marker([lat,lng],{icon:gwIcon}).addTo(map).bindPopup(popup);}
         });
-        gateways.forEach(gw => {
-            const lat = parseFloat(gw.latitude), lng = parseFloat(gw.longitude);
-            if (isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) return;
-            const popup = `<b>🏠 ${gw.gateway_id}</b>${gw.location_name ? `<br><span style="color:#9a6a5a;">${gw.location_name}</span>` : ''}`;
-            if (gatewayMarkers[gw.gateway_id]) {
-                gatewayMarkers[gw.gateway_id].setLatLng([lat, lng]).setPopupContent(popup);
-            } else {
-                gatewayMarkers[gw.gateway_id] = L.marker([lat, lng], { icon: gwIcon }).addTo(map).bindPopup(popup);
-            }
-        });
-    } catch(err) { if (!silent) console.error('Failed to load gateways:', err); }
+    }catch(err){if(!silent)console.error('Failed to load gateways:',err);}
 }
-function getPrimaryGateway() {
-    const gw = gatewayData.find(g => parseFloat(g.latitude) && parseFloat(g.longitude));
-    return gw ? { lat: parseFloat(gw.latitude), lng: parseFloat(gw.longitude) } : { lat:16.046962, lng:120.342117 };
-}
-loadGatewaysOnMap();
-setInterval(() => loadGatewaysOnMap(true), 30000);
+function getPrimaryGateway(){const gw=gatewayData.find(g=>parseFloat(g.latitude)&&parseFloat(g.longitude));return gw?{lat:parseFloat(gw.latitude),lng:parseFloat(gw.longitude)}:{lat:16.046962,lng:120.342117};}
+loadGatewaysOnMap();setInterval(()=>loadGatewaysOnMap(true),30000);
 
-let nodeMarkers = {}, nodeData = {}, selectedNodeId = null;
-const OFFLINE_MIN = 5;
-async function loadAndPlaceNodes(silent = false) {
-    try {
-        const res = await fetch(`${API_BASE()}/nodes`, { headers: authHeader(), cache: silent ? 'default' : 'no-cache' });
-        if (res.status === 401) { window.location.href = 'login.html'; return; }
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const nodes = await res.json();
-        if (!nodes || nodes.length === 0) { if (!silent) alert('No sensor nodes available.'); return; }
-        Object.keys(nodeMarkers).forEach(id => {
-            if (!nodes.some(n => n.node_id === id)) { map.removeLayer(nodeMarkers[id]); delete nodeMarkers[id]; delete nodeData[id]; }
-        });
-        const gw = getPrimaryGateway();
-        nodes.forEach(n => {
-            const nid = n.node_id;
-            let lat = parseFloat(n.latitude), lng = parseFloat(n.longitude);
-            const valid = !isNaN(lat) && lat !== 0 && !isNaN(lng) && lng !== 0;
-            if (!valid) { lat = nodeData[nid]?.latitude; lng = nodeData[nid]?.longitude; }
-            let fallback = false;
-            if (lat == null || isNaN(lat)) {
-                const off = 10 + Math.random()*90, ang = Math.random()*2*Math.PI;
-                lat = gw.lat + (off/111000)*Math.cos(ang);
-                lng = gw.lng + (off/(111000*Math.cos(gw.lat*Math.PI/180)))*Math.sin(ang);
-                fallback = true;
-            }
-            const lastUpdated = n.updated_at || n.last_seen || new Date().toISOString();
-            nodeData[nid] = { ...nodeData[nid]||{}, ...n, latitude:lat, longitude:lng, last_updated:lastUpdated, isUsingFallbackPosition:fallback };
-            const lastTime = new Date(lastUpdated);
-            const minAgo = (Date.now() - lastTime.getTime())/60000;
-            const offline = minAgo > OFFLINE_MIN;
-            const pred = (n.ai_prediction||'normal').toLowerCase();
-            const conf = n.confidence != null ? Number(n.confidence) : 0;
-            const isFire = pred === 'fire', hiConf = conf >= 0.70;
-            const stColor = isFire ? (hiConf ? '#ff4757' : '#ff9f1c') : '#2ecc71';
-            const stLabel = isFire ? (hiConf ? '🔥 FIRE' : 'Possible Fire') : 'Normal';
-            const lastStr = lastTime.toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
-            const posNote = fallback ? `<div style="color:#ff9f1c;font-size:10px;margin-top:5px;">(Approx. position near gateway)</div>` : '';
-            const popupContent = `
+let nodeMarkers={},nodeData={},selectedNodeId=null;
+const OFFLINE_MIN=5;
+async function loadAndPlaceNodes(silent=false){
+    try{
+        const res=await fetch(`${API_BASE()}/nodes`,{headers:authHeader(),cache:silent?'default':'no-cache'});
+        if(res.status===401){window.location.href='login.html';return;}
+        if(!res.ok)throw new Error(`HTTP ${res.status}`);
+        const nodes=await res.json();
+        if(!nodes||nodes.length===0){if(!silent)alert('No sensor nodes available.');return;}
+        Object.keys(nodeMarkers).forEach(id=>{if(!nodes.some(n=>n.node_id===id)){map.removeLayer(nodeMarkers[id]);delete nodeMarkers[id];delete nodeData[id];}});
+        const gw=getPrimaryGateway();
+        nodes.forEach(n=>{
+            const nid=n.node_id;
+            let lat=parseFloat(n.latitude),lng=parseFloat(n.longitude);
+            const valid=!isNaN(lat)&&lat!==0&&!isNaN(lng)&&lng!==0;
+            if(!valid){lat=nodeData[nid]?.latitude;lng=nodeData[nid]?.longitude;}
+            let fallback=false;
+            if(lat==null||isNaN(lat)){const off=10+Math.random()*90,ang=Math.random()*2*Math.PI;lat=gw.lat+(off/111000)*Math.cos(ang);lng=gw.lng+(off/(111000*Math.cos(gw.lat*Math.PI/180)))*Math.sin(ang);fallback=true;}
+            const lastUpdated=n.timestamp||n.updated_at||n.last_seen||new Date().toISOString();
+            nodeData[nid]={...nodeData[nid]||{},...n,latitude:lat,longitude:lng,last_updated:lastUpdated,isUsingFallbackPosition:fallback};
+            const lastTime=new Date(typeof lastUpdated==='string'?lastUpdated.replace(' ','T'):lastUpdated);
+            const minAgo=(Date.now()-lastTime.getTime())/60000;
+            const offline=minAgo>OFFLINE_MIN;
+            const pred=(n.ai_prediction||'normal').toLowerCase();
+            const conf=n.confidence!=null?Number(n.confidence):0;
+            const isFire=pred==='fire',hiConf=conf>=0.70;
+            const stColor=isFire?(hiConf?'#ff4757':'#ff9f1c'):'#2ecc71';
+            const stLabel=isFire?(hiConf?'🔥 FIRE':'Possible Fire'):'Normal';
+            const lastStr=isNaN(lastTime.getTime())?'—':lastTime.toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+            const posNote=fallback?`<div style="color:#ff9f1c;font-size:10px;margin-top:5px;">(Approx. position near gateway)</div>`:'';
+            const popupContent=`
                 <div class="popup-title">📡 ${nid}</div>
-                ${offline ? `<div style="color:#ff9f1c;font-weight:600;margin:6px 0;font-size:12px;">⚠ OFFLINE · Last: ${lastStr}</div>` : ''}
+                ${offline?`<div style="color:#ff9f1c;font-weight:600;margin:6px 0;font-size:12px;">⚠ OFFLINE · Last: ${lastStr}</div>`:''}
                 ${posNote}
                 <div style="font-size:12px;color:#9a6a5a;line-height:1.7;">
                     Temp: <b style="color:#ff904f">${n.temperature??'—'}°C</b><br>
@@ -1055,282 +915,144 @@ async function loadAndPlaceNodes(silent = false) {
                     Smoke: <b style="color:#ff904f">${n.smoke??'—'} ppm</b><br>
                     AI: <strong>${pred.toUpperCase()}</strong> (${(conf*100).toFixed(1)}%)
                     <b style="color:${stColor}">${stLabel}</b>
-                    ${!offline ? `<br><small>Updated: ${lastStr}</small>` : ''}
+                    <br><small style="color:${offline?'#ff9f1c':'#7a5a4a'};">Updated: ${lastStr}</small>
                 </div>`;
-            if (nodeMarkers[nid]) {
-                nodeMarkers[nid].setLatLng([lat,lng]).setPopupContent(popupContent);
-                nodeMarkers[nid].getElement().style.opacity = offline ? 0.55 : 1;
-            } else {
-                const marker = L.marker([lat,lng],{icon:nodeIcon,opacity:offline?0.55:1}).addTo(map);
-                marker.bindPopup(popupContent);
-                marker.on('click', () => { selectedNodeId = nid; updateSensorBar(nodeData[nid], nid); });
-                nodeMarkers[nid] = marker;
-            }
+            if(nodeMarkers[nid]){nodeMarkers[nid].setLatLng([lat,lng]).setPopupContent(popupContent);nodeMarkers[nid].getElement().style.opacity=offline?0.55:1;}
+            else{const marker=L.marker([lat,lng],{icon:nodeIcon,opacity:offline?0.55:1}).addTo(map);marker.bindPopup(popupContent);marker.on('click',()=>{selectedNodeId=nid;updateSensorBar(nodeData[nid],nid);});nodeMarkers[nid]=marker;}
         });
-        if (selectedNodeId && nodeData[selectedNodeId]) updateSensorBar(nodeData[selectedNodeId], selectedNodeId);
-    } catch(err) { console.error('Failed to load nodes:', err); if (!silent) alert('Could not load sensor nodes.'); }
+        if(selectedNodeId&&nodeData[selectedNodeId])updateSensorBar(nodeData[selectedNodeId],selectedNodeId);
+    }catch(err){console.error('Failed to load nodes:',err);if(!silent)alert('Could not load sensor nodes.');}
 }
-loadAndPlaceNodes();
-setInterval(() => loadAndPlaceNodes(true), 15000);
+loadAndPlaceNodes();setInterval(()=>loadAndPlaceNodes(true),15000);
 
-// ====================== WEBSOCKET ======================
-function connectWebSocket() {
-    const wsUrl = API_BASE().replace(/^http/,'ws') + '/ws';
-    const ws = new WebSocket(wsUrl);
-    const dot = document.getElementById('ws-dot'), label = document.getElementById('ws-label');
-    ws.onopen  = () => { dot.className='ws-dot connected'; label.textContent='Live'; };
-    ws.onclose = () => { dot.className='ws-dot error'; label.textContent='Disconnected'; setTimeout(connectWebSocket, 5000); };
-    ws.onerror = () => { dot.className='ws-dot error'; label.textContent='Error'; };
-    ws.onmessage = event => {
-        try {
-            const msg = JSON.parse(event.data);
-            // Always refresh nodes on any WS message
+// WEBSOCKET
+function connectWebSocket(){
+    const wsUrl=API_BASE().replace(/^http/,'ws')+'/ws';
+    const ws=new WebSocket(wsUrl);
+    const dot=document.getElementById('ws-dot'),label=document.getElementById('ws-label');
+    ws.onopen =()=>{dot.className='ws-dot connected';label.textContent='Live';};
+    ws.onclose=()=>{dot.className='ws-dot error';label.textContent='Disconnected';setTimeout(connectWebSocket,5000);};
+    ws.onerror=()=>{dot.className='ws-dot error';label.textContent='Error';};
+    ws.onmessage=event=>{
+        try{
+            const msg=JSON.parse(event.data);
             loadAndPlaceNodes(true);
-            if (msg.type === 'incident_update') loadLiveIncidents(true);
-            if (msg.type === 'gateway_update') {
-                // Gateway association changed — refresh map gateways instantly
-                loadGatewaysOnMap(true);
-                // If admin panel open, refresh orgs table too
-                if (document.getElementById('admin-modal').style.display === 'flex') {
-                    loadOrganizations();
-                }
-            }
-            if (msg.type === 'sensor_data' || msg.type === 'new_reading') {
-                // If history panel is open for this node, auto-refresh
-                if (_hm_node && (msg.node_id === _hm_node || !msg.node_id)) {
-                    fetchHistory();
-                }
-            }
-        } catch {}
+            if(msg.type==='incident_update')loadLiveIncidents(true);
+            if(msg.type==='gateway_update'){loadGatewaysOnMap(true);if(document.getElementById('admin-modal').style.display==='flex')loadOrganizations();}
+            if(msg.type==='sensor_data'||msg.type==='new_reading'){if(_hm_node&&(msg.node_id===_hm_node||!msg.node_id))fetchHistory();}
+        }catch{}
     };
     return ws;
 }
 connectWebSocket();
 
-// ====================== SENSOR BAR ======================
-function updateSensorBar(d, nodeId) {
-    document.getElementById('sb-temp').textContent  = d.temperature != null ? `${d.temperature}°C` : '—';
-    document.getElementById('sb-hum').textContent   = d.humidity    != null ? `${d.humidity}%`     : '—';
-    document.getElementById('sb-smoke').textContent = d.smoke       != null ? `${d.smoke} ppm`     : '—';
-    document.getElementById('sb-flame').textContent = d.flame       != null ? d.flame               : '—';
-    ['sb-temp','sb-hum','sb-smoke','sb-flame'].forEach(id => document.getElementById(id).className = 'sensor-tile-val');
-    const pred = (d.ai_prediction||'normal').toLowerCase(), conf = d.confidence != null ? Number(d.confidence) : 0;
-    if (pred==='fire' && conf>=0.70) {
-        document.getElementById('sb-smoke').className += ' alert';
-        document.getElementById('sb-flame').className += ' alert';
-    }
-    const lastUpdated = d.last_updated ? new Date(d.last_updated) : null;
-    const offline = lastUpdated && (Date.now()-lastUpdated.getTime())/60000 > OFFLINE_MIN;
-    document.getElementById('sb-node-label').innerHTML = nodeId ? `${nodeId}${offline ? ' <small style="color:#ff9f1c;">(offline)</small>' : ''}` : 'No node';
-    const s = offline ? 'opacity:.6;font-style:italic;' : '';
-    ['sb-temp','sb-hum','sb-smoke','sb-flame'].forEach(id => document.getElementById(id).style = s);
+// SENSOR BAR
+function updateSensorBar(d,nodeId){
+    document.getElementById('sb-temp').textContent =d.temperature!=null?`${d.temperature}°C`:'—';
+    document.getElementById('sb-hum').textContent  =d.humidity   !=null?`${d.humidity}%`  :'—';
+    document.getElementById('sb-smoke').textContent=d.smoke      !=null?`${d.smoke} ppm`  :'—';
+    document.getElementById('sb-flame').textContent=d.flame      !=null?d.flame            :'—';
+    ['sb-temp','sb-hum','sb-smoke','sb-flame'].forEach(id=>document.getElementById(id).className='sensor-tile-val');
+    const pred=(d.ai_prediction||'normal').toLowerCase(),conf=d.confidence!=null?Number(d.confidence):0;
+    if(pred==='fire'&&conf>=0.70){document.getElementById('sb-smoke').className+=' alert';document.getElementById('sb-flame').className+=' alert';}
+    const lastUpdated=d.last_updated?new Date(typeof d.last_updated==='string'?d.last_updated.replace(' ','T'):d.last_updated):null;
+    const offline=lastUpdated&&(Date.now()-lastUpdated.getTime())/60000>OFFLINE_MIN;
+    document.getElementById('sb-node-label').innerHTML=nodeId?`${nodeId}${offline?' <small style="color:#ff9f1c;">(offline)</small>':''}`:'No node';
+    const s=offline?'opacity:.6;font-style:italic;':'';
+    ['sb-temp','sb-hum','sb-smoke','sb-flame'].forEach(id=>document.getElementById(id).style=s);
 }
 
-// ====================== PINNED LOCATIONS ======================
-let pinnedLocations = [], pinnedMarkers = {};
-function renderPinned() {
-    document.getElementById('pinned-count').textContent = pinnedLocations.length;
-    const list = document.getElementById('pinned-list');
-    list.querySelectorAll('.pinned-item').forEach(i => i.remove());
-    document.getElementById('no-pinned-msg').style.display = pinnedLocations.length ? 'none' : 'block';
-    Object.values(pinnedMarkers).forEach(m => map.removeLayer(m));
-    pinnedMarkers = {};
-    pinnedLocations.forEach(pin => {
-        const item = document.createElement('div');
-        item.className = 'pinned-item';
-        item.innerHTML = `<div><div class="pinned-item-name">${pin.name||'Pinned Location'}</div><div class="pinned-item-coords">${pin.latitude.toFixed(5)}, ${pin.longitude.toFixed(5)}</div></div>
-            <div class="pinned-item-actions">
-                <button class="btn-icon-sm" onclick="flyToPin(${pin.latitude},${pin.longitude})">📍</button>
-                <button class="btn-icon-sm" onclick="removePin(${pin.id})" style="color:var(--red)">✕</button>
-            </div>`;
+// PINNED
+let pinnedLocations=[],pinnedMarkers={};
+function renderPinned(){
+    document.getElementById('pinned-count').textContent=pinnedLocations.length;
+    const list=document.getElementById('pinned-list');
+    list.querySelectorAll('.pinned-item').forEach(i=>i.remove());
+    document.getElementById('no-pinned-msg').style.display=pinnedLocations.length?'none':'block';
+    Object.values(pinnedMarkers).forEach(m=>map.removeLayer(m));pinnedMarkers={};
+    pinnedLocations.forEach(pin=>{
+        const item=document.createElement('div');item.className='pinned-item';
+        item.innerHTML=`<div><div class="pinned-item-name">${pin.name||'Pinned Location'}</div><div class="pinned-item-coords">${pin.latitude.toFixed(5)}, ${pin.longitude.toFixed(5)}</div></div><div class="pinned-item-actions"><button class="btn-icon-sm" onclick="flyToPin(${pin.latitude},${pin.longitude})">📍</button><button class="btn-icon-sm" onclick="removePin(${pin.id})" style="color:var(--red)">✕</button></div>`;
         list.appendChild(item);
-        pinnedMarkers[pin.id] = L.marker([pin.latitude, pin.longitude]).addTo(map)
-            .bindPopup(`<b>${pin.name||'Pinned'}</b><br>${pin.latitude.toFixed(5)}, ${pin.longitude.toFixed(5)}`);
+        pinnedMarkers[pin.id]=L.marker([pin.latitude,pin.longitude]).addTo(map).bindPopup(`<b>${pin.name||'Pinned'}</b><br>${pin.latitude.toFixed(5)}, ${pin.longitude.toFixed(5)}`);
     });
 }
-let pinnedListVisible = false;
-function togglePinnedList() {
-    pinnedListVisible = !pinnedListVisible;
-    document.getElementById('pinned-list').classList.toggle('visible', pinnedListVisible);
-    document.getElementById('pinned-count-view').style.display = pinnedListVisible ? 'none' : 'flex';
+let pinnedListVisible=false;
+function togglePinnedList(){pinnedListVisible=!pinnedListVisible;document.getElementById('pinned-list').classList.toggle('visible',pinnedListVisible);document.getElementById('pinned-count-view').style.display=pinnedListVisible?'none':'flex';}
+async function loadPinnedLocations(){
+    try{const res=await fetch(`${API_BASE()}/me/pins`,{headers:authHeader(),cache:'no-cache'});if(res.status===401){window.location.href='login.html';return;}if(!res.ok)return;pinnedLocations=await res.json();renderPinned();}
+    catch(err){console.error('Failed to load pins:',err);}
 }
-async function loadPinnedLocations() {
-    try {
-        const res = await fetch(`${API_BASE()}/me/pins`, { headers: authHeader(), cache:'no-cache' });
-        if (res.status===401) { window.location.href='login.html'; return; }
-        if (!res.ok) return;
-        pinnedLocations = await res.json();
-        renderPinned();
-    } catch(err) { console.error('Failed to load pins:', err); }
+async function savePin(lat,lng){
+    const name=document.getElementById('pin-name')?.value.trim()||null;
+    try{const res=await fetch(`${API_BASE()}/me/pins`,{method:'POST',headers:{...authHeader(),'Content-Type':'application/json'},body:JSON.stringify({name,latitude:lat,longitude:lng})});if(!res.ok)throw new Error(await res.text());map.closePopup();await loadPinnedLocations();}
+    catch{alert('Could not save pin.');}
 }
-async function savePin(lat, lng) {
-    const name = document.getElementById('pin-name')?.value.trim() || null;
-    try {
-        const res = await fetch(`${API_BASE()}/me/pins`, {
-            method:'POST', headers:{...authHeader(),'Content-Type':'application/json'},
-            body: JSON.stringify({ name, latitude:lat, longitude:lng })
-        });
-        if (!res.ok) throw new Error(await res.text());
-        map.closePopup();
-        await loadPinnedLocations();
-    } catch(err) { alert('Could not save pin.'); }
+async function removePin(pinId){
+    try{const res=await fetch(`${API_BASE()}/me/pins/${pinId}`,{method:'DELETE',headers:authHeader()});if(!res.ok)throw new Error(await res.text());await loadPinnedLocations();}
+    catch{alert('Could not delete pin.');}
 }
-async function removePin(pinId) {
-    try {
-        const res = await fetch(`${API_BASE()}/me/pins/${pinId}`, { method:'DELETE', headers: authHeader() });
-        if (!res.ok) throw new Error(await res.text());
-        await loadPinnedLocations();
-    } catch { alert('Could not delete pin.'); }
-}
-function flyToPin(lat, lng) { map.flyTo([lat, lng], 16); }
-renderPinned();
-loadPinnedLocations();
+function flyToPin(lat,lng){map.flyTo([lat,lng],16);}
+renderPinned();loadPinnedLocations();
 
-let pendingPopup = null;
-map.on('contextmenu', e => {
+let pendingPopup=null;
+map.on('contextmenu',e=>{
     e.originalEvent.preventDefault();
-    if (pendingPopup) { map.closePopup(pendingPopup); pendingPopup = null; }
-    const lat = e.latlng.lat.toFixed(6), lng = e.latlng.lng.toFixed(6);
-    const p = L.popup({ maxWidth:260 }).setLatLng(e.latlng).setContent(`
-        <div class="popup-title">📍 Pin this location?</div>
-        <div class="popup-coords">${lat}, ${lng}</div>
-        <input class="popup-input" id="pin-name" placeholder="Location name (optional)">
-        <div class="popup-actions">
-            <button class="popup-save" onclick="savePin(${lat},${lng})">Save</button>
-            <button class="popup-cancel" onclick="map.closePopup()">Cancel</button>
-        </div>`).addTo(map);
-    pendingPopup = p;
-    p.on('remove', () => { pendingPopup = null; });
+    if(pendingPopup){map.closePopup(pendingPopup);pendingPopup=null;}
+    const lat=e.latlng.lat.toFixed(6),lng=e.latlng.lng.toFixed(6);
+    const p=L.popup({maxWidth:260}).setLatLng(e.latlng).setContent(`<div class="popup-title">📍 Pin this location?</div><div class="popup-coords">${lat}, ${lng}</div><input class="popup-input" id="pin-name" placeholder="Location name (optional)"><div class="popup-actions"><button class="popup-save" onclick="savePin(${lat},${lng})">Save</button><button class="popup-cancel" onclick="map.closePopup()">Cancel</button></div>`).addTo(map);
+    pendingPopup=p;p.on('remove',()=>{pendingPopup=null;});
 });
 
-// ====================== SEARCH ======================
+// SEARCH
 let searchTimeout;
-async function handleSearch(val) {
-    const clr = document.getElementById('clearSearch'), icon = document.getElementById('search-icon-img'), box = document.getElementById('suggestionsBox');
-    clr.style.display = val ? 'block' : 'none';
-    icon.style.display = val ? 'none' : 'block';
-    if (!val) { box.style.display='none'; return; }
+async function handleSearch(val){
+    const clr=document.getElementById('clearSearch'),icon=document.getElementById('search-icon-img'),box=document.getElementById('suggestionsBox');
+    clr.style.display=val?'block':'none';icon.style.display=val?'none':'block';
+    if(!val){box.style.display='none';return;}
     clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(async () => {
-        try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}&limit=5&countrycodes=ph`);
-            const data = await res.json();
-            box.innerHTML = '';
-            if (!data.length) { box.style.display='none'; return; }
-            data.forEach(item => {
-                const el = document.createElement('div');
-                el.className = 'suggestion-item';
-                el.textContent = item.display_name;
-                el.onclick = () => {
-                    map.flyTo([item.lat, item.lon], 16);
-                    document.getElementById('mapSearchInput').value = item.display_name;
-                    box.style.display='none'; clr.style.display='block'; icon.style.display='none';
-                };
-                box.appendChild(el);
-            });
-            box.style.display='block';
-        } catch {}
-    }, 400);
+    searchTimeout=setTimeout(async()=>{
+        try{const res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}&limit=5&countrycodes=ph`);const data=await res.json();box.innerHTML='';if(!data.length){box.style.display='none';return;}data.forEach(item=>{const el=document.createElement('div');el.className='suggestion-item';el.textContent=item.display_name;el.onclick=()=>{map.flyTo([item.lat,item.lon],16);document.getElementById('mapSearchInput').value=item.display_name;box.style.display='none';clr.style.display='block';icon.style.display='none';};box.appendChild(el);});box.style.display='block';}catch{}
+    },400);
 }
-function clearSearchInput() {
-    document.getElementById('mapSearchInput').value='';
-    document.getElementById('suggestionsBox').style.display='none';
-    document.getElementById('clearSearch').style.display='none';
-    document.getElementById('search-icon-img').style.display='block';
-}
+function clearSearchInput(){document.getElementById('mapSearchInput').value='';document.getElementById('suggestionsBox').style.display='none';document.getElementById('clearSearch').style.display='none';document.getElementById('search-icon-img').style.display='block';}
 
-// ====================== ROUTE PLANNER ======================
-let routingControl=null, waypoints=[], routeMarkers=[];
+// ROUTE
+let routingControl=null,waypoints=[],routeMarkers=[];
 const ORS_API_KEY='eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImEyYTEzN2QzOGRlNzQzNzQ5MTMwZTg1NzVkMTJlMzFiIiwiaCI6Im11cm11cjY0In0=';
-document.getElementById('route-btn').addEventListener('click', () => document.getElementById('route-menu').classList.toggle('visible'));
-document.getElementById('calc-route').addEventListener('click', () => {
-    if (waypoints.length===2) { calculateRoute(waypoints[0],waypoints[1]); document.getElementById('route-menu').classList.remove('visible'); }
-    else { alert('Click to place Start Point (green), then End Point (red).'); waypoints=[]; routeMarkers.forEach(m=>map.removeLayer(m)); routeMarkers=[]; if(routingControl){map.removeLayer(routingControl);routingControl=null;} }
-});
-document.getElementById('clear-route').addEventListener('click', () => {
-    if(routingControl){map.removeLayer(routingControl);routingControl=null;}
-    routeMarkers.forEach(m=>map.removeLayer(m)); routeMarkers=[]; waypoints=[];
-    document.getElementById('route-info-box').style.display='none';
-    document.getElementById('route-menu').classList.remove('visible');
-});
-document.getElementById('close-info-btn').addEventListener('click', () => {
-    if(routingControl){map.removeLayer(routingControl);routingControl=null;}
-    routeMarkers.forEach(m=>map.removeLayer(m)); routeMarkers=[]; waypoints=[];
-    document.getElementById('route-info-box').style.display='none';
-});
-map.on('click', e => {
-    if (waypoints.length < 2) {
-        waypoints.push(e.latlng);
-        routeMarkers.push(L.marker(e.latlng,{icon:waypoints.length===1?greenIcon:redIcon}).addTo(map));
-    }
-});
-async function calculateRoute(start, end) {
-    try {
-        const res = await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson', {
-            method:'POST',
-            headers:{'Content-Type':'application/json','Authorization':ORS_API_KEY},
-            body:JSON.stringify({coordinates:[[start.lng,start.lat],[end.lng,end.lat]],preference:'fastest',units:'m'})
-        });
-        if (!res.ok) throw new Error('Routing API error');
-        const data = await res.json();
-        const coords = data.features[0].geometry.coordinates.map(c=>[c[1],c[0]]);
-        const summary = data.features[0].properties.summary;
-        if (routingControl) map.removeLayer(routingControl);
-        routingControl = L.polyline(coords,{color:'#ff3300',weight:6,opacity:.9,dashArray:'1,10'}).addTo(map);
-        const dist=(summary.distance/1000).toFixed(2), time=Math.round(summary.duration/60);
-        document.getElementById('route-info-box').style.display='flex';
-        document.getElementById('route-dist').innerHTML=`<img src="icons/distance.png"> ${dist} km`;
-        document.getElementById('route-time').innerHTML=`<img src="icons/minutes.png"> ~${time} min`;
-        map.fitBounds(routingControl.getBounds());
-    } catch { alert('Routing failed. No road available.'); }
+document.getElementById('route-btn').addEventListener('click',()=>document.getElementById('route-menu').classList.toggle('visible'));
+document.getElementById('calc-route').addEventListener('click',()=>{if(waypoints.length===2){calculateRoute(waypoints[0],waypoints[1]);document.getElementById('route-menu').classList.remove('visible');}else{alert('Click to place Start Point (green), then End Point (red).');waypoints=[];routeMarkers.forEach(m=>map.removeLayer(m));routeMarkers=[];if(routingControl){map.removeLayer(routingControl);routingControl=null;}}});
+document.getElementById('clear-route').addEventListener('click',()=>{if(routingControl){map.removeLayer(routingControl);routingControl=null;}routeMarkers.forEach(m=>map.removeLayer(m));routeMarkers=[];waypoints=[];document.getElementById('route-info-box').style.display='none';document.getElementById('route-menu').classList.remove('visible');});
+document.getElementById('close-info-btn').addEventListener('click',()=>{if(routingControl){map.removeLayer(routingControl);routingControl=null;}routeMarkers.forEach(m=>map.removeLayer(m));routeMarkers=[];waypoints=[];document.getElementById('route-info-box').style.display='none';});
+map.on('click',e=>{if(waypoints.length<2){waypoints.push(e.latlng);routeMarkers.push(L.marker(e.latlng,{icon:waypoints.length===1?greenIcon:redIcon}).addTo(map));}});
+async function calculateRoute(start,end){
+    try{const res=await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson',{method:'POST',headers:{'Content-Type':'application/json','Authorization':ORS_API_KEY},body:JSON.stringify({coordinates:[[start.lng,start.lat],[end.lng,end.lat]],preference:'fastest',units:'m'})});if(!res.ok)throw new Error('Routing API error');const data=await res.json();const coords=data.features[0].geometry.coordinates.map(c=>[c[1],c[0]]);const summary=data.features[0].properties.summary;if(routingControl)map.removeLayer(routingControl);routingControl=L.polyline(coords,{color:'#ff3300',weight:6,opacity:.9,dashArray:'1,10'}).addTo(map);const dist=(summary.distance/1000).toFixed(2),time=Math.round(summary.duration/60);document.getElementById('route-info-box').style.display='flex';document.getElementById('route-dist').innerHTML=`<img src="icons/distance.png"> ${dist} km`;document.getElementById('route-time').innerHTML=`<img src="icons/minutes.png"> ~${time} min`;map.fitBounds(routingControl.getBounds());}
+    catch{alert('Routing failed. No road available.');}
 }
-function routeToIncident(lat, lng) {
-    const gw = getPrimaryGateway();
-    waypoints=[gw,{lat,lng}];
-    routeMarkers.push(L.marker([gw.lat,gw.lng],{icon:greenIcon}).addTo(map));
-    routeMarkers.push(L.marker([lat,lng],{icon:redIcon}).addTo(map));
-    calculateRoute(gw,{lat,lng});
-    map.flyTo([lat,lng],14);
+function routeToIncident(lat,lng){const gw=getPrimaryGateway();waypoints=[gw,{lat,lng}];routeMarkers.push(L.marker([gw.lat,gw.lng],{icon:greenIcon}).addTo(map));routeMarkers.push(L.marker([lat,lng],{icon:redIcon}).addTo(map));calculateRoute(gw,{lat,lng});map.flyTo([lat,lng],14);}
+
+// LIVE INCIDENTS
+async function loadLiveIncidents(silent=false){
+    try{
+        const res=await fetch(`${API_BASE()}/incidents/active`,{headers:authHeader(),cache:'no-cache'});
+        if(res.status===401){window.location.href='login.html';return;}
+        if(!res.ok)throw new Error(`HTTP ${res.status}`);
+        const incidents=await res.json();
+        const listEl=document.getElementById('incident-list');listEl.innerHTML='';
+        if(!incidents.length){listEl.innerHTML='<div class="node-placeholder">No active incidents right now</div>';}
+        else{incidents.forEach(inc=>{const confColor=inc.confidence_pct>=70?'var(--green)':inc.confidence_pct>=40?'var(--yellow)':'var(--orange)';listEl.innerHTML+=`<div class="incident-card"><div class="incident-title">${inc.location_name||`Node ${inc.node_id}`}</div><div class="incident-meta">Status: <span class="${inc.status_class}">${inc.status}</span></div><div class="incident-meta">AI: <strong>${inc.ai_prediction}</strong> <span style="color:${confColor};font-weight:600;">(${inc.confidence_pct}%)</span></div><div class="incident-meta">Last: ${inc.timestamp}</div>${inc.assigned_team?`<div class="incident-meta">Team: ${inc.assigned_team}</div>`:''}<button class="btn-route" onclick="routeToIncident(${inc.latitude},${inc.longitude})">🔥 Show on Map & Route</button></div>`;});}
+        document.getElementById('incident-count').textContent=incidents.length;
+        const latestTs=incidents.length?incidents[0].timestamp:null;
+        const updatedStr=latestTs?new Date(latestTs.replace(' ','T')).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+        document.getElementById('incidents-last-update').textContent=`Updated: ${updatedStr}`;
+    }catch(err){if(!silent)document.getElementById('incident-list').innerHTML='<div class="node-placeholder">Error loading incidents</div>';}
 }
+loadLiveIncidents();setInterval(()=>loadLiveIncidents(true),20000);
 
-// ====================== LIVE INCIDENTS ======================
-async function loadLiveIncidents(silent=false) {
-    try {
-        const res = await fetch(`${API_BASE()}/incidents/active`, { headers: authHeader(), cache:'no-cache' });
-        if (res.status===401) { window.location.href='login.html'; return; }
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const incidents = await res.json();
-        const listEl = document.getElementById('incident-list');
-        listEl.innerHTML='';
-        if (!incidents.length) {
-            listEl.innerHTML='<div class="node-placeholder">No active incidents right now</div>';
-        } else {
-            incidents.forEach(inc => {
-                const confColor = inc.confidence_pct>=70 ? 'var(--green)' : inc.confidence_pct>=40 ? 'var(--yellow)' : 'var(--orange)';
-                listEl.innerHTML += `<div class="incident-card">
-                    <div class="incident-title">${inc.location_name||`Node ${inc.node_id}`}</div>
-                    <div class="incident-meta">Status: <span class="${inc.status_class}">${inc.status}</span></div>
-                    <div class="incident-meta">AI: <strong>${inc.ai_prediction}</strong> <span style="color:${confColor};font-weight:600;">(${inc.confidence_pct}%)</span></div>
-                    <div class="incident-meta">Last: ${inc.timestamp}</div>
-                    ${inc.assigned_team ? `<div class="incident-meta">Team: ${inc.assigned_team}</div>` : ''}
-                    <button class="btn-route" onclick="routeToIncident(${inc.latitude},${inc.longitude})">🔥 Show on Map & Route</button>
-                </div>`;
-            });
-        }
-        document.getElementById('incident-count').textContent = incidents.length;
-        document.getElementById('incidents-last-update').textContent = `Updated: ${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}`;
-    } catch(err) {
-        if (!silent) document.getElementById('incident-list').innerHTML='<div class="node-placeholder">Error loading incidents</div>';
-    }
-}
-loadLiveIncidents();
-setInterval(() => loadLiveIncidents(true), 20000);
-
-// ====================== INLINE HISTORY PANEL ======================
-let _hm_node=null, _hm_limit=50, _hm_metric='temperature', _hm_rows_cache=[];
-
-function openHistoryPanel(nodeId) {
-    _hm_node=nodeId; _hm_metric='temperature'; _hm_rows_cache=[];
+// HISTORY PANEL
+let _hm_node=null,_hm_limit=50,_hm_metric='temperature',_hm_rows_cache=[];
+function openHistoryPanel(nodeId){
+    _hm_node=nodeId;_hm_metric='temperature';_hm_rows_cache=[];
     document.getElementById('hp-node-id').textContent=nodeId;
     document.getElementById('hp-record-count').textContent='0 readings';
     document.getElementById('hp-live-badge').style.display='inline-flex';
@@ -1343,46 +1065,36 @@ function openHistoryPanel(nodeId) {
     document.getElementById('right-history-view').classList.add('visible');
     fetchHistory();
 }
-function closeHistoryPanel() {
+function closeHistoryPanel(){
     document.getElementById('right-history-view').classList.remove('visible');
     document.getElementById('right-default-view').classList.remove('hidden');
-    _hm_node=null; _hm_rows_cache=[];
+    _hm_node=null;_hm_rows_cache=[];
     document.getElementById('hp-live-badge').style.display='none';
     document.getElementById('hp-table-body').innerHTML='<div class="hp-state"><div>Select a node to view its history</div></div>';
     document.getElementById('hp-stats').innerHTML='';
     document.getElementById('hp-record-count').textContent='0 readings';
     renderSparkline([]);
 }
-function setHistoryLimit(n) {
+function setHistoryLimit(n){
     _hm_limit=n;
     document.querySelectorAll('.hp-limit-btn').forEach(b=>b.classList.toggle('active',parseInt(b.textContent)===n));
     fetchHistory();
 }
-function refreshHistory() {
-    const btn=document.getElementById('hp-refresh-btn');
-    btn.classList.add('spinning');
-    fetchHistory().finally(()=>setTimeout(()=>btn.classList.remove('spinning'),500));
-}
-async function fetchHistory() {
-    if (!_hm_node) return;
+async function fetchHistory(){
+    if(!_hm_node)return;
     const bodyEl=document.getElementById('hp-table-body');
     bodyEl.innerHTML='<div class="hp-state"><div class="hp-spinner"></div>Loading…</div>';
-    document.getElementById('hp-stats').innerHTML='';
-    renderSparkline([]);
-    try {
+    document.getElementById('hp-stats').innerHTML='';renderSparkline([]);
+    try{
         const res=await fetch(`${API_BASE()}/history/${encodeURIComponent(_hm_node)}?limit=${_hm_limit}`,{headers:authHeader(),cache:'no-cache'});
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if(!res.ok)throw new Error(`HTTP ${res.status}`);
         const rows=await res.json();
         document.getElementById('hp-record-count').textContent=`${rows.length} readings`;
-        if (!rows.length) { bodyEl.innerHTML=`<div class="hp-state">No history for <strong>${_hm_node}</strong>.</div>`; return; }
-        renderStats(rows);
-        renderSparkline(rows);
-        renderTable(rows);
-    } catch(err) {
-        bodyEl.innerHTML=`<div class="hp-state" style="color:#ff4757;">⚠ Failed: ${err.message}</div>`;
-    }
+        if(!rows.length){bodyEl.innerHTML=`<div class="hp-state">No history for <strong>${_hm_node}</strong>.</div>`;return;}
+        renderStats(rows);renderSparkline(rows);renderTable(rows);
+    }catch(err){bodyEl.innerHTML=`<div class="hp-state" style="color:#ff4757;">⚠ Failed: ${err.message}</div>`;}
 }
-function renderStats(rows) {
+function renderStats(rows){
     const temps=rows.map(r=>r.temperature).filter(v=>v!=null);
     const smokes=rows.map(r=>r.smoke).filter(v=>v!=null);
     const hums=rows.map(r=>r.humidity).filter(v=>v!=null);
@@ -1394,10 +1106,7 @@ function renderStats(rows) {
         <div class="hp-stat"><span class="hp-stat-label">MAX TEMP</span><span class="hp-stat-val">${max(temps)}°C</span></div>
         <div class="hp-stat"><span class="hp-stat-label">AVG SMOKE</span><span class="hp-stat-val">${avg(smokes)} ppm</span></div>
         <div class="hp-stat"><span class="hp-stat-label">AVG HUM</span><span class="hp-stat-val">${avg(hums)}%</span></div>
-        <div class="hp-stat" style="${fires>0?'border-color:#ff475577;':''}">
-            <span class="hp-stat-label">🔥 FIRE EVENTS</span>
-            <span class="hp-stat-val" style="${fires>0?'color:#ff4757;':''}">${fires}</span>
-        </div>`;
+        <div class="hp-stat" style="${fires>0?'border-color:#ff475577;':''}"><span class="hp-stat-label">🔥 FIRE EVENTS</span><span class="hp-stat-val" style="${fires>0?'color:#ff4757;':''}">${fires}</span></div>`;
 }
 const CHART_METRICS={
     temperature:{label:'Temperature Trend (°C)',unit:'°C',color:'#ff6b35',key:'temperature'},
@@ -1405,18 +1114,18 @@ const CHART_METRICS={
     smoke:{label:'Smoke Trend (ppm)',unit:' ppm',color:'#c8c8c8',key:'smoke'},
     flame:{label:'Flame Sensor Trend',unit:'',color:'#ff4757',key:'flame'},
 };
-function switchChartMetric(metric) {
+function switchChartMetric(metric){
     _hm_metric=metric;
     document.querySelectorAll('.hp-chart-tab').forEach(b=>b.classList.toggle('active',b.dataset.metric===metric));
     document.getElementById('hp-chart-label').textContent=CHART_METRICS[metric].label;
     renderSparkline(_hm_rows_cache);
 }
-function renderSparkline(rows) {
+function renderSparkline(rows){
     _hm_rows_cache=rows;
     const svg=document.getElementById('hp-chart-svg');
     const cfg=CHART_METRICS[_hm_metric];
     const vals=[...rows].reverse().map(r=>r[cfg.key]).filter(v=>v!=null);
-    if (vals.length<2) { svg.innerHTML='<text x="400" y="36" text-anchor="middle" fill="#3a1a0a" font-size="12">Not enough data</text>'; return; }
+    if(vals.length<2){svg.innerHTML='<text x="400" y="36" text-anchor="middle" fill="#3a1a0a" font-size="12">Not enough data</text>';return;}
     const W=800,H=62,P=6;
     const rMin=Math.min(...vals),rMax=Math.max(...vals),rng=rMax-rMin;
     const mn=rMin-(rng*.1||1),mx=rMax+(rng*.1||1);
@@ -1432,53 +1141,66 @@ function renderSparkline(rows) {
         <text x="${P+2}" y="${H-3}" fill="#4a2a1a" font-size="9">${rMin.toFixed(1)}${cfg.unit}</text>
         <text x="${P+2}" y="13" fill="#4a2a1a" font-size="9">${rMax.toFixed(1)}${cfg.unit}</text>`;
 }
-function formatTimestamp(raw) {
-    if (!raw) return '—';
+function formatTimestamp(raw){
+    if(!raw)return'—';
     const s=raw.toString().replace('T',' ').replace(/\.\d+Z?$/,'');
-    const [d,t]=s.split(' ');
-    if (!d) return raw;
-    const [,m,day]=d.split('-');
+    const[d,t]=s.split(' ');if(!d)return raw;
+    const[,m,day]=d.split('-');
     const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    return `${months[parseInt(m,10)-1]||m} ${parseInt(day,10)}, ${t||''}`;
-}
-function renderTable(rows) {
-    document.getElementById('hp-table-body').innerHTML=`
-        <table class="hp-table">
-            <colgroup>
-                <col style="width:24px"><col style="width:100px"><col style="width:54px">
-                <col style="width:44px"><col style="width:50px"><col style="width:46px">
-                <col style="width:58px"><col style="width:50px"><col style="width:40px">
-            </colgroup>
-            <thead><tr><th>#</th><th>Timestamp</th><th>Temp</th><th>Hum</th><th>Smoke</th><th>Flame</th><th>AI</th><th>Conf.</th><th>RSSI</th></tr></thead>
-            <tbody>
-                ${rows.map((r,i)=>{
-                    const rp=r.ai_prediction||'',pred=rp.toLowerCase();
-                    const cr=r.confidence!=null?parseFloat(r.confidence):null;
-                    const cp=cr!=null?(cr<=1?cr*100:cr):null;
-                    const cs=cp!=null?cp.toFixed(1):'—';
-                    const cc=cp!=null?(cp>=70?'#2ecc71':cp>=40?'#f1c40f':'#ff9f1c'):'#5a3a2a';
-                    const ab=pred==='fire'?'<span class="ai-badge ai-fire">🔥 Fire</span>':pred==='normal'?'<span class="ai-badge ai-normal">Normal</span>':rp?`<span class="ai-badge ai-unknown">${rp}</span>`:'<span style="color:#5a3a2a">—</span>';
-                    const ts=formatTimestamp(r.local_timestamp||r.timestamp);
-                    return `<tr><td style="color:#3a2a1a;font-size:9px;">${i+1}</td><td class="hp-time">${ts}</td><td class="hp-num">${r.temperature??'—'}</td><td class="hp-num">${r.humidity??'—'}</td><td class="hp-num">${r.smoke??'—'}</td><td class="hp-num">${r.flame??'—'}</td><td>${ab}</td><td style="color:${cc};font-weight:600;font-family:monospace;">${cs}%</td><td style="color:#5a3a2a;font-family:monospace;">${r.rssi??'—'}</td></tr>`;
-                }).join('')}
-            </tbody>
-        </table>`;
+    return`${months[parseInt(m,10)-1]||m} ${parseInt(day,10)}, ${t||''}`;
 }
 
-// ====================== NODE POPUP → HISTORY BUTTON ======================
-map.on('popupopen', e => {
-    const c=e.popup.getElement();
-    if (!c) return;
-    const t=c.querySelector('.popup-title');
-    if (!t) return;
-    const match=(t.textContent||'').match(/📡\s*(.+)/);
-    if (!match) return;
+// renderTable: real <thead> inside the scroll container ensures sticky headers always align with data
+function renderTable(rows){
+    document.getElementById('hp-table-body').innerHTML=`
+    <table class="hp-table">
+        <thead>
+            <tr>
+                <th class="c-num">#</th>
+                <th class="c-ts">Timestamp</th>
+                <th class="c-val" style="text-align:right;">Temp °C</th>
+                <th class="c-val" style="text-align:right;">Hum %</th>
+                <th class="c-val" style="text-align:right;">Smoke</th>
+                <th class="c-val" style="text-align:right;">Flame</th>
+                <th class="c-ai">AI</th>
+                <th class="c-conf" style="text-align:right;">Conf.</th>
+                <th class="c-rssi" style="text-align:right;">RSSI</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${rows.map((r,i)=>{
+                const rp=r.ai_prediction||'',pred=rp.toLowerCase();
+                const cr=r.confidence!=null?parseFloat(r.confidence):null;
+                const cp=cr!=null?(cr<=1?cr*100:cr):null;
+                const cs=cp!=null?cp.toFixed(1):'—';
+                const cc=cp!=null?(cp>=70?'#2ecc71':cp>=40?'#f1c40f':'#ff9f1c'):'#5a3a2a';
+                const ab=pred==='fire'?'<span class="ai-badge ai-fire">🔥 Fire</span>':pred==='normal'?'<span class="ai-badge ai-normal">Normal</span>':rp?`<span class="ai-badge ai-unknown">${rp}</span>`:'<span style="color:#5a3a2a">—</span>';
+                const ts=formatTimestamp(r.local_timestamp||r.timestamp);
+                return`<tr>
+                    <td class="c-num" style="color:#3a2a1a;font-size:9px;">${i+1}</td>
+                    <td class="c-ts" style="color:#5a3a2a;font-size:9px;">${ts}</td>
+                    <td class="c-val">${r.temperature??'—'}</td>
+                    <td class="c-val">${r.humidity??'—'}</td>
+                    <td class="c-val">${r.smoke??'—'}</td>
+                    <td class="c-val">${r.flame??'—'}</td>
+                    <td class="c-ai">${ab}</td>
+                    <td class="c-conf" style="color:${cc};font-weight:600;font-family:monospace;">${cs}%</td>
+                    <td class="c-rssi">${r.rssi??'—'}</td>
+                </tr>`;
+            }).join('')}
+        </tbody>
+    </table>`;
+}
+
+// NODE POPUP → HISTORY BUTTON
+map.on('popupopen',e=>{
+    const c=e.popup.getElement();if(!c)return;
+    const t=c.querySelector('.popup-title');if(!t)return;
+    const match=(t.textContent||'').match(/📡\s*(.+)/);if(!match)return;
     const nodeId=match[1].trim();
-    if (c.querySelector('.popup-history-btn')) return;
-    const btn=document.createElement('button');
-    btn.className='popup-history-btn';
-    btn.innerHTML='📊 View History';
-    btn.onclick=()=>{ map.closePopup(); openHistoryPanel(nodeId); };
+    if(c.querySelector('.popup-history-btn'))return;
+    const btn=document.createElement('button');btn.className='popup-history-btn';btn.innerHTML='📊 View History';
+    btn.onclick=()=>{map.closePopup();openHistoryPanel(nodeId);};
     c.querySelector('.leaflet-popup-content').appendChild(btn);
 });
 </script>
