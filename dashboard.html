@@ -352,6 +352,25 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .gw-assign-btn{padding:3px 9px;background:linear-gradient(135deg,#5a1000,#8b2200);border:1px solid #e14f0055;border-radius:5px;color:white;font-size:9px;cursor:pointer;white-space:nowrap;transition:.2s;font-family:'Cinzel',serif;letter-spacing:1px;}
 .gw-assign-btn:hover{background:linear-gradient(135deg,#8b1a00,#c43d00);}
 .gw-none{color:#5a3a2a;font-size:9px;font-style:italic;}
+.gw-org-actions{display:inline-flex;align-items:center;}
+.gw-ellipsis-btn{background:none;border:1px solid #4a1a0a55;border-radius:5px;color:#7a4a3a;font-size:13px;cursor:pointer;padding:2px 7px;line-height:1;transition:.2s;letter-spacing:1px;}
+.gw-ellipsis-btn:hover{background:#3a0a0433;border-color:#8b3a1a;color:#ff9055;}
+/* Dropdown rendered as a fixed portal so it escapes overflow:hidden parents */
+#gw-org-portal-dropdown{
+    display:none;position:fixed;
+    background:#1e0a08f5;border:1px solid var(--accent);border-radius:8px;
+    min-width:160px;z-index:99999;box-shadow:0 6px 24px #00000099;
+    overflow:hidden;
+}
+#gw-org-portal-dropdown.open{display:block;}
+.gw-org-dropdown-item{
+    display:flex;align-items:center;gap:7px;
+    padding:9px 14px;font-size:11px;cursor:pointer;
+    color:#f0d0b8;transition:background .15s;white-space:nowrap;
+}
+.gw-org-dropdown-item:hover{background:#3a0a0455;}
+.gw-org-dropdown-item.danger{color:#ff4757;}
+.gw-org-dropdown-item.danger:hover{background:#ff475722;}
 
 /* ===================== RESPONSIVE ===================== */
 @media (max-width:900px){
@@ -669,6 +688,11 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
     </div>
 </div>
 
+<!-- Org dropdown portal — rendered outside any overflow:hidden ancestor -->
+<div id="gw-org-portal-dropdown">
+    <div class="gw-org-dropdown-item danger" id="gw-portal-delete-btn">🗑 Delete Organization</div>
+</div>
+
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
 const API_BASE = () => localStorage.getItem('flames_api') || 'https://flamesapp.up.railway.app';
@@ -758,7 +782,7 @@ function renderOrgGatewayCell(orgId) {
     const assigned=_allGateways.filter(g=>g.org_id===orgId), unassigned=_allGateways.filter(g=>!g.org_id);
     const badgesHtml=assigned.length?assigned.map(g=>`<span class="gw-badge">${g.gateway_id}${g.location_name?' · '+g.location_name:''}<button class="gw-badge-remove" onclick="adminDisassociateGateway('${g.gateway_id}',${orgId})">✕</button></span>`).join(''):'<span class="gw-none">No gateways</span>';
     const optHtml=unassigned.length?unassigned.map(g=>`<option value="${g.gateway_id}">${g.gateway_id}${g.location_name?' – '+g.location_name:''}</option>`).join(''):'<option value="" disabled>No unassigned</option>';
-    cell.innerHTML=`<div class="gw-cell-wrap"><div class="gw-badges-row">${badgesHtml}</div><div class="gw-assign-row"><select class="gw-assign-select" id="gw-select-${orgId}"><option value="">— Assign gateway —</option>${optHtml}</select><button class="gw-assign-btn" onclick="adminAssignGateway(${orgId})">+ Assign</button></div></div>`;
+    cell.innerHTML=`<div class="gw-cell-wrap"><div class="gw-badges-row">${badgesHtml}</div><div class="gw-assign-row"><select class="gw-assign-select" id="gw-select-${orgId}"><option value="">— Assign gateway —</option>${optHtml}</select><button class="gw-assign-btn" onclick="adminAssignGateway(${orgId})">+ Assign</button><div class="gw-org-actions"><button class="gw-ellipsis-btn" onclick="toggleOrgDropdown(${orgId},event)" title="More options">···</button></div></div></div>`;
 }
 async function adminAssignGateway(orgId) {
     const sel=document.getElementById(`gw-select-${orgId}`); const gwId=sel?sel.value:'';
@@ -1190,6 +1214,68 @@ function renderTable(rows){
             }).join('')}
         </tbody>
     </table>`;
+}
+
+// ORG DROPDOWN — fixed-position portal so it escapes overflow:hidden parents
+let _portalOrgId = null;
+const _portal = document.getElementById('gw-org-portal-dropdown');
+
+function toggleOrgDropdown(orgId, e) {
+    e.stopPropagation();
+    const btn = e.currentTarget;
+    const rect = btn.getBoundingClientRect();
+
+    if (_portalOrgId === orgId && _portal.classList.contains('open')) {
+        _portal.classList.remove('open');
+        _portalOrgId = null;
+        return;
+    }
+
+    _portalOrgId = orgId;
+    // Wire up delete action for this org
+    document.getElementById('gw-portal-delete-btn').onclick = () => {
+        _portal.classList.remove('open');
+        _portalOrgId = null;
+        adminDeleteOrganization(orgId);
+    };
+
+    // Position below the button, aligned to its right edge
+    const dropW = 162;
+    let left = rect.right - dropW;
+    let top  = rect.bottom + 4;
+    // Prevent going off-screen left
+    if (left < 8) left = 8;
+    // Flip above if not enough room below
+    if (top + 52 > window.innerHeight - 8) top = rect.top - 52;
+
+    _portal.style.left = left + 'px';
+    _portal.style.top  = top  + 'px';
+    _portal.classList.add('open');
+}
+
+// Close portal when clicking anywhere else
+document.addEventListener('click', (e) => {
+    if (!_portal.contains(e.target)) {
+        _portal.classList.remove('open');
+        _portalOrgId = null;
+    }
+});
+// Close on scroll (table or window)
+document.addEventListener('scroll', () => { _portal.classList.remove('open'); _portalOrgId = null; }, true);
+
+async function adminDeleteOrganization(orgId) {
+    if (!confirm(`Delete organization ID ${orgId}?\n\nThis will remove the organization and all associated data. This cannot be undone.`)) return;
+    try {
+        const res = await fetch(`${API_BASE()}/organizations/${orgId}`, {
+            method: 'DELETE', headers: authHeader()
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || `HTTP ${res.status}`);
+        }
+        adminToast(`Organization ${orgId} deleted`, 'success');
+        loadOrganizations();
+    } catch(err) { adminToast(`Delete failed: ${err.message}`, 'error'); }
 }
 
 // NODE POPUP → HISTORY BUTTON
