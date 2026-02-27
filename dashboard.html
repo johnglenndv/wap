@@ -192,26 +192,41 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .incident-header-row{display:flex;justify-content:space-between;align-items:flex-start;gap:6px;margin-bottom:8px;flex-shrink:0;flex-wrap:wrap;}
 .incident-badge{background:#5a0a00;border:1px solid #8b2a0055;border-radius:8px;padding:3px 9px;display:flex;align-items:center;gap:4px;font-weight:700;font-size:13px;flex-shrink:0;}
 .incident-badge img{width:12px;}
-.incident-list{overflow:hidden;flex:1;display:flex;flex-direction:column;gap:0;}
+.incident-list{overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:0;}
 .incident-card{border-bottom:1px solid #3a1a0a44;padding:7px 0;flex-shrink:0;transition:opacity .4s,transform .4s;}
 .incident-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px;}
 .incident-meta{font-size:11px;color:var(--text-dim);margin-bottom:2px;}
 .txt-active{color:var(--red);font-weight:700;}
 .txt-contained{color:var(--yellow);font-weight:700;}
 .txt-resolved{color:var(--green);font-weight:700;}
-.btn-route{width:100%;margin-top:6px;padding:6px;border:1px solid;color:white;border-radius:7px;font-family:Arial,sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:.3s;letter-spacing:.5px;}
-.btn-route:hover{filter:brightness(1.3);box-shadow:0 0 14px #00000055;}
-#incidents-last-update{font-size:9px;color:greenyellow;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px;display:inline-block;vertical-align:middle;}
 
-/* ===================== RESPOND / RESOLVE BUTTONS ===================== */
-.incident-action-row{display:flex;gap:6px;margin-top:6px;}
+/* ===================== INCIDENT ACTION BUTTONS (2 rows) ===================== */
+.incident-btn-row1{display:flex;gap:5px;margin-top:6px;}
+.incident-btn-row2{display:flex;gap:5px;margin-top:5px;}
+.btn-show-map{flex:1;padding:6px;background:#1a1a3a66;border:1px solid #3d6fff;color:#7db8ff;border-radius:7px;font-family:Arial,sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:.3s;letter-spacing:.5px;}
+.btn-show-map:hover{background:#3d6fff33;box-shadow:0 0 10px #3d6fff44;}
+.btn-details{flex:1;padding:6px;background:#1a2a1a55;border:1px solid #f1c40f88;color:#f1c40f;border-radius:7px;font-family:Arial,sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:.3s;letter-spacing:.5px;}
+.btn-details:hover{background:#f1c40f22;box-shadow:0 0 10px #f1c40f44;}
+.incident-action-row{display:flex;gap:6px;margin-top:0;}
 .btn-respond{flex:1;padding:6px;background:#1a3a6655;border:1px solid #3d9cff;color:#6db8ff;border-radius:7px;font-family:Arial,sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:.3s;letter-spacing:.5px;}
 .btn-respond:hover{background:#3d9cff33;box-shadow:0 0 10px #3d9cff44;}
 .btn-resolve{flex:1;padding:6px;background:#0a1a0a55;border:1px solid #2ecc71;color:#2ecc71;border-radius:7px;font-family:Arial,sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:.3s;letter-spacing:.5px;}
 .btn-resolve:hover{background:#2ecc7133;box-shadow:0 0 10px #2ecc7144;}
 .btn-resolve:disabled{opacity:.5;cursor:not-allowed;}
 
-/* Respond modal */
+/* ===================== INCIDENT HISTORY TAB ===================== */
+.incidents-tab-row{display:flex;gap:4px;margin-bottom:8px;flex-shrink:0;}
+.inc-tab-btn{flex:1;padding:5px 0;border-radius:6px;font-size:9px;letter-spacing:1.5px;font-weight:700;cursor:pointer;border:1px solid #4a1a0a55;background:#2a0a0444;color:#5a3a2a;font-family:'Cinzel',serif;transition:.2s;}
+.inc-tab-btn.active{background:linear-gradient(135deg,#6b1200,#a03000);border-color:var(--accent);color:white;}
+
+/* ===================== RESOLVED HISTORY LIST ===================== */
+.resolved-list{overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:6px;}
+.resolved-card{background:#1a0a0555;border:1px solid #3a1a0a44;border-radius:8px;padding:8px 10px;flex-shrink:0;}
+.resolved-card-title{font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px;}
+.resolved-card-meta{font-size:10px;color:var(--text-dim);line-height:1.6;}
+.resolved-tag{display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:#0a1a0a55;border:1px solid #2ecc7155;color:#2ecc71;letter-spacing:.5px;}
+
+/* ===================== RESPOND MODAL ===================== */
 #respond-modal{display:none;position:fixed;inset:0;z-index:25000;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);align-items:center;justify-content:center;}
 #respond-modal.open{display:flex;}
 .respond-box{background:linear-gradient(135deg,#1e0a08,#2d1209);border:1px solid var(--accent);border-radius:14px;padding:28px 30px;width:min(380px,92vw);box-shadow:0 0 40px #3a0a0088;text-align:center;}
@@ -224,6 +239,86 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .respond-msg{font-size:11px;color:#7a5a4a;margin-bottom:18px;line-height:1.5;}
 .respond-close{padding:9px 28px;background:linear-gradient(135deg,#8b1a00,#c43d00);border:1px solid #e14f0055;border-radius:7px;color:white;font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;cursor:pointer;transition:.3s;}
 .respond-close:hover{box-shadow:0 0 15px #e14f0055;}
+
+/* ===================== RESCUE SELECT MODAL ===================== */
+#rescue-modal{display:none;position:fixed;inset:0;z-index:26000;background:rgba(0,0,0,.8);backdrop-filter:blur(5px);align-items:center;justify-content:center;}
+#rescue-modal.open{display:flex;}
+.rescue-box{background:linear-gradient(135deg,#1e0a08,#2d1209);border:1px solid var(--accent);border-radius:16px;padding:28px;width:min(440px,94vw);box-shadow:0 0 50px #3a0a0099;}
+.rescue-box-title{font-family:'Cinzel',serif;font-size:13px;letter-spacing:3px;color:#e8c4a0;margin-bottom:4px;text-align:center;}
+.rescue-box-sub{font-size:11px;color:#7a5a4a;text-align:center;margin-bottom:18px;}
+.rescue-org-list{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;max-height:240px;overflow-y:auto;}
+.rescue-org-item{display:flex;align-items:center;gap:12px;background:#2a0a0555;border:1px solid #3a1a0a55;border-radius:10px;padding:10px 14px;cursor:pointer;transition:.25s;}
+.rescue-org-item:hover{background:#3a1a0a55;border-color:var(--accent);}
+.rescue-org-item.selected{background:linear-gradient(135deg,#1a3a6633,#2a5a9933);border-color:#3d9cff;}
+.rescue-org-icon{font-size:22px;}
+.rescue-org-name{font-size:13px;font-weight:700;color:var(--text);}
+.rescue-org-meta{font-size:10px;color:var(--text-dim);}
+.rescue-confirm-btn{width:100%;padding:11px;background:linear-gradient(135deg,#1a3a66,#2a5a99);border:1px solid #3d9cff55;border-radius:9px;color:white;font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;cursor:pointer;transition:.3s;margin-bottom:8px;}
+.rescue-confirm-btn:hover{box-shadow:0 0 18px #3d9cff44;}
+.rescue-cancel-btn{width:100%;padding:9px;background:transparent;border:1px solid #4a1a0a44;border-radius:9px;color:var(--text-dim);font-family:Arial,sans-serif;font-size:12px;cursor:pointer;transition:.2s;}
+.rescue-cancel-btn:hover{border-color:#8b3a1a;color:var(--text);}
+
+/* ===================== INCIDENT MAP MODAL ===================== */
+#incident-map-modal{display:none;position:fixed;inset:0;z-index:24000;background:rgba(0,0,0,.8);backdrop-filter:blur(5px);align-items:center;justify-content:center;}
+#incident-map-modal.open{display:flex;}
+.inc-map-box{background:linear-gradient(135deg,#1e0a08,#2d1209);border:1px solid var(--accent);border-radius:16px;width:min(860px,96vw);max-height:92vh;display:flex;flex-direction:column;box-shadow:0 0 60px #3a0a00aa;overflow:hidden;}
+.inc-map-header{display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid #4a1a0a55;flex-shrink:0;}
+.inc-map-header h2{font-family:'Cinzel',serif;font-size:13px;color:#e8c4a0;letter-spacing:3px;display:flex;align-items:center;gap:8px;}
+.inc-map-close{font-size:22px;color:#9a6a5a;cursor:pointer;line-height:1;transition:color .2s;}
+.inc-map-close:hover{color:var(--accent);}
+.inc-map-body{display:flex;flex:1;min-height:0;overflow:hidden;}
+.inc-map-sidebar{width:240px;flex-shrink:0;padding:16px;border-right:1px solid #3a1a0a44;overflow-y:auto;display:flex;flex-direction:column;gap:10px;}
+.inc-map-info-group{background:#2a0a0444;border:1px solid #3a1a0a55;border-radius:9px;padding:12px;}
+.inc-map-info-label{font-size:8px;letter-spacing:2px;color:#7a4a3a;text-transform:uppercase;margin-bottom:6px;}
+.inc-map-info-val{font-size:13px;font-weight:700;color:var(--text);}
+.inc-map-status-active{color:var(--red);}
+.inc-map-status-resolved{color:var(--green);}
+.inc-route-stats{display:flex;gap:6px;}
+.inc-route-stat{flex:1;background:#0a160a55;border:1px solid #2ecc7144;border-radius:7px;padding:8px;text-align:center;}
+.inc-route-stat-val{font-size:16px;font-weight:700;color:var(--green);font-family:Arial,sans-serif;}
+.inc-route-stat-label{font-size:8px;color:#5a3a2a;letter-spacing:1px;text-transform:uppercase;margin-top:2px;}
+.inc-rescue-status{background:linear-gradient(135deg,#1a3a6622,#2a5a9922);border:1px solid #3d9cff44;border-radius:9px;padding:10px;}
+.inc-rescue-status-label{font-size:8px;letter-spacing:2px;color:#3d9cff;text-transform:uppercase;margin-bottom:5px;}
+.inc-rescue-org-name{font-size:13px;font-weight:700;color:#f0d0b8;margin-bottom:2px;}
+.inc-rescue-time{font-size:10px;color:#7a9abb;}
+.inc-rescue-status-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;margin-top:5px;}
+.inc-rescue-status-badge.en-route{background:#f1c40f22;border:1px solid #f1c40f55;color:#f1c40f;}
+.inc-rescue-status-badge.rescued{background:#2ecc7122;border:1px solid #2ecc7155;color:#2ecc71;}
+.inc-map-rescue-btn{width:100%;padding:10px;background:linear-gradient(135deg,#1a3a66,#2a5a99);border:1px solid #3d9cff66;border-radius:9px;color:white;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;cursor:pointer;transition:.3s;margin-top:4px;}
+.inc-map-rescue-btn:hover{box-shadow:0 0 16px #3d9cff44;}
+.inc-map-resolve-btn{width:100%;padding:9px;background:#0a1a0a55;border:1px solid #2ecc7166;border-radius:9px;color:#2ecc71;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;cursor:pointer;transition:.3s;margin-top:4px;}
+.inc-map-resolve-btn:hover{background:#2ecc7122;box-shadow:0 0 16px #2ecc7144;}
+.inc-map-resolve-btn:disabled{opacity:.4;cursor:not-allowed;}
+.inc-map-map-wrap{flex:1;min-height:0;position:relative;}
+#incident-detail-map{width:100%;height:100%;min-height:300px;}
+
+/* ===================== INCIDENT DETAILS MODAL ===================== */
+#incident-details-modal{display:none;position:fixed;inset:0;z-index:25500;background:rgba(0,0,0,.8);backdrop-filter:blur(5px);align-items:center;justify-content:center;}
+#incident-details-modal.open{display:flex;}
+.inc-details-box{background:linear-gradient(135deg,#1e0a08,#2d1209);border:1px solid var(--accent);border-radius:16px;width:min(500px,94vw);max-height:88vh;display:flex;flex-direction:column;box-shadow:0 0 50px #3a0a00aa;overflow:hidden;}
+.inc-details-header{display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid #4a1a0a55;flex-shrink:0;}
+.inc-details-header h2{font-family:'Cinzel',serif;font-size:12px;color:#e8c4a0;letter-spacing:3px;display:flex;align-items:center;gap:8px;}
+.inc-details-close{font-size:22px;color:#9a6a5a;cursor:pointer;line-height:1;transition:color .2s;}
+.inc-details-close:hover{color:var(--accent);}
+.inc-details-body{padding:18px 20px;overflow-y:auto;flex:1;}
+.inc-details-section{margin-bottom:16px;}
+.inc-details-section-title{font-size:9px;letter-spacing:2px;color:#7a4a3a;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.inc-details-section-title::before{content:'';display:inline-block;width:3px;height:12px;background:var(--accent);border-radius:2px;}
+.inc-details-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #2a1a0a33;}
+.inc-details-row-label{font-size:11px;color:var(--text-dim);}
+.inc-details-row-val{font-size:11px;font-weight:600;color:var(--text);}
+.inc-response-timeline{display:flex;flex-direction:column;gap:0;}
+.inc-timeline-item{display:flex;align-items:flex-start;gap:12px;padding:8px 0;position:relative;}
+.inc-timeline-item:not(:last-child)::after{content:'';position:absolute;left:10px;top:28px;bottom:-4px;width:2px;background:#3a1a0a66;}
+.inc-timeline-dot{width:20px;height:20px;border-radius:50%;border:2px solid;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;margin-top:2px;}
+.inc-timeline-dot.dispatched{border-color:#f1c40f;background:#f1c40f22;color:#f1c40f;}
+.inc-timeline-dot.en-route{border-color:#3d9cff;background:#3d9cff22;color:#3d9cff;}
+.inc-timeline-dot.rescued{border-color:#2ecc71;background:#2ecc7122;color:#2ecc71;}
+.inc-timeline-dot.incident{border-color:#ff4757;background:#ff475722;color:#ff4757;}
+.inc-timeline-action{font-size:12px;font-weight:600;color:var(--text);}
+.inc-timeline-time{font-size:10px;color:var(--text-dim);}
+.inc-timeline-org{font-size:10px;color:#6db8ff;}
+.no-response-msg{color:#5a3a2a;font-size:12px;text-align:center;padding:16px;}
 
 /* ===================== HISTORY PANEL ===================== */
 .right-history-view{display:none;flex-direction:column;flex:1;min-height:0;animation:hv-in .3s cubic-bezier(.34,1.56,.64,1);}
@@ -389,6 +484,9 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
     .right-history-view.visible .hp-back-row{padding-top:max(12px, env(safe-area-inset-top));}
     .hp-limit-btn{padding:6px 16px;font-size:11px;}
     .hp-chart-tab{padding:4px 10px;font-size:10px;}
+    .inc-map-body{flex-direction:column;}
+    .inc-map-sidebar{width:100%;border-right:none;border-bottom:1px solid #3a1a0a44;max-height:240px;}
+    .inc-map-map-wrap{min-height:280px;}
 }
 @media (max-width:600px){
     :root{--hdr:52px;}
@@ -541,15 +639,25 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
                         <div class="no-pinned" id="no-pinned-msg">No locations pinned yet.</div>
                     </div>
                 </div>
+
+                <!-- INCIDENTS PANEL -->
                 <div class="panel incidents-panel">
                     <div class="incident-header-row">
                         <div class="panel-title" style="margin-bottom:0;">
-                            <span>Live Incidents</span>
-                            <span id="incidents-last-update" style="margin-left:8px;"></span>
+                            <span id="incidents-panel-title">Live Incidents</span>
+                            <span id="incidents-last-update" style="margin-left:8px;font-size:9px;color:greenyellow;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px;display:inline-block;vertical-align:middle;"></span>
                         </div>
                         <div class="incident-badge"><img src="icons/FireIncident.png" alt="fire"><span id="incident-count">0</span></div>
                     </div>
+                    <!-- TABS -->
+                    <div class="incidents-tab-row">
+                        <button class="inc-tab-btn active" id="tab-live" onclick="switchIncidentTab('live')">🔥 LIVE</button>
+                        <button class="inc-tab-btn" id="tab-resolved" onclick="switchIncidentTab('resolved')">✓ RESOLVED</button>
+                    </div>
+                    <!-- Live list -->
                     <div class="incident-list" id="incident-list"></div>
+                    <!-- Resolved list -->
+                    <div class="resolved-list" id="resolved-list" style="display:none;"></div>
                 </div>
             </div>
         </div>
@@ -593,6 +701,66 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
                 </div>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- ===================== INCIDENT MAP MODAL ===================== -->
+<div id="incident-map-modal">
+    <div class="inc-map-box">
+        <div class="inc-map-header">
+            <h2>🔥 Incident Full Details</h2>
+            <span class="inc-map-close" onclick="closeIncidentMapModal()">✕</span>
+        </div>
+        <div class="inc-map-body">
+            <div class="inc-map-sidebar" id="inc-map-sidebar">
+                <!-- filled by JS -->
+            </div>
+            <div class="inc-map-map-wrap">
+                <div id="incident-detail-map"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== INCIDENT DETAILS MODAL ===================== -->
+<div id="incident-details-modal">
+    <div class="inc-details-box">
+        <div class="inc-details-header">
+            <h2>📋 Incident Details</h2>
+            <span class="inc-details-close" onclick="closeIncidentDetailsModal()">✕</span>
+        </div>
+        <div class="inc-details-body" id="inc-details-body">
+            <!-- filled by JS -->
+        </div>
+    </div>
+</div>
+
+<!-- ===================== RESCUE SELECT MODAL ===================== -->
+<div id="rescue-modal">
+    <div class="rescue-box">
+        <div style="font-size:32px;text-align:center;margin-bottom:8px;">🚒</div>
+        <div class="rescue-box-title">DISPATCH RESCUE</div>
+        <div class="rescue-box-sub" id="rescue-modal-sub">Select the organization to respond to this incident</div>
+        <div class="rescue-org-list" id="rescue-org-list">
+            <!-- filled by JS -->
+        </div>
+        <button class="rescue-confirm-btn" onclick="confirmRescueDispatch()">🚒 CONFIRM DISPATCH</button>
+        <button class="rescue-cancel-btn" onclick="closeRescueModal()">Cancel</button>
+    </div>
+</div>
+
+<!-- ===================== RESPOND MODAL ===================== -->
+<div id="respond-modal">
+    <div class="respond-box">
+        <div class="respond-icon">🚒</div>
+        <div class="respond-title">RESPONSE DISPATCHED</div>
+        <div class="respond-node" id="respond-node-label">Node —</div>
+        <div class="respond-org-badge">
+            <div class="respond-org-label">Responding Organization</div>
+            <div class="respond-org-name" id="respond-org-display">—</div>
+        </div>
+        <div class="respond-msg">Your organization has been marked as the responding unit for this incident. Proceed to the location immediately.</div>
+        <button class="respond-close" onclick="document.getElementById('respond-modal').classList.remove('open')">ACKNOWLEDGE</button>
     </div>
 </div>
 
@@ -675,21 +843,6 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 
 <div id="gw-org-portal-dropdown">
     <div class="gw-org-dropdown-item danger" id="gw-portal-delete-btn">🗑 Delete Organization</div>
-</div>
-
-<!-- RESPOND MODAL -->
-<div id="respond-modal">
-    <div class="respond-box">
-        <div class="respond-icon">🚒</div>
-        <div class="respond-title">RESPONSE DISPATCHED</div>
-        <div class="respond-node" id="respond-node-label">Node —</div>
-        <div class="respond-org-badge">
-            <div class="respond-org-label">Responding Organization</div>
-            <div class="respond-org-name" id="respond-org-display">—</div>
-        </div>
-        <div class="respond-msg">Your organization has been marked as the responding unit for this incident. Proceed to the location immediately.</div>
-        <button class="respond-close" onclick="document.getElementById('respond-modal').classList.remove('open')">ACKNOWLEDGE</button>
-    </div>
 </div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -914,8 +1067,9 @@ loadGatewaysOnMap();
 
 let nodeMarkers={},nodeData={},selectedNodeId=null;
 const OFFLINE_MIN=5;
-// Tracks incident status per node: 'active' | 'resolved' | null
-let _nodeIncidentStatus = {};
+
+// Track resolved incidents (node_id -> true = rescued, remove fire animation)
+let resolvedNodeIds = new Set();
 
 async function loadAndPlaceNodes(silent=false){
     try{
@@ -937,21 +1091,14 @@ async function loadAndPlaceNodes(silent=false){
             nodeData[nid]={...nodeData[nid]||{},...n,latitude:lat,longitude:lng,last_updated:lastUpdated,isUsingFallbackPosition:fallback};
             const lastTime=new Date(typeof lastUpdated==='string'?lastUpdated.replace(' ','T'):lastUpdated);
             const minAgo=(Date.now()-lastTime.getTime())/60000;
+            const offline=minAgo>OFFLINE_MIN;
             const pred=(n.ai_prediction||'normal').toLowerCase();
             const conf=n.confidence!=null?Number(n.confidence):0;
             const isFire=pred==='fire', isFalse=pred==='false', hiConf=conf>=0.70;
-            // Never mark a node offline while it has an ACTIVE (not resolved) fire/possible-fire alert
-            const incStatusNow = _nodeIncidentStatus[nid] || null;
-            const hasActiveAlert = (isFire || isFalse) && hiConf && (incStatusNow !== 'resolved');
-            const offline = !hasActiveAlert && minAgo > OFFLINE_MIN;
             const stColor=isFire?(hiConf?'#ff4757':'#ff9f1c'):isFalse?'#f1c40f':'#2ecc71';
             const stLabel=isFire?(hiConf?'🔥 FIRE':'Possible Fire'):isFalse?'⚠ Possible Fire':'Normal';
             const lastStr=isNaN(lastTime.getTime())?'—':lastTime.toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
             const posNote=fallback?`<div style="color:#ff9f1c;font-size:10px;margin-top:5px;">(Approx. position near gateway)</div>`:'';
-            // Show ✓ RESOLVED badge if this node's last incident was resolved
-            const resolvedBadge = (incStatusNow === 'resolved' && (isFire || isFalse))
-                ? `<span style="display:inline-block;margin-left:5px;font-size:9px;font-weight:700;padding:1px 6px;border-radius:5px;background:#0a2a0a;border:1px solid #2ecc7166;color:#2ecc71;vertical-align:middle;letter-spacing:.5px;">✓ RESOLVED</span>`
-                : '';
             const popupContent=`
                 <div class="popup-title">📡 ${nid}</div>
                 ${offline?`<div style="color:#ff9f1c;font-weight:600;margin:6px 0;font-size:12px;">⚠ OFFLINE · Last: ${lastStr}</div>`:''}
@@ -962,13 +1109,13 @@ async function loadAndPlaceNodes(silent=false){
                     Flame: <b style="color:#ff904f">${n.flame??'—'}</b><br>
                     Smoke: <b style="color:#ff904f">${n.smoke??'—'} ppm</b><br>
                     AI: <strong>${pred.toUpperCase()}</strong> (${(conf*100).toFixed(1)}%)
-                    <b style="color:${stColor}">${stLabel}</b>${resolvedBadge}
+                    <b style="color:${stColor}">${stLabel}</b>
                     <br><small style="color:${offline?'#ff9f1c':'#7a5a4a'};">Updated: ${lastStr}</small>
                 </div>
                 <button class="popup-history-btn" onclick="(function(){window._flames_map && window._flames_map.closePopup(); openHistoryPanel('${nid}');})()">📊 View History</button>`;
 
-            // Fire icon only shows when: not offline, AI=fire, high confidence, AND incident not resolved
-            const isFireActive = (!offline && isFire && hiConf && incStatusNow !== 'resolved');
+            // If node is rescued, don't show fire animation
+            const isFireActive = (!offline && isFire && hiConf && !resolvedNodeIds.has(nid));
             const activeIcon   = isFireActive ? makeFireNodeIcon() : nodeIcon;
 
             if(nodeMarkers[nid]){
@@ -1012,7 +1159,7 @@ function connectWebSocket(){
                 loadAndPlaceNodes(true);
                 if(_hm_node&&(!msg.node_id||msg.node_id===_hm_node))fetchHistory();
             }
-            if(msg.type==='incident_update')loadLiveIncidents(true);
+            if(msg.type==='incident_update'){loadLiveIncidents(true);}
             if(msg.type==='gateway_update'){
                 loadGatewaysOnMap(true);
                 if(document.getElementById('admin-modal').style.display==='flex')loadOrganizations();
@@ -1108,31 +1255,28 @@ async function calculateRoute(start,end){
 }
 function routeToIncident(lat,lng){const gw=getPrimaryGateway();waypoints=[gw,{lat,lng}];routeMarkers.push(L.marker([gw.lat,gw.lng],{icon:greenIcon}).addTo(map));routeMarkers.push(L.marker([lat,lng],{icon:redIcon}).addTo(map));calculateRoute(gw,{lat,lng});map.flyTo([lat,lng],14);}
 
+// ====================== INCIDENT TABS ======================
+let _currentIncidentTab = 'live';
+function switchIncidentTab(tab) {
+    _currentIncidentTab = tab;
+    document.getElementById('tab-live').classList.toggle('active', tab==='live');
+    document.getElementById('tab-resolved').classList.toggle('active', tab==='resolved');
+    document.getElementById('incident-list').style.display = tab==='live' ? 'flex' : 'none';
+    document.getElementById('resolved-list').style.display = tab==='resolved' ? 'flex' : 'none';
+    if (tab==='resolved') loadResolvedIncidents();
+    const titleEl = document.getElementById('incidents-panel-title');
+    titleEl.textContent = tab==='live' ? 'Live Incidents' : 'Resolved Incidents';
+}
+
 // ====================== LIVE INCIDENTS ======================
+let _liveIncidentsCache = [];
 async function loadLiveIncidents(silent=false){
     try{
-        // Fetch active incidents AND recent history to know resolved status per node
-        const [activeRes, histRes] = await Promise.all([
-            fetch(`${API_BASE()}/incidents/active`,{headers:authHeader(),cache:'no-cache'}),
-            fetch(`${API_BASE()}/incidents/history?limit=50`,{headers:authHeader(),cache:'no-cache'})
-        ]);
-        if(activeRes.status===401){window.location.href='login.html';return;}
-        if(!activeRes.ok)throw new Error(`HTTP ${activeRes.status}`);
-        const incidents=await activeRes.json();
-
-        // Build _nodeIncidentStatus: active nodes win over resolved
-        const newStatus = {};
-        if(histRes.ok){
-            const hist = await histRes.json();
-            // Process oldest first so newer entries overwrite
-            [...hist].reverse().forEach(h=>{
-                newStatus[h.node_id] = h.status; // 'active' or 'resolved'
-            });
-        }
-        // Active incidents always override
-        incidents.forEach(inc=>{ newStatus[inc.node_id] = 'active'; });
-        _nodeIncidentStatus = newStatus;
-
+        const res=await fetch(`${API_BASE()}/incidents/active`,{headers:authHeader(),cache:'no-cache'});
+        if(res.status===401){window.location.href='login.html';return;}
+        if(!res.ok)throw new Error(`HTTP ${res.status}`);
+        const incidents=await res.json();
+        _liveIncidentsCache = incidents;
         const listEl=document.getElementById('incident-list');
         listEl.innerHTML='';
         if(!incidents.length){
@@ -1143,27 +1287,27 @@ async function loadLiveIncidents(silent=false){
                 const isFire    = pred==='fire';
                 const confColor = inc.confidence_pct>=70?'var(--green)':inc.confidence_pct>=40?'var(--yellow)':'var(--orange)';
                 const predLabel = isFire?'🔥 FIRE':'⚠ POSSIBLE';
-                const btnBg     = isFire?'#c43d0066':'#7a5a0066';
-                const btnBorder = isFire?'var(--accent)':'var(--yellow)';
-                const btnEmoji  = isFire?'🔥':'⚠';
+                // Check rescue status for display
+                const rescueInfo = _incidentRescueMap[inc.incident_id];
+                const isRescued = rescueInfo && rescueInfo.status === 'rescued';
+                const isEnRoute = rescueInfo && rescueInfo.status === 'en_route';
+
                 listEl.innerHTML+=`
-                <div class="incident-card" id="incident-card-${inc.incident_id}" data-node-id="${inc.node_id}">
+                <div class="incident-card" id="incident-card-${inc.incident_id}">
                     <div class="incident-title">${inc.location_name||`Node ${inc.node_id}`}</div>
-                    <div class="incident-meta">Status: <span class="${inc.status_class}">${inc.status}</span></div>
+                    <div class="incident-meta">Status: <span class="${inc.status_class}">${inc.status}</span>${isEnRoute?` · <span style="color:#f1c40f;font-weight:600;">🚒 En Route</span>`:isRescued?` · <span style="color:#2ecc71;font-weight:600;">✓ Rescued</span>`:''}</div>
                     <div class="incident-meta">AI: <strong>${predLabel}</strong> <span style="color:${confColor};font-weight:600;">(${inc.confidence_pct}%)</span></div>
                     <div class="incident-meta">Started: <span style="color:var(--text);">${inc.started_at}</span></div>
-                    <div class="incident-meta">Updated: <span style="color:var(--text);">${inc.timestamp}</span></div>
-                    ${inc.assigned_team?`<div class="incident-meta">Team: ${inc.assigned_team}</div>`:''}
-                    <button class="btn-route"
-                        style="background:${btnBg};border-color:${btnBorder};"
-                        onclick="routeToIncident(${inc.latitude},${inc.longitude})">
-                        ${btnEmoji} Show on Map &amp; Route
-                    </button>
-                    <div class="incident-action-row">
-                        <button class="btn-respond" onclick="respondToIncident('${inc.incident_id}','${inc.node_id}')">
-                            🚒 Respond
+                    ${rescueInfo?`<div class="incident-meta" style="color:#6db8ff;font-size:10px;">🏢 ${rescueInfo.orgName}${rescueInfo.dispatchTime?' · Dispatched: '+rescueInfo.dispatchTime:''}</div>`:''}
+                    <div class="incident-btn-row1">
+                        <button class="btn-show-map" onclick="openIncidentMapModal(${JSON.stringify(inc).replace(/"/g,'&quot;')})">🗺 Show Map &amp; Route</button>
+                        <button class="btn-details" onclick="openIncidentDetailsModal(${inc.incident_id})">📋 Details</button>
+                    </div>
+                    <div class="incident-action-row" style="margin-top:5px;">
+                        <button class="btn-respond" onclick="openRescueModal(${inc.incident_id},'${inc.node_id}','${inc.location_name||'Node '+inc.node_id}')">
+                            🚒 Rescue
                         </button>
-                        <button class="btn-resolve" id="resolve-btn-${inc.incident_id}" onclick="resolveIncident(${inc.incident_id})">
+                        <button class="btn-resolve" id="resolve-btn-${inc.incident_id}" onclick="resolveIncident(${inc.incident_id},'${inc.node_id}')">
                             ✓ Resolve
                         </button>
                     </div>
@@ -1174,8 +1318,6 @@ async function loadLiveIncidents(silent=false){
         const latestTs=incidents.length?incidents[0].timestamp:null;
         const updatedStr=latestTs?new Date(latestTs.replace(' ','T')).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
         document.getElementById('incidents-last-update').textContent=`Updated: ${updatedStr}`;
-        // Refresh node markers so popup resolved badges update immediately
-        loadAndPlaceNodes(true);
     }catch(err){
         if(!silent)document.getElementById('incident-list').innerHTML='<div class="node-placeholder">Error loading incidents</div>';
     }
@@ -1183,15 +1325,158 @@ async function loadLiveIncidents(silent=false){
 loadLiveIncidents();
 setInterval(()=>loadLiveIncidents(true),20000);
 
-// ====================== RESPOND & RESOLVE ======================
-function respondToIncident(incidentId, nodeId) {
-    const orgName = document.getElementById('side-org-name')?.textContent || '—';
-    document.getElementById('respond-node-label').textContent = `Incident on ${nodeId}`;
-    document.getElementById('respond-org-display').textContent = orgName;
-    document.getElementById('respond-modal').classList.add('open');
+// ====================== RESOLVED INCIDENTS ======================
+async function loadResolvedIncidents() {
+    const listEl = document.getElementById('resolved-list');
+    listEl.innerHTML = '<div class="node-placeholder">Loading…</div>';
+    try {
+        // Try fetching resolved incidents from API
+        const res = await fetch(`${API_BASE()}/incidents/resolved`, {headers:authHeader(),cache:'no-cache'});
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const incidents = await res.json();
+        if (!incidents.length) {
+            listEl.innerHTML='<div class="node-placeholder">No resolved incidents yet</div>';
+            return;
+        }
+        listEl.innerHTML = '';
+        incidents.forEach(inc => {
+            const rescueInfo = _incidentRescueMap[inc.incident_id];
+            listEl.innerHTML += `
+            <div class="resolved-card">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;margin-bottom:4px;">
+                    <div class="resolved-card-title">${inc.location_name||`Node ${inc.node_id}`}</div>
+                    <span class="resolved-tag">✓ RESOLVED</span>
+                </div>
+                <div class="resolved-card-meta">
+                    📅 Started: ${inc.started_at||'—'}<br>
+                    ✓ Resolved: ${inc.resolved_at||inc.timestamp||'—'}<br>
+                    📡 Node: ${inc.node_id||'—'}<br>
+                    ${rescueInfo?`🏢 Responded by: <span style="color:#6db8ff;">${rescueInfo.orgName}</span><br>`:''}
+                    <button style="margin-top:6px;width:100%;padding:5px;background:#2a0a0555;border:1px solid #4a1a0a44;border-radius:6px;color:#9a6a5a;font-size:10px;cursor:pointer;font-family:Arial,sans-serif;transition:.2s;" 
+                        onmouseover="this.style.background='#3a1a0a55';this.style.color='var(--text)'"
+                        onmouseout="this.style.background='#2a0a0555';this.style.color='#9a6a5a'"
+                        onclick="openIncidentDetailsModal(${inc.incident_id})">
+                        📋 View Full Details
+                    </button>
+                </div>
+            </div>`;
+        });
+    } catch(err) {
+        // Fallback: show locally resolved ones from our rescue map
+        const local = Object.entries(_incidentRescueMap).filter(([,v])=>v.status==='rescued');
+        if (!local.length) { listEl.innerHTML='<div class="node-placeholder">No resolved incidents yet</div>'; return; }
+        listEl.innerHTML = '';
+        local.forEach(([incId, info]) => {
+            listEl.innerHTML += `
+            <div class="resolved-card">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;margin-bottom:4px;">
+                    <div class="resolved-card-title">${info.locationName||`Incident #${incId}`}</div>
+                    <span class="resolved-tag">✓ RESOLVED</span>
+                </div>
+                <div class="resolved-card-meta">
+                    🏢 Responded by: <span style="color:#6db8ff;">${info.orgName}</span><br>
+                    ⏱ Dispatched: ${info.dispatchTime||'—'}<br>
+                    ✓ Rescued: ${info.rescuedTime||'—'}
+                </div>
+            </div>`;
+        });
+    }
 }
 
-async function resolveIncident(incidentId) {
+// ====================== RESCUE / RESPOND SYSTEM ======================
+// _incidentRescueMap: incidentId -> { orgName, orgId, status: 'en_route'|'rescued', dispatchTime, rescuedTime, nodeId, locationName }
+let _incidentRescueMap = {};
+let _pendingRescueIncidentId = null;
+let _availableOrganizations = [];
+
+async function openRescueModal(incidentId, nodeId, locationName) {
+    _pendingRescueIncidentId = incidentId;
+    document.getElementById('rescue-modal-sub').textContent = `Dispatching rescue to: ${locationName}`;
+    // Clear selection
+    document.querySelectorAll('.rescue-org-item').forEach(el => el.classList.remove('selected'));
+    
+    // Load organizations
+    const listEl = document.getElementById('rescue-org-list');
+    listEl.innerHTML = '<div style="color:#5a3a2a;text-align:center;padding:16px;">Loading organizations…</div>';
+    document.getElementById('rescue-modal').classList.add('open');
+    
+    try {
+        const res = await fetch(`${API_BASE()}/organizations`, {headers:authHeader()});
+        if (!res.ok) throw new Error('Failed to load orgs');
+        _availableOrganizations = await res.json();
+        listEl.innerHTML = '';
+        if (!_availableOrganizations.length) {
+            listEl.innerHTML = '<div style="color:#5a3a2a;text-align:center;padding:16px;">No organizations registered</div>';
+            return;
+        }
+        _availableOrganizations.forEach((org, i) => {
+            const item = document.createElement('div');
+            item.className = 'rescue-org-item';
+            item.dataset.orgId = org.id;
+            item.dataset.orgName = org.name;
+            item.innerHTML = `
+                <div class="rescue-org-icon">🏢</div>
+                <div>
+                    <div class="rescue-org-name">${org.name}</div>
+                    <div class="rescue-org-meta">ID: ${org.id}${org.invite_code?' · Code: '+org.invite_code:''}</div>
+                </div>`;
+            item.addEventListener('click', () => {
+                document.querySelectorAll('.rescue-org-item').forEach(el => el.classList.remove('selected'));
+                item.classList.add('selected');
+            });
+            listEl.appendChild(item);
+        });
+    } catch(err) {
+        listEl.innerHTML = `<div style="color:#ff4757;text-align:center;padding:16px;">Failed: ${err.message}</div>`;
+    }
+}
+
+function closeRescueModal() {
+    document.getElementById('rescue-modal').classList.remove('open');
+    _pendingRescueIncidentId = null;
+}
+
+async function confirmRescueDispatch() {
+    const selected = document.querySelector('.rescue-org-item.selected');
+    if (!selected) { alert('Please select an organization.'); return; }
+    const orgId = selected.dataset.orgId;
+    const orgName = selected.dataset.orgName;
+    const incidentId = _pendingRescueIncidentId;
+    if (!incidentId) return;
+
+    // Find the incident data
+    const inc = _liveIncidentsCache.find(i => i.incident_id == incidentId);
+    const now = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    
+    // Save rescue status locally (and attempt API call)
+    _incidentRescueMap[incidentId] = {
+        orgId, orgName,
+        status: 'en_route',
+        dispatchTime: now,
+        rescuedTime: null,
+        nodeId: inc?.node_id,
+        locationName: inc?.location_name || `Incident #${incidentId}`
+    };
+
+    // Try to notify via API (optional endpoint)
+    try {
+        await fetch(`${API_BASE()}/incidents/${incidentId}/respond`, {
+            method: 'PATCH',
+            headers: {...authHeader(),'Content-Type':'application/json'},
+            body: JSON.stringify({organization_id: orgId, organization_name: orgName})
+        });
+    } catch {} // Silently fail if endpoint doesn't exist
+
+    closeRescueModal();
+    // Show dispatch confirmation
+    document.getElementById('respond-node-label').textContent = `Incident on ${inc?.node_id || incidentId}`;
+    document.getElementById('respond-org-display').textContent = orgName;
+    document.getElementById('respond-modal').classList.add('open');
+    loadLiveIncidents(true);
+}
+
+// ====================== RESOLVE INCIDENT ======================
+async function resolveIncident(incidentId, nodeId) {
     const btn = document.getElementById(`resolve-btn-${incidentId}`);
     if (btn) { btn.disabled = true; btn.textContent = 'Resolving…'; }
     try {
@@ -1202,25 +1487,287 @@ async function resolveIncident(incidentId) {
         });
         if (!res.ok) throw new Error((await res.json()).detail || 'Failed');
 
-        // Immediately mark node as resolved so the popup badge shows right away
+        // Mark as rescued in our local map
+        const now = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+        if (_incidentRescueMap[incidentId]) {
+            _incidentRescueMap[incidentId].status = 'rescued';
+            _incidentRescueMap[incidentId].rescuedTime = now;
+        } else {
+            const inc = _liveIncidentsCache.find(i => i.incident_id == incidentId);
+            _incidentRescueMap[incidentId] = {
+                orgId: null, orgName: 'Manual Resolve',
+                status: 'rescued', dispatchTime: null, rescuedTime: now,
+                nodeId: nodeId, locationName: inc?.location_name
+            };
+        }
+        // Remove fire animation from node
+        if (nodeId) resolvedNodeIds.add(nodeId);
+        
         const card = document.getElementById(`incident-card-${incidentId}`);
-        const resolvedNodeId = card ? card.dataset.nodeId : null;
-        if (resolvedNodeId) _nodeIncidentStatus[resolvedNodeId] = 'resolved';
-
         if (card) {
             card.style.transition = 'opacity .4s, transform .4s';
             card.style.opacity = '0';
             card.style.transform = 'translateX(20px)';
-            setTimeout(() => loadLiveIncidents(true), 450);
+            setTimeout(() => {
+                loadLiveIncidents(true);
+                loadAndPlaceNodes(true); // Refresh map to remove fire icon
+            }, 450);
         } else {
             loadLiveIncidents(true);
+            loadAndPlaceNodes(true);
         }
-        // Refresh markers so popup badge appears immediately
-        loadAndPlaceNodes(true);
     } catch (err) {
         if (btn) { btn.disabled = false; btn.textContent = '✓ Resolve'; }
         alert(`Could not resolve: ${err.message}`);
     }
+}
+
+// ====================== INCIDENT MAP MODAL ======================
+let _incDetailMap = null, _incDetailRouteLayer = null, _incDetailMarkers = [];
+
+function openIncidentMapModal(inc) {
+    const modal = document.getElementById('incident-map-modal');
+    modal.classList.add('open');
+    
+    const rescueInfo = _incidentRescueMap[inc.incident_id];
+    const isRescued = rescueInfo && rescueInfo.status === 'rescued';
+    const isEnRoute = rescueInfo && rescueInfo.status === 'en_route';
+    const gw = getPrimaryGateway();
+    
+    // Rough distance & ETA
+    const distKm = calcDistance(gw.lat, gw.lng, parseFloat(inc.latitude), parseFloat(inc.longitude));
+    const etaMin = Math.round(distKm / 0.4); // ~24 km/h city speed
+    
+    const pred = (inc.ai_prediction||'').toLowerCase();
+    const isFire = pred === 'fire';
+
+    // Build sidebar
+    const sidebar = document.getElementById('inc-map-sidebar');
+    sidebar.innerHTML = `
+        <div class="inc-map-info-group">
+            <div class="inc-map-info-label">Node Status</div>
+            <div class="inc-map-info-val inc-map-status-${isRescued?'resolved':'active'}">${isRescued?'✓ RESCUED':isFire?'🔥 FIRE ACTIVE':'⚠ ACTIVE'}</div>
+        </div>
+        <div class="inc-map-info-group">
+            <div class="inc-map-info-label">Location</div>
+            <div class="inc-map-info-val" style="font-size:12px;">${inc.location_name||`Node ${inc.node_id}`}</div>
+        </div>
+        <div class="inc-route-stats">
+            <div class="inc-route-stat">
+                <div class="inc-route-stat-val">${distKm.toFixed(1)} km</div>
+                <div class="inc-route-stat-label">Distance</div>
+            </div>
+            <div class="inc-route-stat">
+                <div class="inc-route-stat-val">~${etaMin} min</div>
+                <div class="inc-route-stat-label">ETA</div>
+            </div>
+        </div>
+        ${rescueInfo ? `
+        <div class="inc-rescue-status">
+            <div class="inc-rescue-status-label">Rescue Status</div>
+            <div class="inc-rescue-org-name">🏢 ${rescueInfo.orgName}</div>
+            <div class="inc-rescue-time">Dispatched: ${rescueInfo.dispatchTime||'—'}</div>
+            <div class="inc-rescue-status-badge ${rescueInfo.status==='rescued'?'rescued':'en-route'}">
+                ${rescueInfo.status==='rescued'?'✓ RESCUED':'🚒 EN ROUTE'}
+            </div>
+        </div>` : ''}
+        <button class="inc-map-rescue-btn" onclick="closeIncidentMapModal();openRescueModal(${inc.incident_id},'${inc.node_id}','${(inc.location_name||'Node '+inc.node_id).replace(/'/g,"\\'")}')">🚒 DISPATCH RESCUE</button>
+        <button class="inc-map-resolve-btn" id="inc-map-resolve-${inc.incident_id}" onclick="closeIncidentMapModal();resolveIncident(${inc.incident_id},'${inc.node_id}')" ${isRescued?'disabled':''}>✓ MARK RESOLVED</button>
+    `;
+
+    // Init or re-init the detail map
+    setTimeout(() => {
+        if (_incDetailMap) {
+            _incDetailMap.remove();
+            _incDetailMap = null;
+        }
+        _incDetailMarkers.forEach(m => { try{ m.remove(); } catch{} });
+        _incDetailMarkers = [];
+        if (_incDetailRouteLayer) { try{ _incDetailRouteLayer.remove(); } catch{} _incDetailRouteLayer = null; }
+        
+        const incLat = parseFloat(inc.latitude), incLng = parseFloat(inc.longitude);
+        _incDetailMap = L.map('incident-detail-map', {zoomControl:true, attributionControl:true})
+            .setView([incLat, incLng], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(_incDetailMap);
+        
+        // Incident marker with popup
+        const incMarker = L.marker([incLat, incLng], {icon: makeFireNodeIcon()}).addTo(_incDetailMap);
+        incMarker.bindPopup(`<div style="font-weight:700;color:#ff9055;">🔥 Incident Location</div><div style="font-size:11px;color:#9a6a5a;">${inc.location_name||`Node ${inc.node_id}`}</div>`).openPopup();
+        _incDetailMarkers.push(incMarker);
+        
+        // Gateway/start marker
+        const gwMarker = L.marker([gw.lat, gw.lng], {icon: greenIcon}).addTo(_incDetailMap);
+        gwMarker.bindPopup('<div style="font-weight:700;color:#2ecc71;">🏠 Gateway / Start Point</div>');
+        _incDetailMarkers.push(gwMarker);
+        
+        // Auto-calculate and draw route
+        calculateDetailRoute(gw, {lat: incLat, lng: incLng});
+    }, 150);
+}
+
+async function calculateDetailRoute(start, end) {
+    try {
+        const res = await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json','Authorization':ORS_API_KEY},
+            body: JSON.stringify({coordinates:[[start.lng,start.lat],[end.lng,end.lat]],preference:'fastest',units:'m'})
+        });
+        if (!res.ok) throw new Error('Route API error');
+        const data = await res.json();
+        const coords = data.features[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+        const summary = data.features[0].properties.summary;
+        if (_incDetailRouteLayer) _incDetailRouteLayer.remove();
+        _incDetailRouteLayer = L.polyline(coords, {color:'#ff4400',weight:5,opacity:.9,dashArray:'8,6'}).addTo(_incDetailMap);
+        _incDetailMap.fitBounds(_incDetailRouteLayer.getBounds(), {padding:[20,20]});
+        // Update stats in sidebar
+        const dist = (summary.distance/1000).toFixed(2);
+        const time = Math.round(summary.duration/60);
+        const statEls = document.querySelectorAll('.inc-route-stat-val');
+        if (statEls[0]) statEls[0].textContent = dist + ' km';
+        if (statEls[1]) statEls[1].textContent = '~' + time + ' min';
+    } catch(e) {
+        console.warn('Detail route calc failed:', e.message);
+    }
+}
+
+function closeIncidentMapModal() {
+    document.getElementById('incident-map-modal').classList.remove('open');
+    if (_incDetailMap) { _incDetailMap.remove(); _incDetailMap = null; }
+    _incDetailMarkers = [];
+    _incDetailRouteLayer = null;
+}
+document.getElementById('incident-map-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('incident-map-modal')) closeIncidentMapModal();
+});
+
+// ====================== INCIDENT DETAILS MODAL ======================
+async function openIncidentDetailsModal(incidentId) {
+    document.getElementById('incident-details-modal').classList.add('open');
+    const body = document.getElementById('inc-details-body');
+    body.innerHTML = '<div style="text-align:center;padding:24px;color:#5a3a2a;">Loading…</div>';
+
+    // Find incident in cache
+    const inc = _liveIncidentsCache.find(i => i.incident_id == incidentId);
+    const rescueInfo = _incidentRescueMap[incidentId];
+    
+    let resolvedData = null;
+    try {
+        const res = await fetch(`${API_BASE()}/incidents/${incidentId}`, {headers:authHeader()});
+        if (res.ok) resolvedData = await res.json();
+    } catch {}
+
+    const data = resolvedData || inc || {};
+    const pred = (data.ai_prediction||'').toLowerCase();
+    const isFire = pred === 'fire';
+    const isRescued = rescueInfo && rescueInfo.status === 'rescued';
+    const isEnRoute = rescueInfo && rescueInfo.status === 'en_route';
+
+    body.innerHTML = `
+        <div class="inc-details-section">
+            <div class="inc-details-section-title">Incident Overview</div>
+            <div class="inc-details-row">
+                <span class="inc-details-row-label">Location</span>
+                <span class="inc-details-row-val">${data.location_name||`Node ${data.node_id}`}</span>
+            </div>
+            <div class="inc-details-row">
+                <span class="inc-details-row-label">Node ID</span>
+                <span class="inc-details-row-val" style="font-family:monospace;">${data.node_id||'—'}</span>
+            </div>
+            <div class="inc-details-row">
+                <span class="inc-details-row-label">AI Detection</span>
+                <span class="inc-details-row-val" style="color:${isFire?'var(--red)':'var(--yellow)'};">${isFire?'🔥 FIRE DETECTED':'⚠ Possible Fire'}</span>
+            </div>
+            <div class="inc-details-row">
+                <span class="inc-details-row-label">Confidence</span>
+                <span class="inc-details-row-val">${data.confidence_pct??'—'}%</span>
+            </div>
+            <div class="inc-details-row">
+                <span class="inc-details-row-label">Status</span>
+                <span class="inc-details-row-val">${isRescued?'<span style="color:#2ecc71;">✓ Rescued</span>':isEnRoute?'<span style="color:#f1c40f;">🚒 En Route</span>':'<span style="color:#ff4757;">Active</span>'}</span>
+            </div>
+            <div class="inc-details-row">
+                <span class="inc-details-row-label">Started</span>
+                <span class="inc-details-row-val" style="font-size:10px;">${data.started_at||'—'}</span>
+            </div>
+            <div class="inc-details-row">
+                <span class="inc-details-row-label">Last Updated</span>
+                <span class="inc-details-row-val" style="font-size:10px;">${data.timestamp||'—'}</span>
+            </div>
+        </div>
+
+        <div class="inc-details-section">
+            <div class="inc-details-section-title">Response Timeline</div>
+            <div class="inc-response-timeline">
+                <div class="inc-timeline-item">
+                    <div class="inc-timeline-dot incident">🔥</div>
+                    <div class="inc-timeline-content">
+                        <div class="inc-timeline-action">Fire Detected</div>
+                        <div class="inc-timeline-time">${data.started_at||'—'}</div>
+                    </div>
+                </div>
+                ${rescueInfo ? `
+                <div class="inc-timeline-item">
+                    <div class="inc-timeline-dot dispatched">🚨</div>
+                    <div class="inc-timeline-content">
+                        <div class="inc-timeline-action">Rescue Dispatched</div>
+                        <div class="inc-timeline-time">${rescueInfo.dispatchTime||'—'}</div>
+                        <div class="inc-timeline-org">${rescueInfo.orgName}</div>
+                    </div>
+                </div>
+                <div class="inc-timeline-item">
+                    <div class="inc-timeline-dot en-route">🚒</div>
+                    <div class="inc-timeline-content">
+                        <div class="inc-timeline-action">En Route to Scene</div>
+                        <div class="inc-timeline-time">${rescueInfo.dispatchTime||'—'}</div>
+                        <div class="inc-timeline-org">${rescueInfo.orgName}</div>
+                    </div>
+                </div>
+                ${rescueInfo.status==='rescued'?`
+                <div class="inc-timeline-item">
+                    <div class="inc-timeline-dot rescued">✓</div>
+                    <div class="inc-timeline-content">
+                        <div class="inc-timeline-action">Incident Resolved</div>
+                        <div class="inc-timeline-time">${rescueInfo.rescuedTime||'—'}</div>
+                        <div class="inc-timeline-org">${rescueInfo.orgName}</div>
+                    </div>
+                </div>`:''}`
+                : '<div class="no-response-msg">No rescue dispatched yet</div>'}
+            </div>
+        </div>
+
+        ${data.temperature||data.humidity||data.smoke ? `
+        <div class="inc-details-section">
+            <div class="inc-details-section-title">Sensor Readings at Incident</div>
+            ${data.temperature!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Temperature</span><span class="inc-details-row-val" style="color:#ff904f;">${data.temperature}°C</span></div>`:''}
+            ${data.humidity!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Humidity</span><span class="inc-details-row-val" style="color:#6db8ff;">${data.humidity}%</span></div>`:''}
+            ${data.smoke!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Smoke</span><span class="inc-details-row-val">${data.smoke} ppm</span></div>`:''}
+            ${data.flame!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Flame Sensor</span><span class="inc-details-row-val">${data.flame}</span></div>`:''}
+        </div>` : ''}
+    `;
+}
+
+function closeIncidentDetailsModal() {
+    document.getElementById('incident-details-modal').classList.remove('open');
+}
+document.getElementById('incident-details-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('incident-details-modal')) closeIncidentDetailsModal();
+});
+
+// ====================== HELPER: Distance calc ======================
+function calcDistance(lat1, lng1, lat2, lng2) {
+    const R = 6371;
+    const dLat = (lat2-lat1)*Math.PI/180;
+    const dLon = (lng2-lng1)*Math.PI/180;
+    const a = Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+// ====================== RESPOND MODAL (legacy, kept for compat) ======================
+function respondToIncident(incidentId, nodeId) {
+    const orgName = document.getElementById('side-org-name')?.textContent || '—';
+    document.getElementById('respond-node-label').textContent = `Incident on ${nodeId}`;
+    document.getElementById('respond-org-display').textContent = orgName;
+    document.getElementById('respond-modal').classList.add('open');
 }
 
 // ====================== HISTORY PANEL ======================
