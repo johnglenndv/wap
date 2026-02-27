@@ -868,6 +868,7 @@ function adminToast(msg,type='info'){
 // MAP
 const MAP_CENTER=[16.0435,120.3351];
 const map=L.map('flames-map',{zoomControl:false,attributionControl:false}).setView(MAP_CENTER,14);
+window._flames_map = map;
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
 document.getElementById('home-btn').addEventListener('click',()=>map.flyTo(MAP_CENTER,14));
 document.getElementById('locate-btn').addEventListener('click',()=>navigator.geolocation.getCurrentPosition(p=>map.flyTo([p.coords.latitude,p.coords.longitude],16),()=>alert('Location access denied.')));
@@ -896,7 +897,7 @@ async function loadGatewaysOnMap(silent=false){
     }catch(err){if(!silent)console.error('Failed to load gateways:',err);}
 }
 function getPrimaryGateway(){const gw=gatewayData.find(g=>parseFloat(g.latitude)&&parseFloat(g.longitude));return gw?{lat:parseFloat(gw.latitude),lng:parseFloat(gw.longitude)}:{lat:16.046962,lng:120.342117};}
-loadGatewaysOnMap();setInterval(()=>loadGatewaysOnMap(true),30000);
+loadGatewaysOnMap();
 
 let nodeMarkers={},nodeData={},selectedNodeId=null;
 const OFFLINE_MIN=5;
@@ -940,14 +941,15 @@ async function loadAndPlaceNodes(silent=false){
                     AI: <strong>${pred.toUpperCase()}</strong> (${(conf*100).toFixed(1)}%)
                     <b style="color:${stColor}">${stLabel}</b>
                     <br><small style="color:${offline?'#ff9f1c':'#7a5a4a'};">Updated: ${lastStr}</small>
-                </div>`;
+                </div>
+                <button class="popup-history-btn" onclick="(function(){window._flames_map && window._flames_map.closePopup(); openHistoryPanel('${nid}');})()">📊 View History</button>`;
             if(nodeMarkers[nid]){nodeMarkers[nid].setLatLng([lat,lng]).setPopupContent(popupContent);nodeMarkers[nid].getElement().style.opacity=offline?0.55:1;}
             else{const marker=L.marker([lat,lng],{icon:nodeIcon,opacity:offline?0.55:1}).addTo(map);marker.bindPopup(popupContent);marker.on('click',()=>{selectedNodeId=nid;updateSensorBar(nodeData[nid],nid);});nodeMarkers[nid]=marker;}
         });
         if(selectedNodeId&&nodeData[selectedNodeId])updateSensorBar(nodeData[selectedNodeId],selectedNodeId);
     }catch(err){console.error('Failed to load nodes:',err);if(!silent)alert('Could not load sensor nodes.');}
 }
-loadAndPlaceNodes();setInterval(()=>loadAndPlaceNodes(true),15000);
+loadAndPlaceNodes();
 
 // WEBSOCKET
 function connectWebSocket(){
@@ -960,10 +962,16 @@ function connectWebSocket(){
     ws.onmessage=event=>{
         try{
             const msg=JSON.parse(event.data);
-            loadAndPlaceNodes(true);
+            // Reload only what changed
+            if(msg.type==='sensor_data'||msg.type==='new_reading'||msg.type==='node_update'){
+                loadAndPlaceNodes(true);
+                if(_hm_node&&(!msg.node_id||msg.node_id===_hm_node))fetchHistory();
+            }
             if(msg.type==='incident_update')loadLiveIncidents(true);
-            if(msg.type==='gateway_update'){loadGatewaysOnMap(true);if(document.getElementById('admin-modal').style.display==='flex')loadOrganizations();}
-            if(msg.type==='sensor_data'||msg.type==='new_reading'){if(_hm_node&&(msg.node_id===_hm_node||!msg.node_id))fetchHistory();}
+            if(msg.type==='gateway_update'){
+                loadGatewaysOnMap(true);
+                if(document.getElementById('admin-modal').style.display==='flex')loadOrganizations();
+            }
         }catch{}
     };
     return ws;
@@ -1071,7 +1079,7 @@ async function loadLiveIncidents(silent=false){
         document.getElementById('incidents-last-update').textContent=`Updated: ${updatedStr}`;
     }catch(err){if(!silent)document.getElementById('incident-list').innerHTML='<div class="node-placeholder">Error loading incidents</div>';}
 }
-loadLiveIncidents();setInterval(()=>loadLiveIncidents(true),20000);
+loadLiveIncidents();
 
 // HISTORY PANEL
 let _hm_node=null,_hm_limit=50,_hm_metric='temperature',_hm_rows_cache=[];
@@ -1278,17 +1286,7 @@ async function adminDeleteOrganization(orgId) {
     } catch(err) { adminToast(`Delete failed: ${err.message}`, 'error'); }
 }
 
-// NODE POPUP → HISTORY BUTTON
-map.on('popupopen',e=>{
-    const c=e.popup.getElement();if(!c)return;
-    const t=c.querySelector('.popup-title');if(!t)return;
-    const match=(t.textContent||'').match(/📡\s*(.+)/);if(!match)return;
-    const nodeId=match[1].trim();
-    if(c.querySelector('.popup-history-btn'))return;
-    const btn=document.createElement('button');btn.className='popup-history-btn';btn.innerHTML='📊 View History';
-    btn.onclick=()=>{map.closePopup();openHistoryPanel(nodeId);};
-    c.querySelector('.leaflet-popup-content').appendChild(btn);
-});
+// NODE POPUP → HISTORY BUTTON now embedded directly in popupContent string inside loadAndPlaceNodes
 </script>
 </body>
 </html>
