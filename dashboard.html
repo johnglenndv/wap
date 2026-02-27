@@ -200,19 +200,12 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .txt-contained{color:var(--yellow);font-weight:700;}
 .txt-resolved{color:var(--green);font-weight:700;}
 
-/* ===================== INCIDENT ACTION BUTTONS (2 rows) ===================== */
+/* ===================== INCIDENT ACTION BUTTONS — simplified, only Details ===================== */
 .incident-btn-row1{display:flex;gap:5px;margin-top:6px;}
-.incident-btn-row2{display:flex;gap:5px;margin-top:5px;}
 .btn-show-map{flex:1;padding:6px;background:#1a1a3a66;border:1px solid #3d6fff;color:#7db8ff;border-radius:7px;font-family:Arial,sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:.3s;letter-spacing:.5px;}
 .btn-show-map:hover{background:#3d6fff33;box-shadow:0 0 10px #3d6fff44;}
 .btn-details{flex:1;padding:6px;background:#1a2a1a55;border:1px solid #f1c40f88;color:#f1c40f;border-radius:7px;font-family:Arial,sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:.3s;letter-spacing:.5px;}
 .btn-details:hover{background:#f1c40f22;box-shadow:0 0 10px #f1c40f44;}
-.incident-action-row{display:flex;gap:6px;margin-top:0;}
-.btn-respond{flex:1;padding:6px;background:#1a3a6655;border:1px solid #3d9cff;color:#6db8ff;border-radius:7px;font-family:Arial,sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:.3s;letter-spacing:.5px;}
-.btn-respond:hover{background:#3d9cff33;box-shadow:0 0 10px #3d9cff44;}
-.btn-resolve{flex:1;padding:6px;background:#0a1a0a55;border:1px solid #2ecc71;color:#2ecc71;border-radius:7px;font-family:Arial,sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:.3s;letter-spacing:.5px;}
-.btn-resolve:hover{background:#2ecc7133;box-shadow:0 0 10px #2ecc7144;}
-.btn-resolve:disabled{opacity:.5;cursor:not-allowed;}
 
 /* ===================== INCIDENT HISTORY TAB ===================== */
 .incidents-tab-row{display:flex;gap:4px;margin-bottom:8px;flex-shrink:0;}
@@ -335,15 +328,23 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .inc-timeline-org{font-size:10px;color:#6db8ff;}
 .no-response-msg{color:#5a3a2a;font-size:12px;text-align:center;padding:16px;}
 
+/* ===================== DETAILS MODAL ACTION BUTTONS ===================== */
+.inc-details-action-row{display:flex;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid #2a1a0a44;}
+.inc-details-rescue-btn{flex:1;padding:10px;background:linear-gradient(135deg,#1a3a66,#2a5a99);border:1px solid #3d9cff66;border-radius:9px;color:white;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;cursor:pointer;transition:.3s;}
+.inc-details-rescue-btn:hover{box-shadow:0 0 16px #3d9cff44;}
+.inc-details-resolve-btn{flex:1;padding:10px;background:#0a1a0a55;border:1px solid #2ecc7166;border-radius:9px;color:#2ecc71;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;cursor:pointer;transition:.3s;}
+.inc-details-resolve-btn:hover{background:#2ecc7122;box-shadow:0 0 16px #2ecc7144;}
+.inc-details-resolve-btn:disabled{opacity:.4;cursor:not-allowed;}
+
 /* ===================== HISTORY PANEL ===================== */
 .right-history-view{display:none;flex-direction:column;flex:1;min-height:0;animation:hv-in .3s cubic-bezier(.34,1.56,.64,1);}
 .right-history-view.visible{display:flex;}
 @keyframes hv-in{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
 .history-panel{background:var(--bg-panel);border:1px solid var(--border);border-top:1px solid var(--border-glow);border-radius:var(--radius);display:flex;flex-direction:column;box-shadow:0 8px 30px #00000044,inset 0 1px 0 #8b3a1a22;flex:1;min-height:0;overflow:hidden;}
-.hp-back-row{display:flex;align-items:center;gap:8px;padding:10px 14px 8px;border-bottom:1px solid #3a1a0a44;flex-shrink:0;}
-.hp-back-btn{display:flex;align-items:center;gap:5px;background:transparent;border:1px solid #4a1a0a55;color:var(--text-dim);border-radius:7px;padding:4px 10px;font-size:11px;cursor:pointer;transition:.2s;font-family:Arial,sans-serif;}
-.hp-back-btn:hover{border-color:var(--accent);color:var(--text);background:#3a0a0433;}
-.hp-node-badge{font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;color:#ff7033;background:#3a0a0455;border:1px solid #c43d0055;border-radius:20px;padding:2px 10px;margin-left:auto;}
+.hp-back-row{display:flex;align-items:center;gap:8px;padding:10px 14px 8px;border-bottom:1px solid #3a1a0a44;flex-shrink:0;flex-wrap:nowrap;}
+.hp-back-btn{display:flex;align-items:center;gap:5px;background:#2a0a0466;border:1px solid #6a2a1a88;color:var(--text);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;transition:.2s;font-family:Arial,sans-serif;white-space:nowrap;flex-shrink:0;touch-action:manipulation;}
+.hp-back-btn:hover{border-color:var(--accent);color:var(--text);background:#3a0a0455;}
+.hp-node-badge{font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;color:#ff7033;background:#3a0a0455;border:1px solid #c43d0055;border-radius:20px;padding:2px 10px;margin-left:auto;flex-shrink:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px;}
 .hp-live-badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;color:var(--green);letter-spacing:1px;margin-left:6px;}
 .hp-live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse-dot 1.5s ease infinite;}
 .hp-controls{display:flex;align-items:center;gap:6px;padding:8px 14px 6px;border-bottom:1px solid #2a1a0a33;flex-shrink:0;flex-wrap:wrap;}
@@ -418,6 +419,8 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .popup-cancel{background:transparent;border:1px solid #4a1a0a44;color:#7a4a3a;padding:6px 10px;border-radius:6px;cursor:pointer;font-family:Arial,sans-serif;}
 .popup-history-btn{width:100%;margin-top:8px;padding:6px;background:#2a1a0066;border:1px solid #c43d0088;color:#ff9055;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;letter-spacing:1px;transition:.25s;font-family:Arial,sans-serif;}
 .popup-history-btn:hover{background:linear-gradient(135deg,#6b1200,#a03000);color:white;border-color:var(--accent);}
+/* Resolved status badge in popup */
+.popup-resolved-badge{display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:4px 10px;background:#0a1a0a88;border:1px solid #2ecc7166;border-radius:6px;color:#2ecc71;font-size:11px;font-weight:700;width:100%;justify-content:center;}
 
 /* ===================== ADMIN MODAL ===================== */
 #admin-modal{display:none;position:fixed;inset:0;z-index:30000;background:rgba(0,0,0,.85);backdrop-filter:blur(6px);align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
@@ -484,46 +487,147 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .gw-org-dropdown-item.danger:hover{background:#ff475722;}
 
 /* ===================== RESPONSIVE ===================== */
+
+/* ── Tablet / small desktop (≤900px) ── */
 @media (max-width:900px){
-    .dashboard-grid{position:static;padding-top:calc(var(--hdr) + 10px);display:flex;flex-direction:column;height:auto;overflow:visible;}
-    html,body{height:auto;overflow:auto;}
+    /* Layout: switch from fixed grid to scrollable column */
+    html,body{height:auto;overflow:auto;overflow-x:hidden;}
+    .dashboard-grid{
+        position:static;
+        padding:calc(var(--hdr) + 10px) 10px 20px;
+        display:flex;flex-direction:column;
+        height:auto;overflow:visible;gap:8px;
+    }
+    /* Map */
     .map-col{height:55vw;min-height:260px;isolation:isolate;overflow:hidden;}
     .flames-map-wrap{isolation:isolate;}
     .map-btn,.zoom-group,#route-info-box,.route-menu{z-index:500!important;}
+    /* Right column becomes normal flow */
     .right-col-wrapper{min-height:auto;}
     .right-mid-row{grid-template-columns:1fr 1fr;}
+    /* Admin grid */
     .adm-grid-4{grid-template-columns:1fr 1fr;}
     .adm-grid-4>*:last-child{grid-column:1/-1;}
-    .right-history-view.visible{position:fixed;inset:0;z-index:5000;background:var(--bg-deep);display:flex;flex-direction:column;}
-    .right-history-view.visible .history-panel{border-radius:0;border:none;height:100dvh;}
-    .right-history-view.visible .hp-back-row{padding-top:max(12px, env(safe-area-inset-top));}
-    .hp-limit-btn{padding:6px 16px;font-size:11px;}
-    .hp-chart-tab{padding:4px 10px;font-size:10px;}
+    /* Incident modals */
     .inc-map-body{flex-direction:column;}
-    .inc-map-sidebar{width:100%;border-right:none;border-bottom:1px solid #3a1a0a44;max-height:240px;}
+    .inc-map-sidebar{width:100%;border-right:none;border-bottom:1px solid #3a1a0a44;max-height:220px;overflow-y:auto;}
     .inc-map-map-wrap{min-height:280px;}
+    /* History panel: full-screen overlay on mobile */
+    .right-history-view.visible{
+        position:fixed;inset:0;z-index:5000;
+        background:var(--bg-deep);
+        display:flex;flex-direction:column;
+    }
+    .right-history-view.visible .history-panel{
+        border-radius:0;border:none;
+        height:100%;
+        /* account for safe area on notched phones */
+        padding-bottom:env(safe-area-inset-bottom,0px);
+    }
+    /* Back row: needs enough top padding to clear status bar + header */
+    .right-history-view.visible .hp-back-row{
+        padding-top:max(14px, env(safe-area-inset-top));
+        min-height:52px;
+        position:sticky;top:0;z-index:10;
+        background:var(--bg-deep);
+        border-bottom:1px solid #3a1a0a44;
+    }
+    .hp-back-btn{
+        padding:8px 14px;
+        font-size:13px;
+        min-height:40px;
+        min-width:72px;
+        touch-action:manipulation;
+    }
+    .hp-limit-btn{padding:7px 14px;font-size:11px;min-height:36px;touch-action:manipulation;}
+    .hp-chart-tab{padding:5px 10px;font-size:10px;min-height:32px;touch-action:manipulation;}
 }
+
+/* ── Mobile (≤600px) ── */
 @media (max-width:600px){
     :root{--hdr:52px;}
-    .header-logo h1{font-size:12px;letter-spacing:1.5px;}
-    .header-logo img{width:28px;}
+    /* Header */
+    .header-logo h1{font-size:13px;letter-spacing:1px;}
+    .header-logo img{width:30px;}
+    #admin-btn{font-size:9px;padding:4px 8px;letter-spacing:1px;}
+    /* Sensor bar: 2×2 grid */
     .sensor-bar{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
-    .sensor-tile{padding:10px 8px;}
-    .sensor-tile-val{font-size:13px;}
+    .sensor-tile{padding:10px 8px;gap:6px;}
+    .sensor-tile img{width:16px;}
+    .sensor-tile-label{font-size:8px;}
+    .sensor-tile-val{font-size:14px;}
     .sensor-node-info{display:none;}
-    .map-col{height:70vw;min-height:220px;}
+    /* Map taller on small screens */
+    .map-col{height:72vw;min-height:220px;}
+    /* Right mid: single column */
     .right-mid-row{grid-template-columns:1fr;}
+    /* Incidents panel: give it a reasonable fixed height */
+    .incidents-panel{max-height:320px;}
+    /* Admin */
     .adm-grid-2,.adm-grid-3,.adm-grid-4{grid-template-columns:1fr;}
     .adm-grid-4>*:last-child{grid-column:1;}
     .admin-box{border-radius:10px;}
-    .admin-content{padding:14px 14px 18px;}
-    #admin-tabs-row{padding:10px 14px 0;}
-    .adm-section{padding:14px;}
-    .hp-stats{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
-    .hp-stat{font-size:9px;}
-    .hp-table{font-size:10px;}
-    .hp-table thead th{font-size:7px;padding:5px 6px;}
-    .hp-table tbody td{padding:5px 6px;}
+    .admin-content{padding:12px 12px 16px;}
+    #admin-tabs-row{padding:8px 12px 0;gap:3px;}
+    #admin-tabs-row button{padding:6px 10px;font-size:9px;letter-spacing:1px;}
+    .adm-section{padding:12px;}
+    /* History panel specifics */
+    .hp-back-row{
+        padding:10px 12px 8px;
+        gap:6px;
+        flex-wrap:nowrap;
+        align-items:center;
+    }
+    .hp-back-btn{
+        padding:9px 14px;
+        font-size:13px;
+        font-weight:700;
+        min-height:42px;
+        min-width:80px;
+        border-radius:9px;
+        flex-shrink:0;
+        /* prominent so it's easy to tap */
+        background:linear-gradient(135deg,#3a0a04,#5a1a08);
+        border-color:#8b3a1a88;
+        color:var(--text);
+    }
+    .hp-node-badge{font-size:8px;padding:2px 8px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    /* Controls row */
+    .hp-controls{padding:8px 10px 5px;gap:5px;flex-wrap:wrap;}
+    .hp-limit-label{font-size:8px;}
+    .hp-limit-btn{padding:7px 12px;font-size:10px;min-height:36px;border-radius:7px;flex:1;}
+    /* Stats 2-col */
+    .hp-stats{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:5px 10px 0;}
+    .hp-stat{font-size:9px;padding:4px 8px;}
+    .hp-stat-label{font-size:7px;}
+    /* Chart */
+    .hp-chart-wrap{padding:5px 10px 0;}
+    .hp-chart-tabs{gap:3px;flex-wrap:wrap;}
+    .hp-chart-tab{padding:5px 8px;font-size:9px;min-height:30px;border-radius:6px;flex:1;text-align:center;}
+    .hp-chart{height:54px;}
+    .hp-record-count{padding:3px 10px 0;font-size:9px;}
+    /* Table */
+    .hp-table-wrap{padding:6px 10px 10px;}
+    .hp-table{font-size:9px;}
+    .hp-table thead th{font-size:7px;padding:5px 5px;letter-spacing:0;}
+    .hp-table tbody td{padding:5px 5px;}
+    /* Modals full-width on mobile */
+    .inc-map-box{width:100vw;max-height:100dvh;border-radius:0;}
+    .inc-details-box{width:100vw;max-height:100dvh;border-radius:0;}
+    .rescue-box{width:100vw;border-radius:16px 16px 0 0;position:fixed;bottom:0;left:0;}
+    #rescue-modal.open{align-items:flex-end;}
+    .respond-box{width:min(340px,94vw);}
+    /* Incident details action buttons stack vertically */
+    .inc-details-action-row{flex-direction:column;gap:8px;}
+    .inc-details-rescue-btn,.inc-details-resolve-btn{width:100%;padding:13px;}
+}
+
+/* ── Very small phones (≤380px) ── */
+@media (max-width:380px){
+    .hp-chart-tab{font-size:8px;padding:4px 5px;}
+    .hp-limit-btn{font-size:9px;padding:6px 8px;}
+    .sensor-tile-val{font-size:12px;}
+    .header-logo h1{font-size:11px;}
 }
     </style>
 </head>
@@ -1083,8 +1187,71 @@ loadGatewaysOnMap();
 let nodeMarkers={},nodeData={},selectedNodeId=null;
 const OFFLINE_MIN=5;
 
-// Track resolved incidents (node_id -> true = rescued, remove fire animation)
-let resolvedNodeIds = new Set();
+// ── Resolved node tracking — persisted in localStorage + synced from API ──
+const RESOLVED_STORAGE_KEY = 'flames_resolved_nodes';
+function _loadResolvedFromStorage() {
+    try { const raw = localStorage.getItem(RESOLVED_STORAGE_KEY); return raw ? new Set(JSON.parse(raw)) : new Set(); }
+    catch { return new Set(); }
+}
+function _saveResolvedToStorage(set) {
+    try { localStorage.setItem(RESOLVED_STORAGE_KEY, JSON.stringify([...set])); } catch {}
+}
+let resolvedNodeIds = _loadResolvedFromStorage();
+
+// Sync resolvedNodeIds from server's incident list on every load.
+// Incidents with resolved_at → mark node resolved. Active open incidents → unmark (new fire on same node).
+async function syncResolvedNodesFromAPI() {
+    try {
+        const res = await fetch(`${API_BASE()}/incidents/history?limit=200`, { headers: authHeader() });
+        if (!res.ok) return;
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : (data.incidents || data.data || []);
+        // Nodes with a NEW open (unresolved) fire incident — remove from resolved set
+        const activeFireNodes = new Set(list.filter(i => !(i.resolved_at || i.resolved) && i.node_id).map(i => i.node_id));
+        // Nodes whose incident is resolved on server — add to resolved set
+        list.filter(i => (i.resolved_at || i.resolved) && i.node_id).forEach(i => resolvedNodeIds.add(i.node_id));
+        // Clear nodes that have a new active fire (override localStorage stale data)
+        activeFireNodes.forEach(nid => resolvedNodeIds.delete(nid));
+        _saveResolvedToStorage(resolvedNodeIds);
+    } catch(err) { console.warn('syncResolvedNodesFromAPI:', err); }
+}
+
+// Build node popup content — now includes resolved badge if resolved
+function buildNodePopupContent(n, nid, lat, lng, offline) {
+    const isResolved = resolvedNodeIds.has(nid);
+    const pred = (n.ai_prediction||'normal').toLowerCase();
+    const conf = n.confidence != null ? Number(n.confidence) : 0;
+    const isFire = pred === 'fire', isFalse = pred === 'false', hiConf = conf >= 0.70;
+    const stColor = isFire ? (hiConf ? '#ff4757' : '#ff9f1c') : isFalse ? '#f1c40f' : '#2ecc71';
+    const stLabel = isFire ? (hiConf ? '🔥 FIRE' : 'Possible Fire') : isFalse ? '⚠ Possible Fire' : 'Normal';
+    const lastUpdated = n.timestamp || n.updated_at || n.last_seen || new Date().toISOString();
+    const lastTime = new Date(typeof lastUpdated === 'string' ? lastUpdated.replace(' ', 'T') : lastUpdated);
+    const lastStr = isNaN(lastTime.getTime()) ? '—' : lastTime.toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    const posNote = n.isUsingFallbackPosition ? `<div style="color:#ff9f1c;font-size:10px;margin-top:5px;">(Approx. position near gateway)</div>` : '';
+
+    // Show FIRE status if there's an active fire, or RESOLVED badge if it was resolved
+    let aiStatusHtml = '';
+    if (isResolved && (isFire || isFalse)) {
+        aiStatusHtml = `<br><div style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:3px 8px;background:#0a1a0a88;border:1px solid #2ecc7166;border-radius:5px;color:#2ecc71;font-size:11px;font-weight:700;">✓ INCIDENT RESOLVED</div>`;
+    } else {
+        aiStatusHtml = `<b style="color:${stColor}">${stLabel}</b>`;
+    }
+
+    return `
+        <div class="popup-title">📡 ${nid}</div>
+        ${offline && !isFire && !isFalse ? `<div style="color:#ff9f1c;font-weight:600;margin:6px 0;font-size:12px;">⚠ OFFLINE · Last: ${lastStr}</div>` : ''}
+        ${posNote}
+        <div style="font-size:12px;color:#9a6a5a;line-height:1.7;">
+            Temp: <b style="color:#ff904f">${n.temperature??'—'}°C</b><br>
+            Hum: <b style="color:#ff904f">${n.humidity??'—'}%</b><br>
+            Flame: <b style="color:#ff904f">${n.flame??'—'}</b><br>
+            Smoke: <b style="color:#ff904f">${n.smoke??'—'} ppm</b><br>
+            AI: <strong>${pred.toUpperCase()}</strong> (${(conf*100).toFixed(1)}%)
+            ${aiStatusHtml}
+            <br><small style="color:${(offline && !isFire && !isFalse) ? '#ff9f1c' : '#7a5a4a'};">Updated: ${lastStr}</small>
+        </div>
+        <button class="popup-history-btn" onclick="(function(){window._flames_map && window._flames_map.closePopup(); openHistoryPanel('${nid}');})()">📊 View History</button>`;
+}
 
 async function loadAndPlaceNodes(silent=false){
     try{
@@ -1104,34 +1271,23 @@ async function loadAndPlaceNodes(silent=false){
             if(lat==null||isNaN(lat)){const off=10+Math.random()*90,ang=Math.random()*2*Math.PI;lat=gw.lat+(off/111000)*Math.cos(ang);lng=gw.lng+(off/(111000*Math.cos(gw.lat*Math.PI/180)))*Math.sin(ang);fallback=true;}
             const lastUpdated=n.timestamp||n.updated_at||n.last_seen||new Date().toISOString();
             nodeData[nid]={...nodeData[nid]||{},...n,latitude:lat,longitude:lng,last_updated:lastUpdated,isUsingFallbackPosition:fallback};
-            const lastTime=new Date(typeof lastUpdated==='string'?lastUpdated.replace(' ','T'):lastUpdated);
-            const minAgo=(Date.now()-lastTime.getTime())/60000;
-            const offline=minAgo>OFFLINE_MIN;
             const pred=(n.ai_prediction||'normal').toLowerCase();
             const conf=n.confidence!=null?Number(n.confidence):0;
             const isFire=pred==='fire', isFalse=pred==='false', hiConf=conf>=0.70;
-            const stColor=isFire?(hiConf?'#ff4757':'#ff9f1c'):isFalse?'#f1c40f':'#2ecc71';
-            const stLabel=isFire?(hiConf?'🔥 FIRE':'Possible Fire'):isFalse?'⚠ Possible Fire':'Normal';
-            const lastStr=isNaN(lastTime.getTime())?'—':lastTime.toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
-            const posNote=fallback?`<div style="color:#ff9f1c;font-size:10px;margin-top:5px;">(Approx. position near gateway)</div>`:'';
-            const popupContent=`
-                <div class="popup-title">📡 ${nid}</div>
-                ${offline?`<div style="color:#ff9f1c;font-weight:600;margin:6px 0;font-size:12px;">⚠ OFFLINE · Last: ${lastStr}</div>`:''}
-                ${posNote}
-                <div style="font-size:12px;color:#9a6a5a;line-height:1.7;">
-                    Temp: <b style="color:#ff904f">${n.temperature??'—'}°C</b><br>
-                    Hum: <b style="color:#ff904f">${n.humidity??'—'}%</b><br>
-                    Flame: <b style="color:#ff904f">${n.flame??'—'}</b><br>
-                    Smoke: <b style="color:#ff904f">${n.smoke??'—'} ppm</b><br>
-                    AI: <strong>${pred.toUpperCase()}</strong> (${(conf*100).toFixed(1)}%)
-                    <b style="color:${stColor}">${stLabel}</b>
-                    <br><small style="color:${offline?'#ff9f1c':'#7a5a4a'};">Updated: ${lastStr}</small>
-                </div>
-                <button class="popup-history-btn" onclick="(function(){window._flames_map && window._flames_map.closePopup(); openHistoryPanel('${nid}');})()">📊 View History</button>`;
 
-            // If node is rescued, don't show fire animation
-            const isFireActive = (!offline && isFire && hiConf && !resolvedNodeIds.has(nid));
+            // Only show offline state if NOT a fire/false alert
+            const lastTime=new Date(typeof lastUpdated==='string'?lastUpdated.replace(' ','T'):lastUpdated);
+            const minAgo=(Date.now()-lastTime.getTime())/60000;
+            // Don't mark as offline if fire or false alert is active — sensor might just be slow to report
+            const offline = (minAgo > OFFLINE_MIN) && !isFire && !isFalse;
+
+            // Fire animation: only if fire is active AND node is not in resolved set
+            const isFireActive = (isFire && hiConf && !resolvedNodeIds.has(nid));
             const activeIcon   = isFireActive ? makeFireNodeIcon() : nodeIcon;
+
+            const popupContent = buildNodePopupContent(
+                {...n, isUsingFallbackPosition: fallback}, nid, lat, lng, offline
+            );
 
             if(nodeMarkers[nid]){
                 nodeMarkers[nid].setIcon(activeIcon);
@@ -1156,8 +1312,11 @@ async function loadAndPlaceNodes(silent=false){
         if(selectedNodeId&&nodeData[selectedNodeId])updateSensorBar(nodeData[selectedNodeId],selectedNodeId);
     }catch(err){console.error('Failed to load nodes:',err);if(!silent)alert('Could not load sensor nodes.');}
 }
-loadAndPlaceNodes();
+// On load: first sync resolved state from server, then place nodes so icons are correct
+syncResolvedNodesFromAPI().then(() => loadAndPlaceNodes());
 setInterval(()=>loadAndPlaceNodes(true),15000);
+// Re-sync resolved state from server every minute (catches resolves made by other users)
+setInterval(syncResolvedNodesFromAPI, 60000);
 
 // ====================== WEBSOCKET ======================
 function connectWebSocket(){
@@ -1193,9 +1352,11 @@ function updateSensorBar(d,nodeId){
     document.getElementById('sb-flame').textContent=d.flame      !=null?d.flame            :'—';
     ['sb-temp','sb-hum','sb-smoke','sb-flame'].forEach(id=>document.getElementById(id).className='sensor-tile-val');
     const pred=(d.ai_prediction||'normal').toLowerCase(),conf=d.confidence!=null?Number(d.confidence):0;
-    if((pred==='fire'||pred==='false')&&conf>=0.50){document.getElementById('sb-smoke').className+=' alert';document.getElementById('sb-flame').className+=' alert';}
+    if((pred==='fire'||pred==='false')&&conf>=0.50&&!resolvedNodeIds.has(nodeId)){document.getElementById('sb-smoke').className+=' alert';document.getElementById('sb-flame').className+=' alert';}
     const lastUpdated=d.last_updated?new Date(typeof d.last_updated==='string'?d.last_updated.replace(' ','T'):d.last_updated):null;
-    const offline=lastUpdated&&(Date.now()-lastUpdated.getTime())/60000>OFFLINE_MIN;
+    // Only mark offline if NOT active fire/false alert
+    const predCur=(d.ai_prediction||'normal').toLowerCase();
+    const offline=lastUpdated&&(Date.now()-lastUpdated.getTime())/60000>OFFLINE_MIN&&predCur!=='fire'&&predCur!=='false';
     document.getElementById('sb-node-label').innerHTML=nodeId?`${nodeId}${offline?' <small style="color:#ff9f1c;">(offline)</small>':''}`:'No node';
     const s=offline?'opacity:.6;font-style:italic;':'';
     ['sb-temp','sb-hum','sb-smoke','sb-flame'].forEach(id=>document.getElementById(id).style=s);
@@ -1302,11 +1463,11 @@ async function loadLiveIncidents(silent=false){
                 const isFire    = pred==='fire';
                 const confColor = inc.confidence_pct>=70?'var(--green)':inc.confidence_pct>=40?'var(--yellow)':'var(--orange)';
                 const predLabel = isFire?'🔥 FIRE':'⚠ POSSIBLE';
-                // Check rescue status for display
                 const rescueInfo = _incidentRescueMap[inc.incident_id];
                 const isRescued = rescueInfo && rescueInfo.status === 'rescued';
                 const isEnRoute = rescueInfo && rescueInfo.status === 'en_route';
 
+                // ── Only Show Map & Details buttons — Rescue and Resolve removed from here ──
                 listEl.innerHTML+=`
                 <div class="incident-card" id="incident-card-${inc.incident_id}">
                     <div class="incident-title">${inc.location_name||`Node ${inc.node_id}`}</div>
@@ -1317,14 +1478,6 @@ async function loadLiveIncidents(silent=false){
                     <div class="incident-btn-row1">
                         <button class="btn-show-map" onclick="openIncidentMapModal(${JSON.stringify(inc).replace(/"/g,'&quot;')})">🗺 Show Map &amp; Route</button>
                         <button class="btn-details" onclick="openIncidentDetailsModal(${inc.incident_id})">📋 Details</button>
-                    </div>
-                    <div class="incident-action-row" style="margin-top:5px;">
-                        <button class="btn-respond" onclick="openRescueModal(${inc.incident_id},'${inc.node_id}','${inc.location_name||'Node '+inc.node_id}')">
-                            🚒 Rescue
-                        </button>
-                        <button class="btn-resolve" id="resolve-btn-${inc.incident_id}" onclick="resolveIncident(${inc.incident_id},'${inc.node_id}')">
-                            ✓ Resolve
-                        </button>
                     </div>
                 </div>`;
             });
@@ -1343,7 +1496,7 @@ setInterval(()=>loadLiveIncidents(true),20000);
 // ====================== RESOLVED INCIDENTS ======================
 async function loadResolvedIncidents() {
     const listEl = document.getElementById('resolved-list');
-    listEl.innerHTML = '<div class="node-placeholder">Loading\u2026</div>';
+    listEl.innerHTML = '<div class="node-placeholder">Loading…</div>';
     try {
         const res = await fetch(`${API_BASE()}/incidents/resolved`, {headers:authHeader(),cache:'no-cache'});
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -1371,7 +1524,6 @@ async function loadResolvedIncidents() {
             </div>`;
         });
     } catch(err) {
-        // Fallback: show locally resolved ones from our rescue map
         const local = Object.entries(_incidentRescueMap).filter(([,v])=>v.status==='rescued');
         if (!local.length) { listEl.innerHTML='<div class="node-placeholder">No resolved incidents yet</div>'; return; }
         listEl.innerHTML = '';
@@ -1395,7 +1547,6 @@ async function loadResolvedIncidents() {
 }
 
 // ====================== RESCUE / RESPOND SYSTEM ======================
-// _incidentRescueMap: incidentId -> { orgName, orgId, status: 'en_route'|'rescued', dispatchTime, rescuedTime, nodeId, locationName }
 let _incidentRescueMap = {};
 let _pendingRescueIncidentId = null;
 let _availableOrganizations = [];
@@ -1403,14 +1554,10 @@ let _availableOrganizations = [];
 async function openRescueModal(incidentId, nodeId, locationName) {
     _pendingRescueIncidentId = incidentId;
     document.getElementById('rescue-modal-sub').textContent = `Dispatching rescue to: ${locationName}`;
-    // Clear selection
     document.querySelectorAll('.rescue-org-item').forEach(el => el.classList.remove('selected'));
-    
-    // Load organizations
     const listEl = document.getElementById('rescue-org-list');
     listEl.innerHTML = '<div style="color:#5a3a2a;text-align:center;padding:16px;">Loading organizations…</div>';
     document.getElementById('rescue-modal').classList.add('open');
-    
     try {
         const res = await fetch(`${API_BASE()}/organizations`, {headers:authHeader()});
         if (!res.ok) throw new Error('Failed to load orgs');
@@ -1420,7 +1567,7 @@ async function openRescueModal(incidentId, nodeId, locationName) {
             listEl.innerHTML = '<div style="color:#5a3a2a;text-align:center;padding:16px;">No organizations registered</div>';
             return;
         }
-        _availableOrganizations.forEach((org, i) => {
+        _availableOrganizations.forEach((org) => {
             const item = document.createElement('div');
             item.className = 'rescue-org-item';
             item.dataset.orgId = org.id;
@@ -1454,12 +1601,8 @@ async function confirmRescueDispatch() {
     const orgName = selected.dataset.orgName;
     const incidentId = _pendingRescueIncidentId;
     if (!incidentId) return;
-
-    // Find the incident data
     const inc = _liveIncidentsCache.find(i => i.incident_id == incidentId);
     const now = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-    
-    // Save rescue status locally (and attempt API call)
     _incidentRescueMap[incidentId] = {
         orgId, orgName,
         status: 'en_route',
@@ -1468,28 +1611,31 @@ async function confirmRescueDispatch() {
         nodeId: inc?.node_id,
         locationName: inc?.location_name || `Incident #${incidentId}`
     };
-
-    // Try to notify via API (optional endpoint)
     try {
         await fetch(`${API_BASE()}/incidents/${incidentId}/respond`, {
             method: 'PATCH',
             headers: {...authHeader(),'Content-Type':'application/json'},
             body: JSON.stringify({organization_id: orgId, organization_name: orgName})
         });
-    } catch {} // Silently fail if endpoint doesn't exist
-
+    } catch {}
     closeRescueModal();
-    // Show dispatch confirmation
     document.getElementById('respond-node-label').textContent = `Incident on ${inc?.node_id || incidentId}`;
     document.getElementById('respond-org-display').textContent = orgName;
     document.getElementById('respond-modal').classList.add('open');
     loadLiveIncidents(true);
+    // Refresh the incident details modal if it's open
+    if (document.getElementById('incident-details-modal').classList.contains('open')) {
+        openIncidentDetailsModal(incidentId);
+    }
+    // Refresh the incident map modal sidebar if open
+    if (document.getElementById('incident-map-modal').classList.contains('open')) {
+        const inc2 = _liveIncidentsCache.find(i => i.incident_id == incidentId);
+        if (inc2) openIncidentMapModal(inc2, true);
+    }
 }
 
 // ====================== RESOLVE INCIDENT ======================
 async function resolveIncident(incidentId, nodeId) {
-    const btn = document.getElementById(`resolve-btn-${incidentId}`);
-    if (btn) { btn.disabled = true; btn.textContent = 'Resolving…'; }
     try {
         const res = await fetch(`${API_BASE()}/incidents/${incidentId}/resolve`, {
             method: 'PATCH',
@@ -1498,7 +1644,6 @@ async function resolveIncident(incidentId, nodeId) {
         });
         if (!res.ok) throw new Error((await res.json()).detail || 'Failed');
 
-        // Mark as rescued in our local map
         const now = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
         if (_incidentRescueMap[incidentId]) {
             _incidentRescueMap[incidentId].status = 'rescued';
@@ -1511,9 +1656,32 @@ async function resolveIncident(incidentId, nodeId) {
                 nodeId: nodeId, locationName: inc?.location_name
             };
         }
-        // Remove fire animation from node
-        if (nodeId) resolvedNodeIds.add(nodeId);
-        
+
+        // ── KEY FIX: immediately remove fire animation from node ──
+        if (nodeId) {
+            resolvedNodeIds.add(nodeId);
+            _saveResolvedToStorage(resolvedNodeIds); // persist across refreshes
+            // Instantly update marker icon back to normal
+            if (nodeMarkers[nodeId]) {
+                nodeMarkers[nodeId].setIcon(nodeIcon);
+                const el = nodeMarkers[nodeId].getElement();
+                if (el) {
+                    el.classList.remove('fire-node-active');
+                    el.style.opacity = '1';
+                }
+                // Update popup to show resolved badge
+                const nd = nodeData[nodeId];
+                if (nd) {
+                    const popupContent = buildNodePopupContent(nd, nodeId, nd.latitude, nd.longitude, false);
+                    nodeMarkers[nodeId].setPopupContent(popupContent);
+                }
+            }
+        }
+
+        // Close incident details modal
+        closeIncidentDetailsModal();
+        closeIncidentMapModal();
+
         const card = document.getElementById(`incident-card-${incidentId}`);
         if (card) {
             card.style.transition = 'opacity .4s, transform .4s';
@@ -1521,14 +1689,13 @@ async function resolveIncident(incidentId, nodeId) {
             card.style.transform = 'translateX(20px)';
             setTimeout(() => {
                 loadLiveIncidents(true);
-                loadAndPlaceNodes(true); // Refresh map to remove fire icon
+                loadAndPlaceNodes(true);
             }, 450);
         } else {
             loadLiveIncidents(true);
             loadAndPlaceNodes(true);
         }
     } catch (err) {
-        if (btn) { btn.disabled = false; btn.textContent = '✓ Resolve'; }
         alert(`Could not resolve: ${err.message}`);
     }
 }
@@ -1536,28 +1703,23 @@ async function resolveIncident(incidentId, nodeId) {
 // ====================== INCIDENT MAP MODAL ======================
 let _incDetailMap = null, _incDetailRouteLayer = null, _incDetailMarkers = [];
 
-function openIncidentMapModal(inc) {
+function openIncidentMapModal(inc, sidebarOnly=false) {
     const modal = document.getElementById('incident-map-modal');
     modal.classList.add('open');
-    
     const rescueInfo = _incidentRescueMap[inc.incident_id];
     const isRescued = rescueInfo && rescueInfo.status === 'rescued';
     const isEnRoute = rescueInfo && rescueInfo.status === 'en_route';
     const gw = getPrimaryGateway();
-    
-    // Rough distance & ETA
     const distKm = calcDistance(gw.lat, gw.lng, parseFloat(inc.latitude), parseFloat(inc.longitude));
-    const etaMin = Math.round(distKm / 0.4); // ~24 km/h city speed
-    
+    const etaMin = Math.round(distKm / 0.4);
     const pred = (inc.ai_prediction||'').toLowerCase();
     const isFire = pred === 'fire';
 
-    // Build sidebar
     const sidebar = document.getElementById('inc-map-sidebar');
     sidebar.innerHTML = `
         <div class="inc-map-info-group">
             <div class="inc-map-info-label">Node Status</div>
-            <div class="inc-map-info-val inc-map-status-${isRescued?'resolved':'active'}">${isRescued?'✓ RESCUED':isFire?'🔥 FIRE ACTIVE':'⚠ ACTIVE'}</div>
+            <div class="inc-map-info-val inc-map-status-${isRescued?'resolved':'active'}">${isRescued?'✓ RESOLVED':isFire?'🔥 FIRE ACTIVE':'⚠ ACTIVE'}</div>
         </div>
         <div class="inc-map-info-group">
             <div class="inc-map-info-label">Location</div>
@@ -1579,39 +1741,29 @@ function openIncidentMapModal(inc) {
             <div class="inc-rescue-org-name">🏢 ${rescueInfo.orgName}</div>
             <div class="inc-rescue-time">Dispatched: ${rescueInfo.dispatchTime||'—'}</div>
             <div class="inc-rescue-status-badge ${rescueInfo.status==='rescued'?'rescued':'en-route'}">
-                ${rescueInfo.status==='rescued'?'✓ RESCUED':'🚒 EN ROUTE'}
+                ${rescueInfo.status==='rescued'?'✓ RESOLVED':'🚒 EN ROUTE'}
             </div>
         </div>` : ''}
         <button class="inc-map-rescue-btn" onclick="closeIncidentMapModal();openRescueModal(${inc.incident_id},'${inc.node_id}','${(inc.location_name||'Node '+inc.node_id).replace(/'/g,"\\'")}')">🚒 DISPATCH RESCUE</button>
-        <button class="inc-map-resolve-btn" id="inc-map-resolve-${inc.incident_id}" onclick="closeIncidentMapModal();resolveIncident(${inc.incident_id},'${inc.node_id}')" ${isRescued?'disabled':''}>✓ MARK RESOLVED</button>
+        <button class="inc-map-resolve-btn" id="inc-map-resolve-${inc.incident_id}" onclick="resolveIncident(${inc.incident_id},'${inc.node_id}')" ${isRescued?'disabled':''}>✓ MARK RESOLVED</button>
     `;
 
-    // Init or re-init the detail map
+    if (sidebarOnly) return; // Only update sidebar when called after dispatch
+
     setTimeout(() => {
-        if (_incDetailMap) {
-            _incDetailMap.remove();
-            _incDetailMap = null;
-        }
+        if (_incDetailMap) { _incDetailMap.remove(); _incDetailMap = null; }
         _incDetailMarkers.forEach(m => { try{ m.remove(); } catch{} });
         _incDetailMarkers = [];
         if (_incDetailRouteLayer) { try{ _incDetailRouteLayer.remove(); } catch{} _incDetailRouteLayer = null; }
-        
         const incLat = parseFloat(inc.latitude), incLng = parseFloat(inc.longitude);
-        _incDetailMap = L.map('incident-detail-map', {zoomControl:true, attributionControl:true})
-            .setView([incLat, incLng], 15);
+        _incDetailMap = L.map('incident-detail-map', {zoomControl:true, attributionControl:true}).setView([incLat, incLng], 15);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(_incDetailMap);
-        
-        // Incident marker with popup
         const incMarker = L.marker([incLat, incLng], {icon: makeFireNodeIcon()}).addTo(_incDetailMap);
         incMarker.bindPopup(`<div style="font-weight:700;color:#ff9055;">🔥 Incident Location</div><div style="font-size:11px;color:#9a6a5a;">${inc.location_name||`Node ${inc.node_id}`}</div>`).openPopup();
         _incDetailMarkers.push(incMarker);
-        
-        // Gateway/start marker
         const gwMarker = L.marker([gw.lat, gw.lng], {icon: greenIcon}).addTo(_incDetailMap);
         gwMarker.bindPopup('<div style="font-weight:700;color:#2ecc71;">🏠 Gateway / Start Point</div>');
         _incDetailMarkers.push(gwMarker);
-        
-        // Auto-calculate and draw route
         calculateDetailRoute(gw, {lat: incLat, lng: incLng});
     }, 150);
 }
@@ -1630,15 +1782,12 @@ async function calculateDetailRoute(start, end) {
         if (_incDetailRouteLayer) _incDetailRouteLayer.remove();
         _incDetailRouteLayer = L.polyline(coords, {color:'#ff4400',weight:5,opacity:.9,dashArray:'8,6'}).addTo(_incDetailMap);
         _incDetailMap.fitBounds(_incDetailRouteLayer.getBounds(), {padding:[20,20]});
-        // Update stats in sidebar
         const dist = (summary.distance/1000).toFixed(2);
         const time = Math.round(summary.duration/60);
         const statEls = document.querySelectorAll('.inc-route-stat-val');
         if (statEls[0]) statEls[0].textContent = dist + ' km';
         if (statEls[1]) statEls[1].textContent = '~' + time + ' min';
-    } catch(e) {
-        console.warn('Detail route calc failed:', e.message);
-    }
+    } catch(e) { console.warn('Detail route calc failed:', e.message); }
 }
 
 function closeIncidentMapModal() {
@@ -1652,26 +1801,27 @@ document.getElementById('incident-map-modal').addEventListener('click', e => {
 });
 
 // ====================== INCIDENT DETAILS MODAL ======================
+// Stores which incident ID the details modal is showing
+let _detailsModalIncidentId = null;
+
 async function openIncidentDetailsModal(incidentId) {
+    _detailsModalIncidentId = incidentId;
     document.getElementById('incident-details-modal').classList.add('open');
     const body = document.getElementById('inc-details-body');
     body.innerHTML = '<div style="text-align:center;padding:24px;color:#5a3a2a;">Loading…</div>';
-
-    // Find incident in cache
     const inc = _liveIncidentsCache.find(i => i.incident_id == incidentId);
     const rescueInfo = _incidentRescueMap[incidentId];
-    
     let resolvedData = null;
     try {
         const res = await fetch(`${API_BASE()}/incidents/${incidentId}`, {headers:authHeader()});
         if (res.ok) resolvedData = await res.json();
     } catch {}
-
     const data = resolvedData || inc || {};
     const pred = (data.ai_prediction||'').toLowerCase();
     const isFire = pred === 'fire';
     const isRescued = rescueInfo && rescueInfo.status === 'rescued';
     const isEnRoute = rescueInfo && rescueInfo.status === 'en_route';
+    const isAlreadyResolved = data.status === 'resolved';
 
     body.innerHTML = `
         <div class="inc-details-section">
@@ -1694,7 +1844,7 @@ async function openIncidentDetailsModal(incidentId) {
             </div>
             <div class="inc-details-row">
                 <span class="inc-details-row-label">Status</span>
-                <span class="inc-details-row-val">${isRescued?'<span style="color:#2ecc71;">✓ Rescued</span>':isEnRoute?'<span style="color:#f1c40f;">🚒 En Route</span>':'<span style="color:#ff4757;">Active</span>'}</span>
+                <span class="inc-details-row-val">${(isRescued||isAlreadyResolved)?'<span style="color:#2ecc71;">✓ Resolved</span>':isEnRoute?'<span style="color:#f1c40f;">🚒 En Route</span>':'<span style="color:#ff4757;">Active</span>'}</span>
             </div>
             <div class="inc-details-row">
                 <span class="inc-details-row-label">Started</span>
@@ -1754,11 +1904,26 @@ async function openIncidentDetailsModal(incidentId) {
             ${data.smoke!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Smoke</span><span class="inc-details-row-val">${data.smoke} ppm</span></div>`:''}
             ${data.flame!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Flame Sensor</span><span class="inc-details-row-val">${data.flame}</span></div>`:''}
         </div>` : ''}
+
+        <!-- ── ACTION BUTTONS: Rescue & Resolve are HERE now ── -->
+        ${(!isRescued && !isAlreadyResolved) ? `
+        <div class="inc-details-action-row">
+            <button class="inc-details-rescue-btn" onclick="closeIncidentDetailsModal();openRescueModal(${incidentId},'${data.node_id||''}','${(data.location_name||'Node '+(data.node_id||'')).replace(/'/g,"\\'")}')">
+                🚒 Dispatch Rescue
+            </button>
+            <button class="inc-details-resolve-btn" id="details-resolve-btn-${incidentId}" onclick="resolveIncident(${incidentId},'${data.node_id||''}')">
+                ✓ Mark Resolved
+            </button>
+        </div>` : `
+        <div style="margin-top:16px;padding:10px;background:#0a1a0a55;border:1px solid #2ecc7144;border-radius:9px;text-align:center;color:#2ecc71;font-size:12px;font-weight:600;">
+            ✓ This incident has been resolved
+        </div>`}
     `;
 }
 
 function closeIncidentDetailsModal() {
     document.getElementById('incident-details-modal').classList.remove('open');
+    _detailsModalIncidentId = null;
 }
 document.getElementById('incident-details-modal').addEventListener('click', e => {
     if (e.target === document.getElementById('incident-details-modal')) closeIncidentDetailsModal();
@@ -1771,14 +1936,6 @@ function calcDistance(lat1, lng1, lat2, lng2) {
     const dLon = (lng2-lng1)*Math.PI/180;
     const a = Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
     return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-}
-
-// ====================== RESPOND MODAL (legacy, kept for compat) ======================
-function respondToIncident(incidentId, nodeId) {
-    const orgName = document.getElementById('side-org-name')?.textContent || '—';
-    document.getElementById('respond-node-label').textContent = `Incident on ${nodeId}`;
-    document.getElementById('respond-org-display').textContent = orgName;
-    document.getElementById('respond-modal').classList.add('open');
 }
 
 // ====================== HISTORY PANEL ======================
