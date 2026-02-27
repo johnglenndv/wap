@@ -256,6 +256,43 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .hp-state{text-align:center;padding:24px 15px;color:#4a2a1a;font-size:12px;}
 .hp-spinner{width:22px;height:22px;border:3px solid #3a1a0a;border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 8px;}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* ===================== FIRE NODE PULSE ===================== */
+.fire-node-wrap{
+    position:relative;
+    width:70px;height:70px;
+    display:flex;align-items:center;justify-content:center;
+}
+.fire-node-wrap img{
+    width:60px;height:60px;
+    position:relative;z-index:2;
+    filter:drop-shadow(0 0 6px #ff4757cc);
+}
+/* Three expanding pulse rings */
+.fire-pulse-ring{
+    position:absolute;
+    border-radius:50%;
+    border:3px solid #ff4757;
+    opacity:0;
+    animation:fire-ring-pulse 1.6s ease-out infinite;
+    z-index:1;
+}
+.fire-pulse-ring:nth-child(1){width:40px;height:40px;animation-delay:0s;}
+.fire-pulse-ring:nth-child(2){width:40px;height:40px;animation-delay:0.5s;}
+.fire-pulse-ring:nth-child(3){width:40px;height:40px;animation-delay:1.0s;}
+@keyframes fire-ring-pulse{
+    0%  {transform:scale(1);   opacity:0.9;border-color:#ff4757;}
+    60% {opacity:0.3;          border-color:#ff9f1c;}
+    100%{transform:scale(2.8); opacity:0;  border-color:#ff475700;}
+}
+/* Red glow flash on the icon itself */
+.fire-node-wrap img{
+    animation:fire-icon-glow 1.6s ease-in-out infinite;
+}
+@keyframes fire-icon-glow{
+    0%,100%{filter:drop-shadow(0 0 4px #ff475788);}
+    50%     {filter:drop-shadow(0 0 18px #ff4757ff) drop-shadow(0 0 30px #ff000099);}
+}
 .ai-badge{display:inline-block;font-size:8px;font-weight:700;padding:1px 5px;border-radius:5px;letter-spacing:.5px;}
 .ai-fire{background:#ff475722;color:#ff4757;border:1px solid #ff475544;}
 .ai-possible{background:#f1c40f22;color:#f1c40f;border:1px solid #f1c40f44;}
@@ -830,7 +867,21 @@ const greenIcon    = L.icon({iconUrl:'icons/StartingPoint.png',iconSize:[60,60],
 const redIcon      = L.icon({iconUrl:'icons/EndPoint.png',iconSize:[60,60],iconAnchor:[30,55],popupAnchor:[0,-60]});
 const nodeIcon     = L.icon({iconUrl:'icons/Node.png',iconSize:[50,50],iconAnchor:[18,18]});
 const gwIcon       = L.icon({iconUrl:'icons/Gateway.png',iconSize:[55,55],iconAnchor:[20,20]});
-const fireNodeIcon = L.icon({iconUrl:'icons/FireNode.png',iconSize:[60,60],iconAnchor:[30,55]});
+// Factory — returns a fresh divIcon with pulsing red rings each time
+function makeFireNodeIcon(){
+    return L.divIcon({
+        className: '',   // no leaflet default styles
+        iconSize:  [70, 70],
+        iconAnchor:[35, 60],
+        popupAnchor:[0, -62],
+        html: `<div class="fire-node-wrap">
+                 <div class="fire-pulse-ring"></div>
+                 <div class="fire-pulse-ring"></div>
+                 <div class="fire-pulse-ring"></div>
+                 <img src="icons/FireNode.png" alt="fire node">
+               </div>`
+    });
+}
 
 let gatewayMarkers={},gatewayData=[];
 async function loadGatewaysOnMap(silent=false){
@@ -898,21 +949,32 @@ async function loadAndPlaceNodes(silent=false){
                 <button class="popup-history-btn" onclick="(function(){window._flames_map && window._flames_map.closePopup(); openHistoryPanel('${nid}');})()">📊 View History</button>`;
 
             // ── FIRE NODE ICON LOGIC ──
-            // Use FireNode.png when: NOT offline AND ai_prediction==='fire' AND confidence >= 0.70
+            // Use animated FireNode divIcon when: NOT offline AND ai_prediction==='fire' AND confidence >= 0.70
             // Otherwise use normal Node.png
-            const activeIcon = (!offline && isFire && hiConf) ? fireNodeIcon : nodeIcon;
+            const isFireActive = (!offline && isFire && hiConf);
+            const activeIcon   = isFireActive ? makeFireNodeIcon() : nodeIcon;
 
             if(nodeMarkers[nid]){
-                // Update existing marker — switch icon based on current fire status
+                // Update existing marker — switch icon and apply/remove pulse class
                 nodeMarkers[nid].setIcon(activeIcon);
                 nodeMarkers[nid].setLatLng([lat,lng]);
                 nodeMarkers[nid].setPopupContent(popupContent);
-                nodeMarkers[nid].getElement().style.opacity = offline ? 0.55 : 1;
+                const el = nodeMarkers[nid].getElement();
+                if(el){
+                    el.style.opacity = offline ? 0.55 : 1;
+                    // divIcon wrappers need the class on the outer leaflet element
+                    el.classList.toggle('fire-node-active', isFireActive);
+                }
             } else {
                 // Create new marker with correct icon from the start
                 const marker=L.marker([lat,lng],{icon:activeIcon,opacity:offline?0.55:1}).addTo(map);
                 marker.bindPopup(popupContent);
                 marker.on('click',()=>{selectedNodeId=nid;updateSensorBar(nodeData[nid],nid);});
+                // After addTo, element exists — tag it if fire
+                if(isFireActive){
+                    const el=marker.getElement();
+                    if(el) el.classList.add('fire-node-active');
+                }
                 nodeMarkers[nid]=marker;
             }
         });
