@@ -33,7 +33,7 @@ body{background:var(--bg-deep);font-family:Arial,sans-serif;color:var(--text);tr
     background:linear-gradient(to right,#180401f5,#3a1005f5);
     border-bottom:1px solid #5a1a0a55;
     display:flex;align-items:center;justify-content:space-between;
-    padding:0 18px;position:fixed;top:0;left:0;right:0;z-index:1000;
+    padding:0 18px;position:fixed;top:0;left:0;right:0;z-index:10000;
     box-shadow:0 4px 20px #00000066;
 }
 [data-theme="light"] #main-header{background:linear-gradient(to right,#f5e8e0f5,#f0d5c8f5);border-bottom:1px solid #c8a08866;}
@@ -215,7 +215,6 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .hp-live-badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;color:var(--green);letter-spacing:1px;margin-left:6px;}
 .hp-live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse-dot 1.5s ease infinite;}
 
-/* Controls — NO refresh button */
 .hp-controls{display:flex;align-items:center;gap:6px;padding:8px 14px 6px;border-bottom:1px solid #2a1a0a33;flex-shrink:0;flex-wrap:wrap;}
 .hp-limit-label{font-size:9px;color:#7a4a3a;letter-spacing:1px;text-transform:uppercase;}
 .hp-limit-btn{background:#2a0a0455;border:1px solid #4a1a0a55;color:#9a6a5a;padding:3px 10px;border-radius:5px;font-size:10px;cursor:pointer;transition:.2s;}
@@ -241,10 +240,6 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .hp-chart svg{width:100%;height:100%;overflow:visible;}
 .hp-record-count{padding:3px 14px 0;font-size:10px;color:var(--text-muted);flex-shrink:0;}
 
-/* ===== HISTORY TABLE =====
-   Single scrollable container. Real <thead> stays sticky so
-   headers always line up with data columns. min-width forces
-   horizontal scroll on narrow screens rather than squashing. */
 .hp-table-wrap{flex:1;min-height:0;padding:8px 14px 12px;display:flex;flex-direction:column;}
 .hp-table-scroll{
     flex:1;overflow:auto;
@@ -252,7 +247,7 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 }
 .hp-table{
     width:100%;border-collapse:collapse;font-size:11px;
-    min-width:520px; /* prevents squash; scrolls horizontally instead */
+    min-width:520px;
 }
 .hp-table thead tr{background:#120503;position:sticky;top:0;z-index:2;}
 .hp-table thead th{
@@ -264,7 +259,6 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .hp-table tbody tr{border-bottom:1px solid #2a1a0a33;transition:background .15s;}
 .hp-table tbody tr:hover{background:#3a1a0a22;}
 .hp-table tbody td{padding:6px 8px;color:#c8a080;white-space:nowrap;}
-/* column sizing */
 .hp-table .c-num {width:28px;text-align:center;}
 .hp-table .c-ts  {min-width:112px;}
 .hp-table .c-val {width:60px;text-align:right;color:#ff904f;font-weight:600;font-family:monospace;}
@@ -355,7 +349,6 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .gw-org-actions{display:inline-flex;align-items:center;}
 .gw-ellipsis-btn{background:none;border:1px solid #4a1a0a55;border-radius:5px;color:#7a4a3a;font-size:13px;cursor:pointer;padding:2px 7px;line-height:1;transition:.2s;letter-spacing:1px;}
 .gw-ellipsis-btn:hover{background:#3a0a0433;border-color:#8b3a1a;color:#ff9055;}
-/* Dropdown rendered as a fixed portal so it escapes overflow:hidden parents */
 #gw-org-portal-dropdown{
     display:none;position:fixed;
     background:#1e0a08f5;border:1px solid var(--accent);border-radius:8px;
@@ -376,7 +369,23 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 @media (max-width:900px){
     .dashboard-grid{position:static;padding-top:calc(var(--hdr) + 10px);display:flex;flex-direction:column;height:auto;overflow:visible;}
     html,body{height:auto;overflow:auto;}
-    .map-col{height:55vw;min-height:260px;}
+
+    /* ── KEY FIX: isolate map so its children can't escape above the header ── */
+    .map-col{
+        height:55vw;min-height:260px;
+        isolation:isolate;   /* creates a new stacking context */
+        overflow:hidden;
+    }
+    .flames-map-wrap{isolation:isolate;}
+
+    /* Cap all map UI elements so they stay below z-index:10000 header */
+    .map-btn,
+    .zoom-group,
+    #route-info-box,
+    .route-menu{
+        z-index:500!important;
+    }
+
     .right-col-wrapper{min-height:auto;}
     .right-mid-row{grid-template-columns:1fr 1fr;}
     .adm-grid-4{grid-template-columns:1fr 1fr;}
@@ -414,10 +423,8 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
     .admin-content{padding:14px 14px 18px;}
     #admin-tabs-row{padding:10px 14px 0;}
     .adm-section{padding:14px;}
-    /* stats grid on small screens */
     .hp-stats{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
     .hp-stat{font-size:9px;}
-    /* smaller table font on phones */
     .hp-table{font-size:10px;}
     .hp-table thead th{font-size:7px;padding:5px 6px;}
     .hp-table tbody td{padding:5px 6px;}
@@ -574,7 +581,6 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
                     <span class="hp-node-badge" id="hp-node-id">—</span>
                 </div>
 
-                <!-- Refresh removed — WebSocket handles live updates -->
                 <div class="hp-controls">
                     <span class="hp-limit-label">Show:</span>
                     <button class="hp-limit-btn" onclick="setHistoryLimit(20)">20</button>
@@ -600,7 +606,6 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
                 </div>
                 <div class="hp-record-count"><span id="hp-record-count">0 readings</span></div>
 
-                <!-- Table — thead inside the scroll container so it stays sticky & aligned -->
                 <div class="hp-table-wrap">
                     <div class="hp-table-scroll" id="hp-table-body">
                         <div class="hp-state"><div class="hp-spinner"></div>Select a node to view its history</div>
@@ -688,7 +693,7 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
     </div>
 </div>
 
-<!-- Org dropdown portal — rendered outside any overflow:hidden ancestor -->
+<!-- Org dropdown portal -->
 <div id="gw-org-portal-dropdown">
     <div class="gw-org-dropdown-item danger" id="gw-portal-delete-btn">🗑 Delete Organization</div>
 </div>
@@ -962,7 +967,6 @@ function connectWebSocket(){
     ws.onmessage=event=>{
         try{
             const msg=JSON.parse(event.data);
-            // Reload only what changed
             if(msg.type==='sensor_data'||msg.type==='new_reading'||msg.type==='node_update'){
                 loadAndPlaceNodes(true);
                 if(_hm_node&&(!msg.node_id||msg.node_id===_hm_node))fetchHistory();
@@ -1182,7 +1186,6 @@ function formatTimestamp(raw){
     return`${months[parseInt(m,10)-1]||m} ${parseInt(day,10)}, ${t||''}`;
 }
 
-// renderTable: real <thead> inside the scroll container ensures sticky headers always align with data
 function renderTable(rows){
     document.getElementById('hp-table-body').innerHTML=`
     <table class="hp-table">
@@ -1224,7 +1227,7 @@ function renderTable(rows){
     </table>`;
 }
 
-// ORG DROPDOWN — fixed-position portal so it escapes overflow:hidden parents
+// ORG DROPDOWN
 let _portalOrgId = null;
 const _portal = document.getElementById('gw-org-portal-dropdown');
 
@@ -1240,20 +1243,16 @@ function toggleOrgDropdown(orgId, e) {
     }
 
     _portalOrgId = orgId;
-    // Wire up delete action for this org
     document.getElementById('gw-portal-delete-btn').onclick = () => {
         _portal.classList.remove('open');
         _portalOrgId = null;
         adminDeleteOrganization(orgId);
     };
 
-    // Position below the button, aligned to its right edge
     const dropW = 162;
     let left = rect.right - dropW;
     let top  = rect.bottom + 4;
-    // Prevent going off-screen left
     if (left < 8) left = 8;
-    // Flip above if not enough room below
     if (top + 52 > window.innerHeight - 8) top = rect.top - 52;
 
     _portal.style.left = left + 'px';
@@ -1261,14 +1260,12 @@ function toggleOrgDropdown(orgId, e) {
     _portal.classList.add('open');
 }
 
-// Close portal when clicking anywhere else
 document.addEventListener('click', (e) => {
     if (!_portal.contains(e.target)) {
         _portal.classList.remove('open');
         _portalOrgId = null;
     }
 });
-// Close on scroll (table or window)
 document.addEventListener('scroll', () => { _portal.classList.remove('open'); _portalOrgId = null; }, true);
 
 async function adminDeleteOrganization(orgId) {
@@ -1285,8 +1282,6 @@ async function adminDeleteOrganization(orgId) {
         loadOrganizations();
     } catch(err) { adminToast(`Delete failed: ${err.message}`, 'error'); }
 }
-
-// NODE POPUP → HISTORY BUTTON now embedded directly in popupContent string inside loadAndPlaceNodes
 </script>
 </body>
 </html>
