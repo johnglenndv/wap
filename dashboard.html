@@ -816,7 +816,7 @@ function adminToast(msg,type='info'){
     clearTimeout(el._t);el._t=setTimeout(()=>el.style.display='none',3500);
 }
 
-// MAP
+// ====================== MAP ======================
 const MAP_CENTER=[16.0435,120.3351];
 const map=L.map('flames-map',{zoomControl:false,attributionControl:false}).setView(MAP_CENTER,14);
 window._flames_map = map;
@@ -826,10 +826,11 @@ document.getElementById('locate-btn').addEventListener('click',()=>navigator.geo
 document.getElementById('zoom-in').addEventListener('click',()=>map.zoomIn());
 document.getElementById('zoom-out').addEventListener('click',()=>map.zoomOut());
 
-const greenIcon=L.icon({iconUrl:'icons/StartingPoint.png',iconSize:[60,60],iconAnchor:[30,55],popupAnchor:[0,-60]});
-const redIcon  =L.icon({iconUrl:'icons/EndPoint.png',iconSize:[60,60],iconAnchor:[30,55],popupAnchor:[0,-60]});
-const nodeIcon =L.icon({iconUrl:'icons/Node.png',iconSize:[50,50],iconAnchor:[18,18]});
-const gwIcon   =L.icon({iconUrl:'icons/Gateway.png',iconSize:[55,55],iconAnchor:[20,20]});
+const greenIcon    = L.icon({iconUrl:'icons/StartingPoint.png',iconSize:[60,60],iconAnchor:[30,55],popupAnchor:[0,-60]});
+const redIcon      = L.icon({iconUrl:'icons/EndPoint.png',iconSize:[60,60],iconAnchor:[30,55],popupAnchor:[0,-60]});
+const nodeIcon     = L.icon({iconUrl:'icons/Node.png',iconSize:[50,50],iconAnchor:[18,18]});
+const gwIcon       = L.icon({iconUrl:'icons/Gateway.png',iconSize:[55,55],iconAnchor:[20,20]});
+const fireNodeIcon = L.icon({iconUrl:'icons/FireNode.png',iconSize:[60,60],iconAnchor:[30,55]});
 
 let gatewayMarkers={},gatewayData=[];
 async function loadGatewaysOnMap(silent=false){
@@ -852,6 +853,7 @@ loadGatewaysOnMap();
 
 let nodeMarkers={},nodeData={},selectedNodeId=null;
 const OFFLINE_MIN=5;
+
 async function loadAndPlaceNodes(silent=false){
     try{
         const res=await fetch(`${API_BASE()}/nodes`,{headers:authHeader(),cache:silent?'default':'no-cache'});
@@ -894,15 +896,33 @@ async function loadAndPlaceNodes(silent=false){
                     <br><small style="color:${offline?'#ff9f1c':'#7a5a4a'};">Updated: ${lastStr}</small>
                 </div>
                 <button class="popup-history-btn" onclick="(function(){window._flames_map && window._flames_map.closePopup(); openHistoryPanel('${nid}');})()">📊 View History</button>`;
-            if(nodeMarkers[nid]){nodeMarkers[nid].setLatLng([lat,lng]).setPopupContent(popupContent);nodeMarkers[nid].getElement().style.opacity=offline?0.55:1;}
-            else{const marker=L.marker([lat,lng],{icon:nodeIcon,opacity:offline?0.55:1}).addTo(map);marker.bindPopup(popupContent);marker.on('click',()=>{selectedNodeId=nid;updateSensorBar(nodeData[nid],nid);});nodeMarkers[nid]=marker;}
+
+            // ── FIRE NODE ICON LOGIC ──
+            // Use FireNode.png when: NOT offline AND ai_prediction==='fire' AND confidence >= 0.70
+            // Otherwise use normal Node.png
+            const activeIcon = (!offline && isFire && hiConf) ? fireNodeIcon : nodeIcon;
+
+            if(nodeMarkers[nid]){
+                // Update existing marker — switch icon based on current fire status
+                nodeMarkers[nid].setIcon(activeIcon);
+                nodeMarkers[nid].setLatLng([lat,lng]);
+                nodeMarkers[nid].setPopupContent(popupContent);
+                nodeMarkers[nid].getElement().style.opacity = offline ? 0.55 : 1;
+            } else {
+                // Create new marker with correct icon from the start
+                const marker=L.marker([lat,lng],{icon:activeIcon,opacity:offline?0.55:1}).addTo(map);
+                marker.bindPopup(popupContent);
+                marker.on('click',()=>{selectedNodeId=nid;updateSensorBar(nodeData[nid],nid);});
+                nodeMarkers[nid]=marker;
+            }
         });
         if(selectedNodeId&&nodeData[selectedNodeId])updateSensorBar(nodeData[selectedNodeId],selectedNodeId);
     }catch(err){console.error('Failed to load nodes:',err);if(!silent)alert('Could not load sensor nodes.');}
 }
 loadAndPlaceNodes();
+setInterval(()=>loadAndPlaceNodes(true),15000);
 
-// WEBSOCKET
+// ====================== WEBSOCKET ======================
 function connectWebSocket(){
     const wsUrl=API_BASE().replace(/^http/,'ws')+'/ws';
     const ws=new WebSocket(wsUrl);
@@ -928,7 +948,7 @@ function connectWebSocket(){
 }
 connectWebSocket();
 
-// SENSOR BAR
+// ====================== SENSOR BAR ======================
 function updateSensorBar(d,nodeId){
     document.getElementById('sb-temp').textContent =d.temperature!=null?`${d.temperature}°C`:'—';
     document.getElementById('sb-hum').textContent  =d.humidity   !=null?`${d.humidity}%`  :'—';
@@ -944,7 +964,7 @@ function updateSensorBar(d,nodeId){
     ['sb-temp','sb-hum','sb-smoke','sb-flame'].forEach(id=>document.getElementById(id).style=s);
 }
 
-// PINNED
+// ====================== PINNED ======================
 let pinnedLocations=[],pinnedMarkers={};
 function renderPinned(){
     document.getElementById('pinned-count').textContent=pinnedLocations.length;
@@ -986,7 +1006,7 @@ map.on('contextmenu',e=>{
     pendingPopup=p;p.on('remove',()=>{pendingPopup=null;});
 });
 
-// SEARCH
+// ====================== SEARCH ======================
 let searchTimeout;
 async function handleSearch(val){
     const clr=document.getElementById('clearSearch'),icon=document.getElementById('search-icon-img'),box=document.getElementById('suggestionsBox');
@@ -999,7 +1019,7 @@ async function handleSearch(val){
 }
 function clearSearchInput(){document.getElementById('mapSearchInput').value='';document.getElementById('suggestionsBox').style.display='none';document.getElementById('clearSearch').style.display='none';document.getElementById('search-icon-img').style.display='block';}
 
-// ROUTE
+// ====================== ROUTE ======================
 let routingControl=null,waypoints=[],routeMarkers=[];
 const ORS_API_KEY='eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImEyYTEzN2QzOGRlNzQzNzQ5MTMwZTg1NzVkMTJlMzFiIiwiaCI6Im11cm11cjY0In0=';
 document.getElementById('route-btn').addEventListener('click',()=>document.getElementById('route-menu').classList.toggle('visible'));
@@ -1013,13 +1033,7 @@ async function calculateRoute(start,end){
 }
 function routeToIncident(lat,lng){const gw=getPrimaryGateway();waypoints=[gw,{lat,lng}];routeMarkers.push(L.marker([gw.lat,gw.lng],{icon:greenIcon}).addTo(map));routeMarkers.push(L.marker([lat,lng],{icon:redIcon}).addTo(map));calculateRoute(gw,{lat,lng});map.flyTo([lat,lng],14);}
 
-// ══════════════════════════════════════════════════════════════
-//  LIVE INCIDENTS
-//  Reads from fire_incidents table via GET /incidents/active
-//  'fire'  → red  Active  + red route button
-//  'false' → yellow Possible Fire + yellow route button
-//  Both show Started, Updated, and the route button
-// ══════════════════════════════════════════════════════════════
+// ====================== LIVE INCIDENTS ======================
 async function loadLiveIncidents(silent=false){
     try{
         const res=await fetch(`${API_BASE()}/incidents/active`,{headers:authHeader(),cache:'no-cache'});
@@ -1028,7 +1042,6 @@ async function loadLiveIncidents(silent=false){
         const incidents=await res.json();
         const listEl=document.getElementById('incident-list');
         listEl.innerHTML='';
-
         if(!incidents.length){
             listEl.innerHTML='<div class="node-placeholder">No active incidents right now</div>';
         } else {
@@ -1037,11 +1050,9 @@ async function loadLiveIncidents(silent=false){
                 const isFire    = pred==='fire';
                 const confColor = inc.confidence_pct>=70?'var(--green)':inc.confidence_pct>=40?'var(--yellow)':'var(--orange)';
                 const predLabel = isFire?'🔥 FIRE':'⚠ POSSIBLE';
-                // Fire → red button, Possible → yellow-tinted button
                 const btnBg     = isFire?'#c43d0066':'#7a5a0066';
                 const btnBorder = isFire?'var(--accent)':'var(--yellow)';
                 const btnEmoji  = isFire?'🔥':'⚠';
-
                 listEl.innerHTML+=`
                 <div class="incident-card">
                     <div class="incident-title">${inc.location_name||`Node ${inc.node_id}`}</div>
@@ -1058,20 +1069,18 @@ async function loadLiveIncidents(silent=false){
                 </div>`;
             });
         }
-
         document.getElementById('incident-count').textContent=incidents.length;
         const latestTs=incidents.length?incidents[0].timestamp:null;
-        const updatedStr=latestTs
-            ?new Date(latestTs.replace(' ','T')).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})
-            :new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+        const updatedStr=latestTs?new Date(latestTs.replace(' ','T')).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
         document.getElementById('incidents-last-update').textContent=`Updated: ${updatedStr}`;
     }catch(err){
         if(!silent)document.getElementById('incident-list').innerHTML='<div class="node-placeholder">Error loading incidents</div>';
     }
 }
 loadLiveIncidents();
+setInterval(()=>loadLiveIncidents(true),20000);
 
-// HISTORY PANEL
+// ====================== HISTORY PANEL ======================
 let _hm_node=null,_hm_limit=50,_hm_metric='temperature',_hm_rows_cache=[];
 function openHistoryPanel(nodeId){
     _hm_node=nodeId;_hm_metric='temperature';_hm_rows_cache=[];
@@ -1227,7 +1236,7 @@ function renderTable(rows){
     </table>`;
 }
 
-// ORG DROPDOWN
+// ====================== ORG DROPDOWN ======================
 let _portalOrgId=null;
 const _portal=document.getElementById('gw-org-portal-dropdown');
 function toggleOrgDropdown(orgId,e){
