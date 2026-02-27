@@ -1352,7 +1352,7 @@ const greenIcon  = L.icon({ iconUrl: 'icons/StartingPoint.png', iconSize: [60,60
 const redIcon    = L.icon({ iconUrl: 'icons/EndPoint.png',      iconSize: [60,60], iconAnchor:[30,55], popupAnchor:[0,-60] });
 const nodeIcon   = L.icon({ iconUrl: 'icons/Node.png',          iconSize: [50,50], iconAnchor:[18,18] });
 const gwIcon     = L.icon({ iconUrl: 'icons/Gateway.png',       iconSize: [55,55], iconAnchor:[20,20] });
-const fireNodeIcon   = L.icon({ iconUrl: 'icons/FireNode.png',  iconSize: [50,50], iconAnchor:[18,18] });
+const fireIcon   = L.icon({ iconUrl: 'icons/FireIncident.png',  iconSize: [30,30], iconAnchor:[15,15] });
 
 L.marker([GATEWAY.lat, GATEWAY.lng], { icon: gwIcon }).addTo(map).bindPopup('<b>🏠 F.L.A.M.E.S. Gateway</b>');
 
@@ -1421,21 +1421,17 @@ async function loadAndPlaceNodes(silent = false) {
                     ${!isOffline ? `<br><small>Last update: ${lastOnlineStr}</small>` : ''}
                 </div>
             `;
-         
-            if (nodeMarkers[node_id]) {
-            const updatedIcon = (!isOffline && isFire && isHighConf) ? fireNodeIcon : nodeIcon;
-            nodeMarkers[node_id].setIcon(updatedIcon);
-            nodeMarkers[node_id].setLatLng([lat, lng]);
-            nodeMarkers[node_id].setPopupContent(popupContent);
-            nodeMarkers[node_id].getElement().style.opacity = isOffline ? 0.55 : 1.0;
 
+            if (nodeMarkers[node_id]) {
+                nodeMarkers[node_id].setLatLng([lat, lng]);
+                nodeMarkers[node_id].setPopupContent(popupContent);
+                nodeMarkers[node_id].getElement().style.opacity = isOffline ? 0.55 : 1.0;
             } else {
-            const activeFireIcon = (!isOffline && isFire && isHighConf) ? fireNodeIcon : nodeIcon;
-            const marker = L.marker([lat, lng], { icon: activeFireIcon, opacity: isOffline ? 0.55 : 1.0 }).addTo(map);
-            marker.bindPopup(popupContent);
-            marker.on('click', () => { selectedNodeId = node_id; updateSensorBar(nodeData[node_id], node_id); });
-            nodeMarkers[node_id] = marker;
-        }
+                const marker = L.marker([lat, lng], { icon: nodeIcon, opacity: isOffline ? 0.55 : 1.0 }).addTo(map);
+                marker.bindPopup(popupContent);
+                marker.on('click', () => { selectedNodeId = node_id; updateSensorBar(nodeData[node_id], node_id); });
+                nodeMarkers[node_id] = marker;
+            }
         });
 
         if (selectedNodeId && nodeData[selectedNodeId]) updateSensorBar(nodeData[selectedNodeId], selectedNodeId);
