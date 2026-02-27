@@ -914,6 +914,8 @@ loadGatewaysOnMap();
 
 let nodeMarkers={},nodeData={},selectedNodeId=null;
 const OFFLINE_MIN=5;
+// Tracks incident status per node: 'active' | 'resolved' | null
+let _nodeIncidentStatus = {};
 
 async function loadAndPlaceNodes(silent=false){
     try{
@@ -935,14 +937,21 @@ async function loadAndPlaceNodes(silent=false){
             nodeData[nid]={...nodeData[nid]||{},...n,latitude:lat,longitude:lng,last_updated:lastUpdated,isUsingFallbackPosition:fallback};
             const lastTime=new Date(typeof lastUpdated==='string'?lastUpdated.replace(' ','T'):lastUpdated);
             const minAgo=(Date.now()-lastTime.getTime())/60000;
-            const offline=minAgo>OFFLINE_MIN;
             const pred=(n.ai_prediction||'normal').toLowerCase();
             const conf=n.confidence!=null?Number(n.confidence):0;
             const isFire=pred==='fire', isFalse=pred==='false', hiConf=conf>=0.70;
+            // Never mark a node offline while it has an ACTIVE (not resolved) fire/possible-fire alert
+            const incStatusNow = _nodeIncidentStatus[nid] || null;
+            const hasActiveAlert = (isFire || isFalse) && hiConf && (incStatusNow !== 'resolved');
+            const offline = !hasActiveAlert && minAgo > OFFLINE_MIN;
             const stColor=isFire?(hiConf?'#ff4757':'#ff9f1c'):isFalse?'#f1c40f':'#2ecc71';
             const stLabel=isFire?(hiConf?'🔥 FIRE':'Possible Fire'):isFalse?'⚠ Possible Fire':'Normal';
             const lastStr=isNaN(lastTime.getTime())?'—':lastTime.toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
             const posNote=fallback?`<div style="color:#ff9f1c;font-size:10px;margin-top:5px;">(Approx. position near gateway)</div>`:'';
+            // Show ✓ RESOLVED badge if this node's last incident was resolved
+            const resolvedBadge = (incStatusNow === 'resolved' && (isFire || isFalse))
+                ? `<span style="display:inline-block;margin-left:5px;font-size:9px;font-weight:700;padding:1px 6px;border-radius:5px;background:#0a2a0a;border:1px solid #2ecc7166;color:#2ecc71;vertical-align:middle;letter-spacing:.5px;">✓ RESOLVED</span>`
+                : '';
             const popupContent=`
                 <div class="popup-title">📡 ${nid}</div>
                 ${offline?`<div style="color:#ff9f1c;font-weight:600;margin:6px 0;font-size:12px;">⚠ OFFLINE · Last: ${lastStr}</div>`:''}
@@ -953,12 +962,13 @@ async function loadAndPlaceNodes(silent=false){
                     Flame: <b style="color:#ff904f">${n.flame??'—'}</b><br>
                     Smoke: <b style="color:#ff904f">${n.smoke??'—'} ppm</b><br>
                     AI: <strong>${pred.toUpperCase()}</strong> (${(conf*100).toFixed(1)}%)
-                    <b style="color:${stColor}">${stLabel}</b>
+                    <b style="color:${stColor}">${stLabel}</b>${resolvedBadge}
                     <br><small style="color:${offline?'#ff9f1c':'#7a5a4a'};">Updated: ${lastStr}</small>
                 </div>
                 <button class="popup-history-btn" onclick="(function(){window._flames_map && window._flames_map.closePopup(); openHistoryPanel('${nid}');})()">📊 View History</button>`;
 
-            const isFireActive = (!offline && isFire && hiConf);
+            // Fire icon only shows when: not offline, AI=fire, high confidence, AND incident not resolved
+            const isFireActive = (!offline && isFire && hiConf && incStatusNow !== 'resolved');
             const activeIcon   = isFireActive ? makeFireNodeIcon() : nodeIcon;
 
             if(nodeMarkers[nid]){
@@ -1101,10 +1111,28 @@ function routeToIncident(lat,lng){const gw=getPrimaryGateway();waypoints=[gw,{la
 // ====================== LIVE INCIDENTS ======================
 async function loadLiveIncidents(silent=false){
     try{
-        const res=await fetch(`${API_BASE()}/incidents/active`,{headers:authHeader(),cache:'no-cache'});
-        if(res.status===401){window.location.href='login.html';return;}
-        if(!res.ok)throw new Error(`HTTP ${res.status}`);
-        const incidents=await res.json();
+        // Fetch active incidents AND recent history to know resolved status per node
+        const [activeRes, histRes] = await Promise.all([
+            fetch(`${API_BASE()}/incidents/active`,{headers:authHeader(),cache:'no-cache'}),
+            fetch(`${API_BASE()}/incidents/history?limit=50`,{headers:authHeader(),cache:'no-cache'})
+        ]);
+        if(activeRes.status===401){window.location.href='login.html';return;}
+        if(!activeRes.ok)throw new Error(`HTTP ${activeRes.status}`);
+        const incidents=await activeRes.json();
+
+        // Build _nodeIncidentStatus: active nodes win over resolved
+        const newStatus = {};
+        if(histRes.ok){
+            const hist = await histRes.json();
+            // Process oldest first so newer entries overwrite
+            [...hist].reverse().forEach(h=>{
+                newStatus[h.node_id] = h.status; // 'active' or 'resolved'
+            });
+        }
+        // Active incidents always override
+        incidents.forEach(inc=>{ newStatus[inc.node_id] = 'active'; });
+        _nodeIncidentStatus = newStatus;
+
         const listEl=document.getElementById('incident-list');
         listEl.innerHTML='';
         if(!incidents.length){
@@ -1119,7 +1147,7 @@ async function loadLiveIncidents(silent=false){
                 const btnBorder = isFire?'var(--accent)':'var(--yellow)';
                 const btnEmoji  = isFire?'🔥':'⚠';
                 listEl.innerHTML+=`
-                <div class="incident-card" id="incident-card-${inc.incident_id}">
+                <div class="incident-card" id="incident-card-${inc.incident_id}" data-node-id="${inc.node_id}">
                     <div class="incident-title">${inc.location_name||`Node ${inc.node_id}`}</div>
                     <div class="incident-meta">Status: <span class="${inc.status_class}">${inc.status}</span></div>
                     <div class="incident-meta">AI: <strong>${predLabel}</strong> <span style="color:${confColor};font-weight:600;">(${inc.confidence_pct}%)</span></div>
@@ -1146,6 +1174,8 @@ async function loadLiveIncidents(silent=false){
         const latestTs=incidents.length?incidents[0].timestamp:null;
         const updatedStr=latestTs?new Date(latestTs.replace(' ','T')).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
         document.getElementById('incidents-last-update').textContent=`Updated: ${updatedStr}`;
+        // Refresh node markers so popup resolved badges update immediately
+        loadAndPlaceNodes(true);
     }catch(err){
         if(!silent)document.getElementById('incident-list').innerHTML='<div class="node-placeholder">Error loading incidents</div>';
     }
@@ -1171,7 +1201,12 @@ async function resolveIncident(incidentId) {
             body: JSON.stringify({ notes: 'Resolved via dashboard' })
         });
         if (!res.ok) throw new Error((await res.json()).detail || 'Failed');
+
+        // Immediately mark node as resolved so the popup badge shows right away
         const card = document.getElementById(`incident-card-${incidentId}`);
+        const resolvedNodeId = card ? card.dataset.nodeId : null;
+        if (resolvedNodeId) _nodeIncidentStatus[resolvedNodeId] = 'resolved';
+
         if (card) {
             card.style.transition = 'opacity .4s, transform .4s';
             card.style.opacity = '0';
@@ -1180,6 +1215,8 @@ async function resolveIncident(incidentId) {
         } else {
             loadLiveIncidents(true);
         }
+        // Refresh markers so popup badge appears immediately
+        loadAndPlaceNodes(true);
     } catch (err) {
         if (btn) { btn.disabled = false; btn.textContent = '✓ Resolve'; }
         alert(`Could not resolve: ${err.message}`);
