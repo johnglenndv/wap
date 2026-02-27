@@ -1129,7 +1129,7 @@ loadGatewaysOnMap();
 let nodeMarkers={},nodeData={},selectedNodeId=null;
 const OFFLINE_MIN=5;
 
-// ── Resolved node tracking — persisted in localStorage + synced from API ──
+// ── Resolved node tracking ──
 const RESOLVED_STORAGE_KEY = 'flames_resolved_nodes';
 function _loadResolvedFromStorage() {
     try { const raw = localStorage.getItem(RESOLVED_STORAGE_KEY); return raw ? new Set(JSON.parse(raw)) : new Set(); }
@@ -1140,23 +1140,19 @@ function _saveResolvedToStorage(set) {
 }
 let resolvedNodeIds = _loadResolvedFromStorage();
 
-// Sync resolvedNodeIds from server — uses /incidents/history (fixed endpoint)
 async function syncResolvedNodesFromAPI() {
     try {
         const res = await fetch(`${API_BASE()}/incidents/history?limit=200`, { headers: authHeader() });
         if (!res.ok) return;
         const list = await res.json();
-        // Nodes with a NEW open (unresolved) fire incident — remove from resolved set
         const activeFireNodes = new Set(list.filter(i => !(i.resolved_at || i.resolved) && i.node_id && i.status !== 'resolved').map(i => i.node_id));
-        // Nodes whose incident is resolved on server — add to resolved set
         list.filter(i => (i.resolved_at || i.status === 'resolved') && i.node_id).forEach(i => resolvedNodeIds.add(i.node_id));
-        // Clear nodes that have a new active fire (override localStorage stale data)
         activeFireNodes.forEach(nid => resolvedNodeIds.delete(nid));
         _saveResolvedToStorage(resolvedNodeIds);
     } catch(err) { console.warn('syncResolvedNodesFromAPI:', err); }
 }
 
-// Instantly remove fire animation from a specific node without waiting for API
+// Instantly clear fire animation for a node (used on resolve)
 function clearFireAnimationForNode(nodeId) {
     if (!nodeId) return;
     resolvedNodeIds.add(nodeId);
@@ -1168,7 +1164,6 @@ function clearFireAnimationForNode(nodeId) {
             el.classList.remove('fire-node-active');
             el.style.opacity = '1';
         }
-        // Update popup to show resolved badge
         const nd = nodeData[nodeId];
         if (nd) {
             const popupContent = buildNodePopupContent(nd, nodeId, nd.latitude, nd.longitude, false);
@@ -1177,7 +1172,33 @@ function clearFireAnimationForNode(nodeId) {
     }
 }
 
-// Build node popup content
+// ── NEW: Instantly apply fire animation for a node (used on fire event via WS) ──
+function applyFireAnimationForNode(nodeId, sensorData) {
+    if (!nodeId) return;
+    // Remove from resolved set since there's a new active fire
+    resolvedNodeIds.delete(nodeId);
+    _saveResolvedToStorage(resolvedNodeIds);
+
+    if (nodeMarkers[nodeId]) {
+        nodeMarkers[nodeId].setIcon(makeFireNodeIcon());
+        const el = nodeMarkers[nodeId].getElement();
+        if (el) {
+            el.classList.add('fire-node-active');
+            el.style.opacity = '1';
+        }
+        // Update popup if we have sensor data
+        const nd = sensorData || nodeData[nodeId];
+        if (nd) {
+            const popupContent = buildNodePopupContent(nd, nodeId, nd.latitude || nodeData[nodeId]?.latitude, nd.longitude || nodeData[nodeId]?.longitude, false);
+            nodeMarkers[nodeId].setPopupContent(popupContent);
+        }
+    }
+    // Also update node data cache with latest values if provided
+    if (sensorData && nodeData[nodeId]) {
+        Object.assign(nodeData[nodeId], sensorData);
+    }
+}
+
 function buildNodePopupContent(n, nid, lat, lng, offline) {
     const isResolved = resolvedNodeIds.has(nid);
     const pred = (n.ai_prediction||'normal').toLowerCase();
@@ -1215,7 +1236,7 @@ function buildNodePopupContent(n, nid, lat, lng, offline) {
 
 async function loadAndPlaceNodes(silent=false){
     try{
-        const res=await fetch(`${API_BASE()}/nodes`,{headers:authHeader(),cache:silent?'default':'no-cache'});
+        const res=await fetch(`${API_BASE()}/nodes`,{headers:authHeader(),cache:'no-cache'});
         if(res.status===401){window.location.href='login.html';return;}
         if(!res.ok)throw new Error(`HTTP ${res.status}`);
         const nodes=await res.json();
@@ -1239,7 +1260,6 @@ async function loadAndPlaceNodes(silent=false){
             const minAgo=(Date.now()-lastTime.getTime())/60000;
             const offline = (minAgo > OFFLINE_MIN) && !isFire && !isFalse;
 
-            // Fire animation only if active AND not resolved
             const isFireActive = (isFire && hiConf && !resolvedNodeIds.has(nid));
             const activeIcon   = isFireActive ? makeFireNodeIcon() : nodeIcon;
 
@@ -1271,10 +1291,8 @@ async function loadAndPlaceNodes(silent=false){
     }catch(err){console.error('Failed to load nodes:',err);if(!silent)alert('Could not load sensor nodes.');}
 }
 
-// On load: first sync resolved state from server, then place nodes
 syncResolvedNodesFromAPI().then(() => loadAndPlaceNodes());
 setInterval(()=>loadAndPlaceNodes(true), 15000);
-// Re-sync resolved state from server every 60s (catches changes by other users)
 setInterval(syncResolvedNodesFromAPI, 60000);
 
 // ====================== WEBSOCKET ======================
@@ -1289,26 +1307,64 @@ function connectWebSocket(){
         try{
             const msg=JSON.parse(event.data);
 
-            // ── node_update or sensor reading → refresh nodes immediately ──
-            if(msg.type==='sensor_data'||msg.type==='new_reading'||msg.type==='node_update'){
+            // ── sensor_data / new_reading → update nodes immediately ──
+            if(msg.type==='sensor_data'||msg.type==='new_reading'){
                 loadAndPlaceNodes(true);
                 if(_hm_node&&(!msg.node_id||msg.node_id===_hm_node))fetchHistory();
             }
 
-            // ── incident_update → refresh incidents AND nodes immediately ──
+            // ── node_update → always reload nodes immediately (no delay) ──
+            if(msg.type==='node_update'){
+                loadAndPlaceNodes(true);
+                if(_hm_node&&(!msg.node_id||msg.node_id===_hm_node))fetchHistory();
+            }
+
+            // ── incident_update → handle all cases ──
             if(msg.type==='incident_update'){
-                loadLiveIncidents(true);
-                // Always reload nodes so fire animation appears/disappears instantly
                 if(msg.action==='resolved' && msg.node_id){
-                    // Instantly clear fire animation before the API call returns
+                    // Instantly clear fire animation before API call returns
                     clearFireAnimationForNode(msg.node_id);
-                    // Then sync server state and reload
-                    syncResolvedNodesFromAPI().then(()=>loadAndPlaceNodes(true));
+                    syncResolvedNodesFromAPI().then(()=> loadAndPlaceNodes(true));
                 } else {
+                    // ★ KEY FIX: For new fire / possible fire / responded events,
+                    // immediately apply fire animation if confidence qualifies,
+                    // then also do a full reload to get latest data from server.
+                    const pred = (msg.ai_prediction||'').toLowerCase();
+                    const conf = msg.confidence != null ? Number(msg.confidence) : 0;
+                    const isFire = pred === 'fire' || pred === 'false';
+                    const hiConf = conf >= 0.70;
+
+                    if (isFire && hiConf && msg.node_id) {
+                        // Instantly switch icon to fire animation — no API round-trip needed
+                        applyFireAnimationForNode(msg.node_id, {
+                            ai_prediction: msg.ai_prediction,
+                            confidence: conf,
+                            temperature: msg.temperature,
+                            humidity: msg.humidity,
+                            flame: msg.flame,
+                            smoke: msg.smoke,
+                            timestamp: msg.timestamp,
+                            latitude: msg.latitude,
+                            longitude: msg.longitude,
+                        });
+                    } else if (msg.node_id && (pred === 'fire' || pred === 'false')) {
+                        // Lower confidence fire — still apply animation, let full reload confirm
+                        applyFireAnimationForNode(msg.node_id, {
+                            ai_prediction: msg.ai_prediction,
+                            confidence: conf,
+                            timestamp: msg.timestamp,
+                        });
+                    }
+                    // Always do a full node reload too (gets accurate data from /nodes endpoint)
                     loadAndPlaceNodes(true);
                 }
+
+                // Always refresh incidents panel
+                loadLiveIncidents(true);
+
                 // Refresh resolved tab if open
                 if(_currentIncidentTab==='resolved') loadResolvedIncidents();
+
                 // Refresh details modal if open
                 if(document.getElementById('incident-details-modal').classList.contains('open') && _detailsModalIncidentId){
                     openIncidentDetailsModal(_detailsModalIncidentId);
@@ -1591,7 +1647,6 @@ async function confirmRescueDispatch() {
         locationName: inc?.location_name || `Incident #${incidentId}`
     };
     try {
-        // POST to backend — backend will broadcast to all clients via WebSocket
         await fetch(`${API_BASE()}/incidents/${incidentId}/respond`, {
             method: 'PATCH',
             headers: {...authHeader(),'Content-Type':'application/json'},
@@ -1635,14 +1690,10 @@ async function resolveIncident(incidentId, nodeId) {
             };
         }
 
-        // Instantly clear fire animation on this device — don't wait for WS echo
         clearFireAnimationForNode(nodeId);
-
-        // Close modals
         closeIncidentDetailsModal();
         closeIncidentMapModal();
 
-        // Animate card out then reload
         const card = document.getElementById(`incident-card-${incidentId}`);
         if (card) {
             card.style.transition = 'opacity .4s, transform .4s';
@@ -1656,7 +1707,6 @@ async function resolveIncident(incidentId, nodeId) {
             loadLiveIncidents(true);
             loadAndPlaceNodes(true);
         }
-        // Backend will broadcast WS → other devices also update instantly
     } catch (err) {
         alert(`Could not resolve: ${err.message}`);
     }
