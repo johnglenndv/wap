@@ -1064,7 +1064,7 @@ map.on('contextmenu',e=>{
     e.originalEvent.preventDefault();
     if(pendingPopup){map.closePopup(pendingPopup);pendingPopup=null;}
     const lat=e.latlng.lat.toFixed(6),lng=e.latlng.lng.toFixed(6);
-    const p=L.popup({maxWidth:260}).setLatLng(e.latlng).setContent(`<div class="popup-title">📍 Pin this location?</div><div class="popup-coords">${lat}, ${lng}</div><input class="popup-input" id="pin-name" placeholder="Location name (optional)"><div class="popup-actions"><button class="popup-save" onclick="savePin(${lat},${lng})">Save</button><button class="popup-cancel" onclick="map.closePopup()">Cancel</button></div>`).addTo(map);
+    const p=L.popup({maxWidth:260}).setLatLng(e.latlng).setContent(`<div class="popup-title">📍 Pin this location?</div><div class="popup-coords">${lat}, ${lng}</div><input class="popup-input" id="pin-name" placeholder="Location name..."><div class="popup-actions"><button class="popup-save" onclick="savePin(${lat},${lng})">Save</button><button class="popup-cancel" onclick="map.closePopup()">Cancel</button></div>`).addTo(map);
     pendingPopup=p;p.on('remove',()=>{pendingPopup=null;});
 });
 
