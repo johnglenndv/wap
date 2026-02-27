@@ -1777,7 +1777,13 @@ function renderPinned(){
         const item=document.createElement('div');item.className='pinned-item';
         item.innerHTML=`<div><div class="pinned-item-name">${pin.name||'Pinned Location'}</div><div class="pinned-item-coords">${pin.latitude.toFixed(5)}, ${pin.longitude.toFixed(5)}</div></div><div class="pinned-item-actions"><button class="btn-icon-sm" onclick="flyToPin(${pin.latitude},${pin.longitude})">📍</button><button class="btn-icon-sm" onclick="removePin(${pin.id})" style="color:var(--red)">✕</button></div>`;
         list.appendChild(item);
-        pinnedMarkers[pin.id]=L.marker([pin.latitude,pin.longitude]).addTo(map).bindPopup(`<b>${pin.name||'Pinned'}</b><br>${pin.latitude.toFixed(5)}, ${pin.longitude.toFixed(5)}`);
+        const pinnedIcon = L.icon({
+        iconUrl: 'icons/Pinpoint.png', 
+        iconSize: [55, 55],
+        iconAnchor: [20, 40],
+        popupAnchor: [0, -40]
+    });
+    pinnedMarkers[pin.id] = L.marker([pin.latitude, pin.longitude], { icon: pinnedIcon }).addTo(map).bindPopup(`<b>${pin.name||'Pinned'}</b><br>${pin.latitude.toFixed(5)}, ${pin.longitude.toFixed(5)}`)
     });
 }
 let pinnedListVisible=false;
