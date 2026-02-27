@@ -151,6 +151,84 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 #close-info-btn{background:none;border:none;color:white;cursor:pointer;font-size:18px;margin-left:4px;transition:color .2s;}
 #close-info-btn:hover{color:var(--red);}
 
+/* ===================== FLOATING MAP SEARCH ===================== */
+.map-search-float{
+    position:absolute;
+    top:10px;
+    left:10px;
+    z-index:1000;
+    width:min(260px, calc(100% - 56px));
+}
+.map-search-float .search-wrap{position:relative;}
+.map-search-float .search-wrap input{
+    width:100%;
+    background:#1a0805ee;
+    border:2px solid #5a1a0a88;
+    border-radius:10px;
+    padding:9px 36px 9px 14px;
+    color:var(--text);
+    font-family:Arial,sans-serif;
+    font-size:13px;
+    outline:none;
+    transition:border-color .3s,box-shadow .3s,background .2s;
+    box-shadow:0 4px 16px #00000066;
+    backdrop-filter:blur(8px);
+    box-sizing:border-box;
+}
+.map-search-float .search-wrap input:focus{
+    border-color:var(--accent);
+    box-shadow:0 0 16px #e14f0044, 0 4px 20px #00000077;
+    background:#1e0a08f8;
+}
+.map-search-float .search-wrap input::placeholder{color:#7a5a4a;}
+.map-search-float .search-icon{
+    position:absolute;right:10px;top:50%;transform:translateY(-50%);
+    width:16px;opacity:.5;pointer-events:none;
+}
+.map-search-float .clr-btn{
+    position:absolute;right:10px;top:50%;transform:translateY(-50%);
+    color:var(--text);font-size:18px;cursor:pointer;display:none;z-index:5;
+    background:none;border:none;padding:0;line-height:1;
+}
+.map-search-float .suggestions-box{
+    position:absolute;top:calc(100% + 4px);left:0;right:0;
+    background:#1a0805f8;
+    border:2px solid var(--accent);
+    border-radius:10px;
+    max-height:180px;overflow-y:auto;display:none;z-index:9999;
+    box-shadow:0 8px 24px #00000099;
+    backdrop-filter:blur(8px);
+}
+.map-search-float .suggestion-item{
+    padding:9px 13px;font-size:12px;color:var(--text);
+    cursor:pointer;border-bottom:1px solid #3a1a0a44;
+    transition:background .15s;
+}
+.map-search-float .suggestion-item:last-child{border-bottom:none;}
+.map-search-float .suggestion-item:hover{background:#3a1a0a66;}
+[data-theme="light"] .map-search-float .search-wrap input{
+    background:#fdf5f0ee;
+    border-color:#c8a08888;
+    color:#2a1208;
+    box-shadow:0 4px 16px #00000022;
+}
+[data-theme="light"] .map-search-float .search-wrap input:focus{
+    background:#fffffff8;
+    border-color:var(--accent);
+}
+[data-theme="light"] .map-search-float .suggestions-box{
+    background:#fdf5f0f8;
+    border-color:var(--accent);
+}
+[data-theme="light"] .map-search-float .suggestion-item{color:#2a1208;}
+/* Hide route-info-box behind search by shifting it when search has content */
+@media (max-width:600px){
+    .map-search-float{
+        top:8px;left:8px;
+        width:calc(100% - 54px);
+    }
+}
+
 /* ===================== RIGHT COLUMN ===================== */
 .right-col-wrapper{grid-column:2;grid-row:1/3;display:flex;flex-direction:column;gap:10px;min-height:0;overflow:hidden;}
 .right-default-view{display:flex;flex-direction:column;gap:10px;flex:1;min-height:0;}
@@ -158,7 +236,54 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .right-mid-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;flex:1;min-height:0;}
 .left-col-stack{display:flex;flex-direction:column;gap:10px;min-height:0;overflow:hidden;}
 
-/* ===================== SEARCH ===================== */
+/* ===================== GATEWAY STATUS PANEL ===================== */
+.gateway-status-panel{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;}
+.gw-refresh-btn{background:transparent;border:1px solid #4a1a0a44;border-radius:6px;color:var(--text-dim);font-size:10px;padding:3px 8px;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:3px;}
+.gw-refresh-btn:hover{border-color:var(--accent);color:var(--text);}
+.gw-refresh-btn.spinning svg{animation:spin .7s linear infinite;}
+.gw-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:5px;min-height:0;}
+.gw-list::-webkit-scrollbar{width:3px;}
+.gw-list::-webkit-scrollbar-track{background:transparent;}
+.gw-list::-webkit-scrollbar-thumb{background:#3a1a0a55;border-radius:3px;}
+.gw-item{background:#1e0a0666;border:1px solid #3a1a0a44;border-radius:9px;overflow:hidden;flex-shrink:0;transition:border-color .2s;}
+.gw-item:hover{border-color:#5a2a1a77;}
+.gw-item.expanded{border-color:#5a2a1a99;}
+.gw-item-header{display:flex;align-items:center;gap:7px;padding:8px 10px;cursor:pointer;user-select:none;transition:background .15s;}
+.gw-item-header:hover{background:#2a0a0444;}
+.gw-status-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;transition:background .3s;}
+.gw-status-dot.online{background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse-dot 2s ease infinite;}
+.gw-status-dot.offline{background:#4a4a4a;box-shadow:none;animation:none;}
+.gw-status-dot.fire{background:var(--red);box-shadow:0 0 8px var(--red);animation:fire-pulse-dot 1s ease infinite;}
+@keyframes fire-pulse-dot{0%,100%{opacity:1;box-shadow:0 0 8px #ff4757;}50%{opacity:.5;box-shadow:0 0 16px #ff4757,0 0 24px #ff000066;}}
+.gw-item-name{font-size:12px;font-weight:700;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.gw-item-location{font-size:9px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60px;flex-shrink:1;}
+.gw-item-meta{display:flex;align-items:center;gap:4px;flex-shrink:0;}
+.gw-node-count-badge{font-size:9px;font-weight:700;color:#ff9055;background:#3a0a0455;border:1px solid #5a2a1a44;border-radius:10px;padding:1px 6px;white-space:nowrap;}
+.gw-chevron{font-size:10px;color:var(--text-muted);transition:transform .25s;flex-shrink:0;margin-left:2px;}
+.gw-item.expanded .gw-chevron{transform:rotate(180deg);}
+.gw-nodes-list{display:none;border-top:1px solid #3a1a0a33;background:#12050333;}
+.gw-nodes-list.visible{display:block;}
+.gw-node-row{display:flex;align-items:center;gap:7px;padding:6px 10px 6px 14px;cursor:pointer;border-bottom:1px solid #2a1a0a22;transition:background .15s;position:relative;}
+.gw-node-row:last-child{border-bottom:none;}
+.gw-node-row:hover{background:#2a0a0444;}
+.gw-node-row:hover .gw-node-flyto{opacity:1;}
+.node-status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.node-status-dot.active{background:var(--green);box-shadow:0 0 5px var(--green);animation:pulse-dot 2s ease infinite;}
+.node-status-dot.offline{background:#4a4a4a;animation:none;box-shadow:none;}
+.node-status-dot.fire{background:var(--red);box-shadow:0 0 7px var(--red);animation:fire-pulse-dot 1s ease infinite;}
+.gw-node-info{flex:1;min-width:0;}
+.gw-node-id{font-size:11px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.gw-node-id .fire-label{font-size:8px;font-weight:700;color:#ff4757;background:#ff475722;border:1px solid #ff475544;border-radius:4px;padding:1px 4px;letter-spacing:.5px;flex-shrink:0;}
+.gw-node-loc{font-size:9px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.gw-node-coords{font-size:8px;color:#3a2a1a;font-family:monospace;white-space:nowrap;margin-top:1px;}
+.gw-node-flyto{opacity:0;transition:opacity .2s;flex-shrink:0;}
+.gw-node-flyto-btn{background:linear-gradient(135deg,#1a1a3a,#2a2a5a);border:1px solid #3d6fff55;color:#6db8ff;font-size:8px;font-weight:700;padding:3px 7px;border-radius:5px;cursor:pointer;white-space:nowrap;letter-spacing:.5px;transition:.2s;}
+.gw-node-flyto-btn:hover{background:linear-gradient(135deg,#2a3a8a,#3d5acc);box-shadow:0 0 8px #3d6fff44;}
+.gw-no-nodes{padding:10px 14px;font-size:11px;color:var(--text-muted);text-align:center;font-style:italic;}
+.gw-empty-state{text-align:center;padding:16px 10px;color:var(--text-muted);font-size:11px;}
+.gw-loading{text-align:center;padding:14px;color:var(--text-muted);font-size:11px;}
+
+/* ===================== SEARCH (kept for reference, now unused in right col) ===================== */
 .search-panel{flex-shrink:0;overflow:visible!important;}
 .search-wrap{position:relative;}
 .search-wrap input{width:100%;background:#12060566;border:1px solid #4a1a0a;border-radius:8px;padding:9px 36px 9px 12px;color:var(--text);font-family:Arial,sans-serif;font-size:13px;outline:none;transition:border-color .3s,box-shadow .3s;}
@@ -171,13 +296,13 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .suggestion-item:hover{background:#3a1a0a55;}
 
 /* ===================== PINNED ===================== */
-.pinned-panel{flex-shrink:0;overflow:hidden;display:flex;flex-direction:column;}
+.pinned-panel{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;}
 .pinned-count-view{display:flex;justify-content:space-between;align-items:flex-end;}
 .pinned-num{font-size:32px;font-family:Arial,sans-serif;color:var(--text);line-height:1;}
 .pinned-label{font-size:11px;color:var(--text-dim);margin-top:3px;}
 .btn-small{background:transparent;border:1px solid #4a1a0a;color:var(--text);padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-family:Arial,sans-serif;transition:.3s;white-space:nowrap;}
 .btn-small:hover{background:linear-gradient(to right,#8b1a00,#c43d00);border-color:var(--accent);}
-.pinned-list{display:none;flex-direction:column;gap:5px;overflow-y:auto;flex:1;padding-top:8px; max-height: 140px;}
+.pinned-list{display:none;flex-direction:column;gap:5px;overflow:hidden;flex:1;padding-top:8px;}
 .pinned-list.visible{display:flex;}
 .pinned-item{background:#2a0a0555;border:1px solid #3a1a0a44;border-radius:8px;padding:7px 10px;display:flex;justify-content:space-between;align-items:center;font-size:12px;flex-shrink:0;}
 .pinned-item-name{color:var(--text);font-weight:500;}
@@ -186,71 +311,6 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .btn-icon-sm{background:none;border:none;cursor:pointer;padding:2px 5px;border-radius:4px;font-size:12px;color:var(--text-dim);transition:.2s;}
 .btn-icon-sm:hover{background:#5a1a0a44;color:var(--text);}
 .no-pinned{color:var(--text-muted);font-size:12px;text-align:center;margin-top:10px;}
-
-/* ===================== GATEWAY STATUS PANEL ===================== */
-.gateway-status-panel{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;}
-
-.gw-refresh-btn{background:transparent;border:1px solid #4a1a0a44;border-radius:6px;color:var(--text-dim);font-size:10px;padding:3px 8px;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:3px;}
-.gw-refresh-btn:hover{border-color:var(--accent);color:var(--text);}
-.gw-refresh-btn.spinning svg{animation:spin .7s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-.gw-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:5px;min-height:0;}
-.gw-list::-webkit-scrollbar{width:3px;}
-.gw-list::-webkit-scrollbar-track{background:transparent;}
-.gw-list::-webkit-scrollbar-thumb{background:#3a1a0a55;border-radius:3px;}
-
-/* Gateway Item */
-.gw-item{background:#1e0a0666;border:1px solid #3a1a0a44;border-radius:9px;overflow:hidden;flex-shrink:0;transition:border-color .2s;}
-.gw-item:hover{border-color:#5a2a1a77;}
-.gw-item.expanded{border-color:#5a2a1a99;}
-
-.gw-item-header{display:flex;align-items:center;gap:7px;padding:8px 10px;cursor:pointer;user-select:none;transition:background .15s;}
-.gw-item-header:hover{background:#2a0a0444;}
-.gw-item-header:active{background:#3a0a0433;}
-
-/* Gateway status dot */
-.gw-status-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;transition:background .3s;}
-.gw-status-dot.online{background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse-dot 2s ease infinite;}
-.gw-status-dot.offline{background:#4a4a4a;box-shadow:none;animation:none;}
-.gw-status-dot.fire{background:var(--red);box-shadow:0 0 8px var(--red);animation:fire-pulse-dot 1s ease infinite;}
-@keyframes fire-pulse-dot{0%,100%{opacity:1;box-shadow:0 0 8px #ff4757;}50%{opacity:.5;box-shadow:0 0 16px #ff4757,0 0 24px #ff000066;}}
-
-.gw-item-name{font-size:12px;font-weight:700;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.gw-item-location{font-size:9px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60px;flex-shrink:1;}
-.gw-item-meta{display:flex;align-items:center;gap:4px;flex-shrink:0;}
-.gw-node-count-badge{font-size:9px;font-weight:700;color:#ff9055;background:#3a0a0455;border:1px solid #5a2a1a44;border-radius:10px;padding:1px 6px;white-space:nowrap;}
-.gw-chevron{font-size:10px;color:var(--text-muted);transition:transform .25s;flex-shrink:0;margin-left:2px;}
-.gw-item.expanded .gw-chevron{transform:rotate(180deg);}
-
-/* Nodes list inside gateway */
-.gw-nodes-list{display:none;border-top:1px solid #3a1a0a33;background:#12050333;}
-.gw-nodes-list.visible{display:block;}
-
-.gw-node-row{display:flex;align-items:center;gap:7px;padding:6px 10px 6px 14px;cursor:pointer;border-bottom:1px solid #2a1a0a22;transition:background .15s;position:relative;}
-.gw-node-row:last-child{border-bottom:none;}
-.gw-node-row:hover{background:#2a0a0444;}
-.gw-node-row:hover .gw-node-flyto{opacity:1;}
-
-/* Node status dot */
-.node-status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
-.node-status-dot.active{background:var(--green);box-shadow:0 0 5px var(--green);animation:pulse-dot 2s ease infinite;}
-.node-status-dot.offline{background:#4a4a4a;animation:none;}
-.node-status-dot.fire{background:var(--red);box-shadow:0 0 7px var(--red);animation:fire-pulse-dot 1s ease infinite;}
-
-.gw-node-info{flex:1;min-width:0;}
-.gw-node-id{font-size:11px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.gw-node-id .fire-label{font-size:8px;font-weight:700;color:#ff4757;background:#ff475722;border:1px solid #ff475544;border-radius:4px;padding:1px 4px;letter-spacing:.5px;flex-shrink:0;}
-.gw-node-loc{font-size:9px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.gw-node-coords{font-size:8px;color:#3a2a1a;font-family:monospace;white-space:nowrap;margin-top:1px;}
-
-.gw-node-flyto{opacity:0;transition:opacity .2s;flex-shrink:0;}
-.gw-node-flyto-btn{background:linear-gradient(135deg,#1a1a3a,#2a2a5a);border:1px solid #3d6fff55;color:#6db8ff;font-size:8px;font-weight:700;padding:3px 7px;border-radius:5px;cursor:pointer;white-space:nowrap;letter-spacing:.5px;transition:.2s;}
-.gw-node-flyto-btn:hover{background:linear-gradient(135deg,#2a3a8a,#3d5acc);box-shadow:0 0 8px #3d6fff44;}
-
-.gw-no-nodes{padding:10px 14px;font-size:11px;color:var(--text-muted);text-align:center;font-style:italic;}
-.gw-empty-state{text-align:center;padding:16px 10px;color:var(--text-muted);font-size:11px;}
-.gw-loading{text-align:center;padding:14px;color:var(--text-muted);font-size:11px;}
 
 /* ===================== INCIDENTS ===================== */
 .incidents-panel{min-height:0;display:flex;flex-direction:column;}
@@ -532,7 +592,7 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .gw-cell-wrap{display:flex;flex-direction:column;gap:5px;}
 .gw-badges-row{display:flex;flex-wrap:wrap;gap:3px;min-height:20px;}
 .gw-badge{display:inline-flex;align-items:center;gap:3px;background:#3a0a0444;border:1px solid #5a2a1a44;border-radius:5px;padding:2px 6px 2px 7px;font-size:9px;color:#ff9055;}
-.gw-badge-remove{background:none;border:none;color:#7a3a2a;cursor:pointer;font-size:11px;line-height:1;padding:0 1px;transition:color .15px;}
+.gw-badge-remove{background:none;border:none;color:#7a3a2a;cursor:pointer;font-size:11px;line-height:1;padding:0 1px;transition:color .15s;}
 .gw-badge-remove:hover{color:#ff4757;}
 .gw-assign-row{display:flex;gap:4px;align-items:center;}
 .gw-assign-select{flex:1;min-width:0;background:#12060566;border:1px solid #4a1a0a;border-radius:5px;padding:3px 7px;color:#f0d0b8;font-size:10px;outline:none;}
@@ -562,9 +622,9 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
     .map-col{height:55vw;min-height:260px;isolation:isolate;overflow:hidden;}
     .flames-map-wrap{isolation:isolate;}
     .map-btn,.zoom-group,#route-info-box,.route-menu{z-index:500!important;}
+    .map-search-float{z-index:500!important;}
     .right-col-wrapper{min-height:auto;}
-    .right-top-row{grid-template-columns:1fr 1fr;}
-    .gateway-status-panel{height:160px;}
+    .right-mid-row{grid-template-columns:1fr 1fr;}
     .adm-grid-4{grid-template-columns:1fr 1fr;}
     .adm-grid-4>*:last-child{grid-column:1/-1;}
     .inc-map-body{flex-direction:column;}
@@ -604,9 +664,7 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
     .sensor-node-info{display:none;}
     .map-col{height:72vw;min-height:220px;}
     .right-mid-row{grid-template-columns:1fr;}
-    .right-top-row{grid-template-columns:1fr;}
     .incidents-panel{max-height:320px;}
-    .gateway-status-panel{height:auto;min-height:120px;}
     .adm-grid-2,.adm-grid-3,.adm-grid-4{grid-template-columns:1fr;}
     .adm-grid-4>*:last-child{grid-column:1;}
     .admin-box{border-radius:10px;}
@@ -729,6 +787,17 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
     <div class="map-col">
         <div class="flames-map-wrap">
             <div id="flames-map"></div>
+
+            <!-- ✦ FLOATING SEARCH (moved from right column onto the map) -->
+            <div class="map-search-float">
+                <div class="search-wrap">
+                    <input type="text" id="mapSearchInput" placeholder="🔍  Search a place…" oninput="handleSearch(this.value)">
+                    <span id="clearSearch" class="clr-btn" onclick="clearSearchInput()">×</span>
+                    <img src="icons/search-icon.png" class="search-icon" id="search-icon-img" alt="">
+                    <div id="suggestionsBox" class="suggestions-box"></div>
+                </div>
+            </div>
+
             <button class="map-btn" id="home-btn"><img src="icons/home.png" alt="Home"></button>
             <button class="map-btn" id="locate-btn"><img src="icons/showmylocation.png" alt="Locate"></button>
             <button class="map-btn" id="route-btn"><img src="icons/RoutePlanner.png" alt="Route"></button>
@@ -754,16 +823,8 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
     <!-- RIGHT COLUMN -->
     <div class="right-col-wrapper">
         <div class="right-default-view" id="right-default-view">
-            <div class="panel search-panel">
-                <div class="panel-title"><span>Search Location</span><img src="icons/search-icon.png" alt=""></div>
-                <div class="search-wrap">
-                    <input type="text" id="mapSearchInput" placeholder="Search a place…" oninput="handleSearch(this.value)">
-                    <span id="clearSearch" class="clr-btn" onclick="clearSearchInput()">×</span>
-                    <img src="icons/search-icon.png" class="search-icon" id="search-icon-img" alt="">
-                    <div id="suggestionsBox" class="suggestions-box"></div>
-                </div>
-            </div>
-            <div class="right-mid-row">
+            <!-- Search panel removed from here — now floating on the map -->
+            <div class="right-mid-row" style="flex:1;">
 
                 <!-- LEFT COLUMN: Pinned (top) + Gateway Status (bottom) -->
                 <div class="left-col-stack">
@@ -799,7 +860,7 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 
                 </div>
 
-                <!-- RIGHT COLUMN: Incidents (unchanged) -->
+                <!-- RIGHT COLUMN: Incidents -->
                 <div class="panel incidents-panel">
                     <div class="incident-header-row">
                         <div class="panel-title" style="margin-bottom:0;">
@@ -818,7 +879,6 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
                     <!-- Resolved list -->
                     <div class="resolved-list" id="resolved-list" style="display:none;"></div>
                 </div>
-
             </div>
         </div>
 
@@ -1200,6 +1260,19 @@ function makeFireNodeIcon(){
     });
 }
 
+function makeOfflineNodeIcon(){
+    return L.divIcon({
+        className: '',
+        iconSize:  [50, 50],
+        iconAnchor:[18, 18],
+        popupAnchor:[0, -22],
+        html: `<div style="position:relative;width:50px;height:50px;display:flex;align-items:center;justify-content:center;opacity:0.55;">
+                 <img src="icons/Node.png" style="width:50px;height:50px;" alt="offline node">
+                 <div style="position:absolute;bottom:2px;right:2px;width:12px;height:12px;background:#4a4a4a;border:2px solid #1a0a06;border-radius:50%;"></div>
+               </div>`
+    });
+}
+
 let gatewayMarkers={},gatewayData=[];
 async function loadGatewaysOnMap(silent=false){
     try{
@@ -1220,7 +1293,7 @@ function getPrimaryGateway(){const gw=gatewayData.find(g=>parseFloat(g.latitude)
 loadGatewaysOnMap();
 
 let nodeMarkers={},nodeData={},selectedNodeId=null;
-const OFFLINE_MIN=5;
+const OFFLINE_MIN=3;
 
 // ── Resolved node tracking ──
 const RESOLVED_STORAGE_KEY = 'flames_resolved_nodes';
@@ -1250,15 +1323,25 @@ function clearFireAnimationForNode(nodeId) {
     resolvedNodeIds.add(nodeId);
     _saveResolvedToStorage(resolvedNodeIds);
     if (nodeMarkers[nodeId]) {
-        nodeMarkers[nodeId].setIcon(nodeIcon);
+        // Check if the node is currently offline (no recent data)
+        const nd = nodeData[nodeId];
+        let isOffline = false;
+        if (nd) {
+            const lastUpdated = nd.last_updated || nd.timestamp || nd.updated_at || null;
+            if (lastUpdated) {
+                const lastTime = new Date(typeof lastUpdated === 'string' ? lastUpdated.replace(' ', 'T') : lastUpdated);
+                const minAgo = (Date.now() - lastTime.getTime()) / 60000;
+                isOffline = minAgo > OFFLINE_MIN;
+            }
+        }
+        nodeMarkers[nodeId].setIcon(isOffline ? makeOfflineNodeIcon() : nodeIcon);
         const el = nodeMarkers[nodeId].getElement();
         if (el) {
             el.classList.remove('fire-node-active');
             el.style.opacity = '1';
         }
-        const nd = nodeData[nodeId];
         if (nd) {
-            const popupContent = buildNodePopupContent(nd, nodeId, nd.latitude, nd.longitude, false);
+            const popupContent = buildNodePopupContent(nd, nodeId, nd.latitude, nd.longitude, isOffline);
             nodeMarkers[nodeId].setPopupContent(popupContent);
         }
     }
@@ -1268,6 +1351,7 @@ function applyFireAnimationForNode(nodeId, sensorData) {
     if (!nodeId) return;
     resolvedNodeIds.delete(nodeId);
     _saveResolvedToStorage(resolvedNodeIds);
+
     if (nodeMarkers[nodeId]) {
         nodeMarkers[nodeId].setIcon(makeFireNodeIcon());
         const el = nodeMarkers[nodeId].getElement();
@@ -1348,7 +1432,7 @@ async function loadAndPlaceNodes(silent=false){
             const offline = (minAgo > OFFLINE_MIN) && !isFire && !isFalse;
 
             const isFireActive = (isFire && hiConf && !resolvedNodeIds.has(nid));
-            const activeIcon   = isFireActive ? makeFireNodeIcon() : nodeIcon;
+            const activeIcon   = isFireActive ? makeFireNodeIcon() : (offline ? makeOfflineNodeIcon() : nodeIcon);
 
             const popupContent = buildNodePopupContent(
                 {...n, isUsingFallbackPosition: fallback}, nid, lat, lng, offline
@@ -1360,11 +1444,11 @@ async function loadAndPlaceNodes(silent=false){
                 nodeMarkers[nid].setPopupContent(popupContent);
                 const el = nodeMarkers[nid].getElement();
                 if(el){
-                    el.style.opacity = offline ? 0.55 : 1;
+                    el.style.opacity = '1';
                     el.classList.toggle('fire-node-active', isFireActive);
                 }
             } else {
-                const marker=L.marker([lat,lng],{icon:activeIcon,opacity:offline?0.55:1}).addTo(map);
+                const marker=L.marker([lat,lng],{icon:activeIcon,opacity:1}).addTo(map);
                 marker.bindPopup(popupContent);
                 marker.on('click',()=>{selectedNodeId=nid;updateSensorBar(nodeData[nid],nid);});
                 if(isFireActive){
@@ -1375,7 +1459,8 @@ async function loadAndPlaceNodes(silent=false){
             }
         });
         if(selectedNodeId&&nodeData[selectedNodeId])updateSensorBar(nodeData[selectedNodeId],selectedNodeId);
-        // Also refresh the gateway status panel with latest node data
+        // Sync gateway status panel nodes cache and re-render to reflect latest online/offline
+        _gwStatusNodes = nodes;
         renderGatewayStatusPanel();
     }catch(err){console.error('Failed to load nodes:',err);if(!silent)alert('Could not load sensor nodes.');}
 }
@@ -1395,14 +1480,17 @@ function connectWebSocket(){
     ws.onmessage=event=>{
         try{
             const msg=JSON.parse(event.data);
+
             if(msg.type==='sensor_data'||msg.type==='new_reading'){
                 loadAndPlaceNodes(true);
                 if(_hm_node&&(!msg.node_id||msg.node_id===_hm_node))fetchHistory();
             }
+
             if(msg.type==='node_update'){
                 loadAndPlaceNodes(true);
                 if(_hm_node&&(!msg.node_id||msg.node_id===_hm_node))fetchHistory();
             }
+
             if(msg.type==='incident_update'){
                 if(msg.action==='resolved' && msg.node_id){
                     clearFireAnimationForNode(msg.node_id);
@@ -1412,6 +1500,7 @@ function connectWebSocket(){
                     const conf = msg.confidence != null ? Number(msg.confidence) : 0;
                     const isFire = pred === 'fire' || pred === 'false';
                     const hiConf = conf >= 0.70;
+
                     if (isFire && hiConf && msg.node_id) {
                         applyFireAnimationForNode(msg.node_id, {
                             ai_prediction: msg.ai_prediction,
@@ -1433,12 +1522,16 @@ function connectWebSocket(){
                     }
                     loadAndPlaceNodes(true);
                 }
+
                 loadLiveIncidents(true);
+
                 if(_currentIncidentTab==='resolved') loadResolvedIncidents();
+
                 if(document.getElementById('incident-details-modal').classList.contains('open') && _detailsModalIncidentId){
                     openIncidentDetailsModal(_detailsModalIncidentId);
                 }
             }
+
             if(msg.type==='gateway_update'){
                 loadGatewaysOnMap(true);
                 loadGatewayStatusPanel(true);
@@ -1467,56 +1560,8 @@ function updateSensorBar(d,nodeId){
     ['sb-temp','sb-hum','sb-smoke','sb-flame'].forEach(id=>document.getElementById(id).style=s);
 }
 
-// ====================== PINNED ======================
-let pinnedLocations=[],pinnedMarkers={};
-function renderPinned(){
-    document.getElementById('pinned-count').textContent=pinnedLocations.length;
-    const list=document.getElementById('pinned-list');
-    list.querySelectorAll('.pinned-item').forEach(i=>i.remove());
-    document.getElementById('no-pinned-msg').style.display=pinnedLocations.length?'none':'block';
-    Object.values(pinnedMarkers).forEach(m=>map.removeLayer(m));pinnedMarkers={};
-    pinnedLocations.forEach(pin=>{
-        const item=document.createElement('div');item.className='pinned-item';
-        item.innerHTML=`<div><div class="pinned-item-name">${pin.name||'Pinned Location'}</div><div class="pinned-item-coords">${pin.latitude.toFixed(5)}, ${pin.longitude.toFixed(5)}</div></div><div class="pinned-item-actions"><button class="btn-icon-sm" onclick="flyToPin(${pin.latitude},${pin.longitude})">📍</button><button class="btn-icon-sm" onclick="removePin(${pin.id})" style="color:var(--red)">✕</button></div>`;
-        list.appendChild(item);
-        const pinnedIcon = L.icon({
-        iconUrl: 'icons/Pinpoint.png',  // 👈 change this
-        iconSize: [55, 55],
-        iconAnchor: [20, 40],
-        popupAnchor: [0, -40]
-    });
-        pinnedMarkers[pin.id] = L.marker([pin.latitude, pin.longitude], { icon: pinnedIcon }).addTo(map).bindPopup(`<b>${pin.name||'Pinned'}</b><br>${pin.latitude.toFixed(5)}, ${pin.longitude.toFixed(5)}`);
-    });
-}
-let pinnedListVisible=false;
-function togglePinnedList(){pinnedListVisible=!pinnedListVisible;document.getElementById('pinned-list').classList.toggle('visible',pinnedListVisible);document.getElementById('pinned-count-view').style.display=pinnedListVisible?'none':'flex';}
-async function loadPinnedLocations(){
-    try{const res=await fetch(`${API_BASE()}/me/pins`,{headers:authHeader(),cache:'no-cache'});if(res.status===401){window.location.href='login.html';return;}if(!res.ok)return;pinnedLocations=await res.json();renderPinned();}
-    catch(err){console.error('Failed to load pins:',err);}
-}
-async function savePin(lat,lng){
-    const name=document.getElementById('pin-name')?.value.trim()||null;
-    try{const res=await fetch(`${API_BASE()}/me/pins`,{method:'POST',headers:{...authHeader(),'Content-Type':'application/json'},body:JSON.stringify({name,latitude:lat,longitude:lng})});if(!res.ok)throw new Error(await res.text());map.closePopup();await loadPinnedLocations();}
-    catch{alert('Could not save pin.');}
-}
-async function removePin(pinId){
-    try{const res=await fetch(`${API_BASE()}/me/pins/${pinId}`,{method:'DELETE',headers:authHeader()});if(!res.ok)throw new Error(await res.text());await loadPinnedLocations();}
-    catch{alert('Could not delete pin.');}
-}
-function flyToPin(lat,lng){map.flyTo([lat,lng],16);}
-renderPinned();loadPinnedLocations();
-
-let pendingPopup=null;
-map.on('contextmenu',e=>{
-    e.originalEvent.preventDefault();
-    if(pendingPopup){map.closePopup(pendingPopup);pendingPopup=null;}
-    const lat=e.latlng.lat.toFixed(6),lng=e.latlng.lng.toFixed(6);
-    const p=L.popup({maxWidth:260}).setLatLng(e.latlng).setContent(`<div class="popup-title">📍 Pin this location?</div><div class="popup-coords">${lat}, ${lng}</div><input class="popup-input" id="pin-name" placeholder="Location name..."><div class="popup-actions"><button class="popup-save" onclick="savePin(${lat},${lng})">Save</button><button class="popup-cancel" onclick="map.closePopup()">Cancel</button></div>`).addTo(map);
-    pendingPopup=p;p.on('remove',()=>{pendingPopup=null;});
-});
-
 // ====================== GATEWAY STATUS PANEL ======================
-let _gwStatusExpanded = new Set(); // track which gateways are expanded
+let _gwStatusExpanded = new Set();
 let _gwStatusData = [];
 let _gwStatusNodes = [];
 
@@ -1535,7 +1580,6 @@ async function loadGatewayStatusPanel(silent = false) {
 
         renderGatewayStatusPanel();
 
-        // Update last refresh time
         const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         const el = document.getElementById('gw-last-refresh');
         if (el) el.textContent = `Updated ${now}`;
@@ -1575,13 +1619,10 @@ function renderGatewayStatusPanel() {
 
     if (!_gwStatusData.length) {
         listEl.innerHTML = '<div class="gw-empty-state">🏠 No gateways registered</div>';
-        const ob = document.getElementById('gw-online-badge'); if(ob) ob.textContent = '0';
         const tn = document.getElementById('gw-total-nodes-label'); if(tn) tn.textContent = '0 nodes';
         return;
     }
 
-    // Build a map: gateway_id -> nodes[]
-    // Nodes have a gateway_id field, or we fall back to assigning all nodes to the first gateway
     const gwNodeMap = {};
     _gwStatusData.forEach(gw => { gwNodeMap[gw.gateway_id] = []; });
 
@@ -1590,20 +1631,17 @@ function renderGatewayStatusPanel() {
         if (gwId && gwNodeMap[gwId] !== undefined) {
             gwNodeMap[gwId].push(node);
         } else {
-            // If no gateway_id on node, try to assign to the gateway with matching org or first one
             const firstGwId = _gwStatusData[0]?.gateway_id;
             if (firstGwId) gwNodeMap[firstGwId].push(node);
         }
     });
 
-    // Determine gateway online status: online if any of its nodes are active, or last_seen < OFFLINE_MIN
     let onlineCount = 0;
     const gwStatuses = _gwStatusData.map(gw => {
         const nodes = gwNodeMap[gw.gateway_id] || [];
         const nodeStatuses = nodes.map(n => getNodeStatus(n));
         const hasFire = nodeStatuses.includes('fire');
         const hasActive = nodeStatuses.includes('active');
-        // Gateway is online if it has active nodes, fire nodes, or has a recent timestamp
         const gwLastSeen = gw.last_seen || gw.updated_at || null;
         let gwOffline = true;
         if (gwLastSeen) {
@@ -1611,7 +1649,6 @@ function renderGatewayStatusPanel() {
             const minAgo = (Date.now() - t.getTime()) / 60000;
             gwOffline = minAgo > OFFLINE_MIN;
         }
-        // If no last_seen, determine from nodes
         if (!gwLastSeen) {
             gwOffline = !hasActive && !hasFire && nodes.length === 0;
         }
@@ -1620,7 +1657,6 @@ function renderGatewayStatusPanel() {
         return { gw, nodes, nodeStatuses, status };
     });
 
-    const obEl = document.getElementById('gw-online-badge'); if(obEl) obEl.textContent = onlineCount;
     const tnEl = document.getElementById('gw-total-nodes-label'); if(tnEl) tnEl.textContent = `${_gwStatusNodes.length} node${_gwStatusNodes.length !== 1 ? 's' : ''}`;
 
     const html = gwStatuses.map(({ gw, nodes, nodeStatuses, status }) => {
@@ -1640,6 +1676,7 @@ function renderGatewayStatusPanel() {
                 const pred = (node.ai_prediction || 'normal').toLowerCase();
                 const conf = node.confidence != null ? Number(node.confidence) : 0;
                 const fireLabel = nStatus === 'fire' ? '<span class="fire-label">🔥 FIRE</span>' : '';
+                const offlineLabel = nStatus === 'offline' ? '<span style="font-size:8px;color:#5a5a5a;background:#2a2a2a;border:1px solid #3a3a3a;border-radius:3px;padding:1px 4px;margin-left:3px;">⚫ OFFLINE</span>' : '';
                 const coordStr = hasCoords ? `${lat.toFixed(5)}, ${lng.toFixed(5)}` : 'No coordinates';
                 const flyBtn = hasCoords
                     ? `<div class="gw-node-flyto">
@@ -1650,7 +1687,7 @@ function renderGatewayStatusPanel() {
                 return `<div class="gw-node-row" onclick="flyToNode('${node.node_id}',${hasCoords ? lat : 'null'},${hasCoords ? lng : 'null'})">
                     <div class="node-status-dot ${nStatus}"></div>
                     <div class="gw-node-info">
-                        <div class="gw-node-id">${node.node_id} ${fireLabel}</div>
+                        <div class="gw-node-id">${node.node_id} ${fireLabel}${offlineLabel}</div>
                         ${locName ? `<div class="gw-node-loc">📍 ${locName}</div>` : ''}
                         <div class="gw-node-coords">${coordStr}</div>
                     </div>
@@ -1661,7 +1698,7 @@ function renderGatewayStatusPanel() {
         const metaBadges = [];
         if (fireCount > 0) metaBadges.push(`<span style="color:#ff4757;font-size:8px;font-weight:700;">🔥 ${fireCount} fire</span>`);
         if (offlineCount > 0) metaBadges.push(`<span style="color:#5a5a5a;font-size:8px;">⚫ ${offlineCount} offline</span>`);
-        if (activeCount > 0) metaBadges.push(`<span style="color:#2ecc71;font-size:8px;">● ${activeCount} active</span>`);
+        if (activeCount > 0) metaBadges.push(`<span style="color:#2ecc71;font-size:8px;">● ${activeCount} online</span>`);
 
         return `<div class="gw-item${isExpanded ? ' expanded' : ''}" id="gwitem-${gw.gateway_id}">
             <div class="gw-item-header" onclick="toggleGatewayExpand('${gw.gateway_id}')">
@@ -1701,7 +1738,6 @@ function toggleGatewayExpand(gwId) {
 
 function flyToNode(nodeId, lat, lng) {
     if (lat === null || isNaN(lat) || lat === 0) {
-        // Try to get from nodeData
         const nd = nodeData[nodeId];
         if (nd && nd.latitude && !isNaN(nd.latitude)) {
             lat = nd.latitude;
@@ -1712,13 +1748,9 @@ function flyToNode(nodeId, lat, lng) {
         }
     }
     map.flyTo([lat, lng], 17, { animate: true, duration: 1.2 });
-    // Open the popup if marker exists
     if (nodeMarkers[nodeId]) {
-        setTimeout(() => {
-            nodeMarkers[nodeId].openPopup();
-        }, 1300);
+        setTimeout(() => { nodeMarkers[nodeId].openPopup(); }, 1300);
     }
-    // Also update sensor bar
     if (nodeData[nodeId]) {
         selectedNodeId = nodeId;
         updateSensorBar(nodeData[nodeId], nodeId);
@@ -1729,9 +1761,51 @@ function refreshGatewayPanel() {
     loadGatewayStatusPanel(false);
 }
 
-// Initial load and auto-refresh
+// Initial load and auto-refresh every 15s
 loadGatewayStatusPanel();
 setInterval(() => loadGatewayStatusPanel(true), 15000);
+
+// ====================== PINNED ======================
+let pinnedLocations=[],pinnedMarkers={};
+function renderPinned(){
+    document.getElementById('pinned-count').textContent=pinnedLocations.length;
+    const list=document.getElementById('pinned-list');
+    list.querySelectorAll('.pinned-item').forEach(i=>i.remove());
+    document.getElementById('no-pinned-msg').style.display=pinnedLocations.length?'none':'block';
+    Object.values(pinnedMarkers).forEach(m=>map.removeLayer(m));pinnedMarkers={};
+    pinnedLocations.forEach(pin=>{
+        const item=document.createElement('div');item.className='pinned-item';
+        item.innerHTML=`<div><div class="pinned-item-name">${pin.name||'Pinned Location'}</div><div class="pinned-item-coords">${pin.latitude.toFixed(5)}, ${pin.longitude.toFixed(5)}</div></div><div class="pinned-item-actions"><button class="btn-icon-sm" onclick="flyToPin(${pin.latitude},${pin.longitude})">📍</button><button class="btn-icon-sm" onclick="removePin(${pin.id})" style="color:var(--red)">✕</button></div>`;
+        list.appendChild(item);
+        pinnedMarkers[pin.id]=L.marker([pin.latitude,pin.longitude]).addTo(map).bindPopup(`<b>${pin.name||'Pinned'}</b><br>${pin.latitude.toFixed(5)}, ${pin.longitude.toFixed(5)}`);
+    });
+}
+let pinnedListVisible=false;
+function togglePinnedList(){pinnedListVisible=!pinnedListVisible;document.getElementById('pinned-list').classList.toggle('visible',pinnedListVisible);document.getElementById('pinned-count-view').style.display=pinnedListVisible?'none':'flex';}
+async function loadPinnedLocations(){
+    try{const res=await fetch(`${API_BASE()}/me/pins`,{headers:authHeader(),cache:'no-cache'});if(res.status===401){window.location.href='login.html';return;}if(!res.ok)return;pinnedLocations=await res.json();renderPinned();}
+    catch(err){console.error('Failed to load pins:',err);}
+}
+async function savePin(lat,lng){
+    const name=document.getElementById('pin-name')?.value.trim()||null;
+    try{const res=await fetch(`${API_BASE()}/me/pins`,{method:'POST',headers:{...authHeader(),'Content-Type':'application/json'},body:JSON.stringify({name,latitude:lat,longitude:lng})});if(!res.ok)throw new Error(await res.text());map.closePopup();await loadPinnedLocations();}
+    catch{alert('Could not save pin.');}
+}
+async function removePin(pinId){
+    try{const res=await fetch(`${API_BASE()}/me/pins/${pinId}`,{method:'DELETE',headers:authHeader()});if(!res.ok)throw new Error(await res.text());await loadPinnedLocations();}
+    catch{alert('Could not delete pin.');}
+}
+function flyToPin(lat,lng){map.flyTo([lat,lng],16);}
+renderPinned();loadPinnedLocations();
+
+let pendingPopup=null;
+map.on('contextmenu',e=>{
+    e.originalEvent.preventDefault();
+    if(pendingPopup){map.closePopup(pendingPopup);pendingPopup=null;}
+    const lat=e.latlng.lat.toFixed(6),lng=e.latlng.lng.toFixed(6);
+    const p=L.popup({maxWidth:260}).setLatLng(e.latlng).setContent(`<div class="popup-title">📍 Pin this location?</div><div class="popup-coords">${lat}, ${lng}</div><input class="popup-input" id="pin-name" placeholder="Location name..."><div class="popup-actions"><button class="popup-save" onclick="savePin(${lat},${lng})">Save</button><button class="popup-cancel" onclick="map.closePopup()">Cancel</button></div>`).addTo(map);
+    pendingPopup=p;p.on('remove',()=>{pendingPopup=null;});
+});
 
 // ====================== SEARCH ======================
 let searchTimeout;
