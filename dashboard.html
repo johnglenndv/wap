@@ -2202,7 +2202,7 @@ function renderTable(rows){
                 const cc=cp!=null?(cp>=70?'#2ecc71':cp>=40?'#f1c40f':'#ff9f1c'):'#5a3a2a';
                 // Trust AI label for badge colour — fire=red, false=yellow, normal=green
                 const ab=pred==='fire'?'<span class="ai-badge ai-fire">Active Fire</span>'
-                    :pred==='false'?'<span class="ai-badge ai-possible">⚠ Possible</span>'
+                    :pred==='false'?'<span class="ai-badge ai-possible">⚠Possible</span>'
                     :pred==='normal'?'<span class="ai-badge ai-normal">Normal</span>'
                     :rp?`<span class="ai-badge ai-unknown">${rp}</span>`:'<span style="color:#5a3a2a">—</span>';
                 const ts=formatTimestamp(r.local_timestamp||r.timestamp);
