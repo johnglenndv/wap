@@ -152,82 +152,22 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 #close-info-btn:hover{color:var(--red);}
 
 /* ===================== FLOATING MAP SEARCH ===================== */
-.map-search-float{
-    position:absolute;
-    top:10px;
-    left:10px;
-    z-index:1000;
-    width:min(260px, calc(100% - 56px));
-}
+.map-search-float{position:absolute;top:10px;left:10px;z-index:1000;width:min(260px, calc(100% - 56px));}
 .map-search-float .search-wrap{position:relative;}
-.map-search-float .search-wrap input{
-    width:100%;
-    background:#1a0805ee;
-    border:2px solid #5a1a0a88;
-    border-radius:10px;
-    padding:9px 36px 9px 14px;
-    color:var(--text);
-    font-family:Arial,sans-serif;
-    font-size:13px;
-    outline:none;
-    transition:border-color .3s,box-shadow .3s,background .2s;
-    box-shadow:0 4px 16px #00000066;
-    backdrop-filter:blur(8px);
-    box-sizing:border-box;
-}
-.map-search-float .search-wrap input:focus{
-    border-color:var(--accent);
-    box-shadow:0 0 16px #e14f0044, 0 4px 20px #00000077;
-    background:#1e0a08f8;
-}
+.map-search-float .search-wrap input{width:100%;background:#1a0805ee;border:2px solid #5a1a0a88;border-radius:10px;padding:9px 36px 9px 14px;color:var(--text);font-family:Arial,sans-serif;font-size:13px;outline:none;transition:border-color .3s,box-shadow .3s,background .2s;box-shadow:0 4px 16px #00000066;backdrop-filter:blur(8px);box-sizing:border-box;}
+.map-search-float .search-wrap input:focus{border-color:var(--accent);box-shadow:0 0 16px #e14f0044, 0 4px 20px #00000077;background:#1e0a08f8;}
 .map-search-float .search-wrap input::placeholder{color:#7a5a4a;}
-.map-search-float .search-icon{
-    position:absolute;right:10px;top:50%;transform:translateY(-50%);
-    width:16px;opacity:.5;pointer-events:none;
-}
-.map-search-float .clr-btn{
-    position:absolute;right:10px;top:50%;transform:translateY(-50%);
-    color:var(--text);font-size:18px;cursor:pointer;display:none;z-index:5;
-    background:none;border:none;padding:0;line-height:1;
-}
-.map-search-float .suggestions-box{
-    position:absolute;top:calc(100% + 4px);left:0;right:0;
-    background:#1a0805f8;
-    border:2px solid var(--accent);
-    border-radius:10px;
-    max-height:180px;overflow-y:auto;display:none;z-index:9999;
-    box-shadow:0 8px 24px #00000099;
-    backdrop-filter:blur(8px);
-}
-.map-search-float .suggestion-item{
-    padding:9px 13px;font-size:12px;color:var(--text);
-    cursor:pointer;border-bottom:1px solid #3a1a0a44;
-    transition:background .15s;
-}
+.map-search-float .search-icon{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:16px;opacity:.5;pointer-events:none;}
+.map-search-float .clr-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--text);font-size:18px;cursor:pointer;display:none;z-index:5;background:none;border:none;padding:0;line-height:1;}
+.map-search-float .suggestions-box{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#1a0805f8;border:2px solid var(--accent);border-radius:10px;max-height:180px;overflow-y:auto;display:none;z-index:9999;box-shadow:0 8px 24px #00000099;backdrop-filter:blur(8px);}
+.map-search-float .suggestion-item{padding:9px 13px;font-size:12px;color:var(--text);cursor:pointer;border-bottom:1px solid #3a1a0a44;transition:background .15s;}
 .map-search-float .suggestion-item:last-child{border-bottom:none;}
 .map-search-float .suggestion-item:hover{background:#3a1a0a66;}
-[data-theme="light"] .map-search-float .search-wrap input{
-    background:#fdf5f0ee;
-    border-color:#c8a08888;
-    color:#2a1208;
-    box-shadow:0 4px 16px #00000022;
-}
-[data-theme="light"] .map-search-float .search-wrap input:focus{
-    background:#fffffff8;
-    border-color:var(--accent);
-}
-[data-theme="light"] .map-search-float .suggestions-box{
-    background:#fdf5f0f8;
-    border-color:var(--accent);
-}
+[data-theme="light"] .map-search-float .search-wrap input{background:#fdf5f0ee;border-color:#c8a08888;color:#2a1208;box-shadow:0 4px 16px #00000022;}
+[data-theme="light"] .map-search-float .search-wrap input:focus{background:#fffffff8;border-color:var(--accent);}
+[data-theme="light"] .map-search-float .suggestions-box{background:#fdf5f0f8;border-color:var(--accent);}
 [data-theme="light"] .map-search-float .suggestion-item{color:#2a1208;}
-/* Hide route-info-box behind search by shifting it when search has content */
-@media (max-width:600px){
-    .map-search-float{
-        top:8px;left:8px;
-        width:calc(100% - 54px);
-    }
-}
+@media (max-width:600px){.map-search-float{top:8px;left:8px;width:calc(100% - 54px);}}
 
 /* ===================== RIGHT COLUMN ===================== */
 .right-col-wrapper{grid-column:2;grid-row:1/3;display:flex;flex-direction:column;gap:10px;min-height:0;overflow:hidden;}
@@ -254,6 +194,8 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .gw-status-dot.online{background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse-dot 2s ease infinite;}
 .gw-status-dot.offline{background:#4a4a4a;box-shadow:none;animation:none;}
 .gw-status-dot.fire{background:var(--red);box-shadow:0 0 8px var(--red);animation:fire-pulse-dot 1s ease infinite;}
+.gw-status-dot.possible{background:#f1c40f;box-shadow:0 0 8px #f1c40f;animation:possible-pulse-dot 1.2s ease infinite;}
+@keyframes possible-pulse-dot{0%,100%{opacity:1;box-shadow:0 0 8px #f1c40f;}50%{opacity:.5;box-shadow:0 0 16px #f1c40f,0 0 24px #f1c40f66;}}
 @keyframes fire-pulse-dot{0%,100%{opacity:1;box-shadow:0 0 8px #ff4757;}50%{opacity:.5;box-shadow:0 0 16px #ff4757,0 0 24px #ff000066;}}
 .gw-item-name{font-size:12px;font-weight:700;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .gw-item-location{font-size:9px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60px;flex-shrink:1;}
@@ -271,9 +213,11 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .node-status-dot.active{background:var(--green);box-shadow:0 0 5px var(--green);animation:pulse-dot 2s ease infinite;}
 .node-status-dot.offline{background:#4a4a4a;animation:none;box-shadow:none;}
 .node-status-dot.fire{background:var(--red);box-shadow:0 0 7px var(--red);animation:fire-pulse-dot 1s ease infinite;}
+.node-status-dot.possible{background:#f1c40f;box-shadow:0 0 7px #f1c40f;animation:possible-pulse-dot 1.2s ease infinite;}
 .gw-node-info{flex:1;min-width:0;}
 .gw-node-id{font-size:11px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .gw-node-id .fire-label{font-size:8px;font-weight:700;color:#ff4757;background:#ff475722;border:1px solid #ff475544;border-radius:4px;padding:1px 4px;letter-spacing:.5px;flex-shrink:0;}
+.gw-node-id .possible-label{font-size:8px;font-weight:700;color:#f1c40f;background:#f1c40f22;border:1px solid #f1c40f44;border-radius:4px;padding:1px 4px;letter-spacing:.5px;flex-shrink:0;}
 .gw-node-loc{font-size:9px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .gw-node-coords{font-size:8px;color:#3a2a1a;font-family:monospace;white-space:nowrap;margin-top:1px;}
 .gw-node-flyto{opacity:0;transition:opacity .2s;flex-shrink:0;}
@@ -283,7 +227,7 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .gw-empty-state{text-align:center;padding:16px 10px;color:var(--text-muted);font-size:11px;}
 .gw-loading{text-align:center;padding:14px;color:var(--text-muted);font-size:11px;}
 
-/* ===================== SEARCH (kept for reference, now unused in right col) ===================== */
+/* ===================== SEARCH ===================== */
 .search-panel{flex-shrink:0;overflow:visible!important;}
 .search-wrap{position:relative;}
 .search-wrap input{width:100%;background:#12060566;border:1px solid #4a1a0a;border-radius:8px;padding:9px 36px 9px 12px;color:var(--text);font-family:Arial,sans-serif;font-size:13px;outline:none;transition:border-color .3s,box-shadow .3s;}
@@ -325,40 +269,21 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .txt-active{color:var(--red);font-weight:700;}
 .txt-contained{color:var(--yellow);font-weight:700;}
 .txt-resolved{color:var(--green);font-weight:700;}
-
-/* ===================== INCIDENT ACTION BUTTONS ===================== */
 .incident-btn-row1{display:flex;gap:5px;margin-top:6px;}
 .btn-show-map{flex:1;padding:6px;background:#1a1a3a66;border:1px solid #3d6fff;color:#7db8ff;border-radius:7px;font-family:Arial,sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:.3s;letter-spacing:.5px;}
 .btn-show-map:hover{background:#3d6fff33;box-shadow:0 0 10px #3d6fff44;}
 .btn-details{flex:1;padding:6px;background:#1a2a1a55;border:1px solid #f1c40f88;color:#f1c40f;border-radius:7px;font-family:Arial,sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:.3s;letter-spacing:.5px;}
 .btn-details:hover{background:#f1c40f22;box-shadow:0 0 10px #f1c40f44;}
-
-/* ===================== INCIDENT HISTORY TAB ===================== */
 .incidents-tab-row{display:flex;gap:4px;margin-bottom:8px;flex-shrink:0;}
 .inc-tab-btn{flex:1;padding:5px 0;border-radius:6px;font-size:9px;letter-spacing:1.5px;font-weight:700;cursor:pointer;border:1px solid #4a1a0a55;background:#2a0a0444;color:#5a3a2a;font-family:'Cinzel',serif;transition:.2s;}
 .inc-tab-btn.active{background:linear-gradient(135deg,#6b1200,#a03000);border-color:var(--accent);color:white;}
-
-/* ===================== RESOLVED HISTORY LIST ===================== */
 .resolved-list{overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:6px;}
 .resolved-card{background:#1a0a0555;border:1px solid #3a1a0a44;border-radius:8px;padding:8px 10px;flex-shrink:0;}
 .resolved-card-title{font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px;}
 .resolved-card-meta{font-size:10px;color:var(--text-dim);line-height:1.7;}
 .resolved-tag{display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:#0a1a0a55;border:1px solid #2ecc7155;color:#2ecc71;letter-spacing:.5px;}
-.resolved-info-btn{
-    display:inline-flex;align-items:center;justify-content:center;
-    width:20px;height:20px;border-radius:50%;
-    background:linear-gradient(135deg,#1a2a4a,#1e3a66);
-    border:1.5px solid #3d9cff88;
-    color:#6db8ff;font-size:11px;font-weight:700;
-    cursor:pointer;transition:.2s;flex-shrink:0;
-    font-style:italic;font-family:Georgia,serif;line-height:1;
-}
-.resolved-info-btn:hover{
-    background:linear-gradient(135deg,#2a4a88,#3d6fcc);
-    border-color:#3d9cff;
-    box-shadow:0 0 10px #3d9cff55;
-    color:white;
-}
+.resolved-info-btn{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#1a2a4a,#1e3a66);border:1.5px solid #3d9cff88;color:#6db8ff;font-size:11px;font-weight:700;cursor:pointer;transition:.2s;flex-shrink:0;font-style:italic;font-family:Georgia,serif;line-height:1;}
+.resolved-info-btn:hover{background:linear-gradient(135deg,#2a4a88,#3d6fcc);border-color:#3d9cff;box-shadow:0 0 10px #3d9cff55;color:white;}
 
 /* ===================== RESPOND MODAL ===================== */
 #respond-modal{display:none;position:fixed;inset:0;z-index:25000;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);align-items:center;justify-content:center;}
@@ -453,8 +378,6 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .inc-timeline-time{font-size:10px;color:var(--text-dim);}
 .inc-timeline-org{font-size:10px;color:#6db8ff;}
 .no-response-msg{color:#5a3a2a;font-size:12px;text-align:center;padding:16px;}
-
-/* ===================== DETAILS MODAL ACTION BUTTONS ===================== */
 .inc-details-action-row{display:flex;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid #2a1a0a44;}
 .inc-details-rescue-btn{flex:1;padding:10px;background:linear-gradient(135deg,#1a3a66,#2a5a99);border:1px solid #3d9cff66;border-radius:9px;color:white;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;cursor:pointer;transition:.3s;}
 .inc-details-rescue-btn:hover{box-shadow:0 0 16px #3d9cff44;}
@@ -520,12 +443,31 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .fire-node-wrap{position:relative;width:70px;height:70px;display:flex;align-items:center;justify-content:center;}
 .fire-node-wrap img{width:60px;height:60px;position:relative;z-index:2;filter:drop-shadow(0 0 6px #ff4757cc);}
 .fire-pulse-ring{position:absolute;border-radius:50%;border:3px solid #ff4757;opacity:0;animation:fire-ring-pulse 1.6s ease-out infinite;z-index:1;}
+.fire-pulse-ring.possible{border-color:#f1c40f;animation-name:fire-ring-pulse-possible;}
 .fire-pulse-ring:nth-child(1){width:40px;height:40px;animation-delay:0s;}
 .fire-pulse-ring:nth-child(2){width:40px;height:40px;animation-delay:0.5s;}
 .fire-pulse-ring:nth-child(3){width:40px;height:40px;animation-delay:1.0s;}
-@keyframes fire-ring-pulse{0%{transform:scale(1);opacity:0.9;border-color:#ff4757;}60%{opacity:0.3;border-color:#ff9f1c;}100%{transform:scale(2.8);opacity:0;border-color:#ff475700;}}
+@keyframes fire-ring-pulse{
+    0%{transform:scale(1);opacity:0.9;border-color:#ff4757;}
+    60%{opacity:0.3;border-color:#ff9f1c;}
+    100%{transform:scale(2.8);opacity:0;border-color:#ff475700;}
+}
+@keyframes fire-ring-pulse-possible{
+    0%{transform:scale(1);opacity:0.9;border-color:#f1c40f;}
+    60%{opacity:0.3;border-color:#ff9f1c;}
+    100%{transform:scale(2.8);opacity:0;border-color:#f1c40f00;}
+}
 .fire-node-wrap img{animation:fire-icon-glow 1.6s ease-in-out infinite;}
-@keyframes fire-icon-glow{0%,100%{filter:drop-shadow(0 0 4px #ff475788);}50%{filter:drop-shadow(0 0 18px #ff4757ff) drop-shadow(0 0 30px #ff000099);}}
+.fire-node-wrap.possible img{animation:fire-icon-glow-possible 1.6s ease-in-out infinite;}
+@keyframes fire-icon-glow{
+    0%,100%{filter:drop-shadow(0 0 4px #ff475788);}
+    50%{filter:drop-shadow(0 0 18px #ff4757ff) drop-shadow(0 0 30px #ff000099);}
+}
+@keyframes fire-icon-glow-possible{
+    0%,100%{filter:drop-shadow(0 0 4px #f1c40f88);}
+    50%{filter:drop-shadow(0 0 18px #f1c40fff) drop-shadow(0 0 30px #f1c40f99);}
+}
+
 .ai-badge{display:inline-block;font-size:8px;font-weight:700;padding:1px 5px;border-radius:5px;letter-spacing:.5px;}
 .ai-fire{background:#ff475722;color:#ff4757;border:1px solid #ff475544;}
 .ai-possible{background:#f1c40f22;color:#f1c40f;border:1px solid #f1c40f44;}
@@ -613,12 +555,7 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 /* ===================== RESPONSIVE ===================== */
 @media (max-width:900px){
     html,body{height:auto;overflow:auto;overflow-x:hidden;}
-    .dashboard-grid{
-        position:static;
-        padding:calc(var(--hdr) + 10px) 10px 20px;
-        display:flex;flex-direction:column;
-        height:auto;overflow:visible;gap:8px;
-    }
+    .dashboard-grid{position:static;padding:calc(var(--hdr) + 10px) 10px 20px;display:flex;flex-direction:column;height:auto;overflow:visible;gap:8px;}
     .map-col{height:55vw;min-height:260px;isolation:isolate;overflow:hidden;}
     .flames-map-wrap{isolation:isolate;}
     .map-btn,.zoom-group,#route-info-box,.route-menu{z-index:500!important;}
@@ -630,23 +567,9 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
     .inc-map-body{flex-direction:column;}
     .inc-map-sidebar{width:100%;border-right:none;border-bottom:1px solid #3a1a0a44;max-height:220px;overflow-y:auto;}
     .inc-map-map-wrap{min-height:280px;}
-    .right-history-view.visible{
-        position:fixed;inset:0;z-index:5000;
-        background:var(--bg-deep);
-        display:flex;flex-direction:column;
-    }
-    .right-history-view.visible .history-panel{
-        border-radius:0;border:none;
-        height:100%;
-        padding-bottom:env(safe-area-inset-bottom,0px);
-    }
-    .right-history-view.visible .hp-back-row{
-        padding-top:max(14px, env(safe-area-inset-top));
-        min-height:52px;
-        position:sticky;top:0;z-index:10;
-        background:var(--bg-deep);
-        border-bottom:1px solid #3a1a0a44;
-    }
+    .right-history-view.visible{position:fixed;inset:0;z-index:5000;background:var(--bg-deep);display:flex;flex-direction:column;}
+    .right-history-view.visible .history-panel{border-radius:0;border:none;height:100%;padding-bottom:env(safe-area-inset-bottom,0px);}
+    .right-history-view.visible .hp-back-row{padding-top:max(14px, env(safe-area-inset-top));min-height:52px;position:sticky;top:0;z-index:10;background:var(--bg-deep);border-bottom:1px solid #3a1a0a44;}
     .hp-back-btn{padding:8px 14px;font-size:13px;min-height:40px;min-width:72px;touch-action:manipulation;}
     .hp-limit-btn{padding:7px 14px;font-size:11px;min-height:36px;touch-action:manipulation;}
     .hp-chart-tab{padding:5px 10px;font-size:10px;min-height:32px;touch-action:manipulation;}
@@ -674,7 +597,7 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
     .adm-section{padding:12px;}
     .hp-back-row{padding:10px 12px 8px;gap:6px;flex-wrap:nowrap;align-items:center;}
     .hp-back-btn{padding:9px 14px;font-size:13px;font-weight:700;min-height:42px;min-width:80px;border-radius:9px;flex-shrink:0;background:linear-gradient(135deg,#3a0a04,#5a1a08);border-color:#8b3a1a88;color:var(--text);}
-    .hp-node-badge{font-size:8px;padding:2px 8px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .hp-node-badge{font-size:8px;padding:2px 8px;max-width:100px;}
     .hp-controls{padding:8px 10px 5px;gap:5px;flex-wrap:wrap;}
     .hp-limit-label{font-size:8px;}
     .hp-limit-btn{padding:7px 12px;font-size:10px;min-height:36px;border-radius:7px;flex:1;}
@@ -787,8 +710,6 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
     <div class="map-col">
         <div class="flames-map-wrap">
             <div id="flames-map"></div>
-
-            <!-- ✦ FLOATING SEARCH (moved from right column onto the map) -->
             <div class="map-search-float">
                 <div class="search-wrap">
                     <input type="text" id="mapSearchInput" placeholder="Search Location…" oninput="handleSearch(this.value)">
@@ -797,7 +718,6 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
                     <div id="suggestionsBox" class="suggestions-box"></div>
                 </div>
             </div>
-
             <button class="map-btn" id="home-btn"><img src="icons/home.png" alt="Home"></button>
             <button class="map-btn" id="locate-btn"><img src="icons/showmylocation.png" alt="Locate"></button>
             <button class="map-btn" id="route-btn"><img src="icons/RoutePlanner.png" alt="Route"></button>
@@ -823,12 +743,8 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
     <!-- RIGHT COLUMN -->
     <div class="right-col-wrapper">
         <div class="right-default-view" id="right-default-view">
-            <!-- Search panel removed from here — now floating on the map -->
             <div class="right-mid-row" style="flex:1;">
-
-                <!-- LEFT COLUMN: Pinned (top) + Gateway Status (bottom) -->
                 <div class="left-col-stack">
-
                     <!-- PINNED PANEL -->
                     <div class="panel pinned-panel">
                         <div class="panel-title"><span>Pinned</span><img src="icons/pinned-location.png" alt=""></div>
@@ -841,7 +757,6 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
                             <div class="no-pinned" id="no-pinned-msg">No locations pinned yet.</div>
                         </div>
                     </div>
-
                     <!-- GATEWAY STATUS PANEL -->
                     <div class="panel gateway-status-panel">
                         <div class="panel-title">
@@ -857,9 +772,7 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
                             <div class="gw-loading">Loading gateways…</div>
                         </div>
                     </div>
-
                 </div>
-
                 <!-- RIGHT COLUMN: Incidents -->
                 <div class="panel incidents-panel">
                     <div class="incident-header-row">
@@ -869,14 +782,11 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
                         </div>
                         <div class="incident-badge"><img src="icons/FireIncident.png" alt="fire"><span id="incident-count">0</span></div>
                     </div>
-                    <!-- TABS -->
                     <div class="incidents-tab-row">
                         <button class="inc-tab-btn active" id="tab-live" onclick="switchIncidentTab('live')">🔥 LIVE</button>
                         <button class="inc-tab-btn" id="tab-resolved" onclick="switchIncidentTab('resolved')">✓ RESOLVED</button>
                     </div>
-                    <!-- Live list -->
                     <div class="incident-list" id="incident-list"></div>
-                    <!-- Resolved list -->
                     <div class="resolved-list" id="resolved-list" style="display:none;"></div>
                 </div>
             </div>
@@ -1245,16 +1155,19 @@ const greenIcon    = L.icon({iconUrl:'icons/StartingPoint.png',iconSize:[60,60],
 const redIcon      = L.icon({iconUrl:'icons/EndPoint.png',iconSize:[60,60],iconAnchor:[30,55],popupAnchor:[0,-60]});
 const nodeIcon     = L.icon({iconUrl:'icons/Node.png',iconSize:[50,50],iconAnchor:[18,18]});
 const gwIcon       = L.icon({iconUrl:'icons/Gateway.png',iconSize:[55,55],iconAnchor:[20,20]});
-function makeFireNodeIcon(){
+
+// ── makeFireNodeIcon: isPossible=false → red rings, isPossible=true → yellow rings
+function makeFireNodeIcon(isPossible) {
+    const cls = isPossible ? 'possible' : '';
     return L.divIcon({
         className: '',
         iconSize:  [70, 70],
         iconAnchor:[35, 60],
         popupAnchor:[0, -62],
-        html: `<div class="fire-node-wrap">
-                 <div class="fire-pulse-ring"></div>
-                 <div class="fire-pulse-ring"></div>
-                 <div class="fire-pulse-ring"></div>
+        html: `<div class="fire-node-wrap ${cls}">
+                 <div class="fire-pulse-ring ${cls}"></div>
+                 <div class="fire-pulse-ring ${cls}"></div>
+                 <div class="fire-pulse-ring ${cls}"></div>
                  <img src="icons/FireNode.png" alt="fire node">
                </div>`
     });
@@ -1323,7 +1236,6 @@ function clearFireAnimationForNode(nodeId) {
     resolvedNodeIds.add(nodeId);
     _saveResolvedToStorage(resolvedNodeIds);
     if (nodeMarkers[nodeId]) {
-        // Check if the node is currently offline (no recent data)
         const nd = nodeData[nodeId];
         let isOffline = false;
         if (nd) {
@@ -1336,10 +1248,7 @@ function clearFireAnimationForNode(nodeId) {
         }
         nodeMarkers[nodeId].setIcon(isOffline ? makeOfflineNodeIcon() : nodeIcon);
         const el = nodeMarkers[nodeId].getElement();
-        if (el) {
-            el.classList.remove('fire-node-active');
-            el.style.opacity = '1';
-        }
+        if (el) { el.classList.remove('fire-node-active'); el.style.opacity = '1'; }
         if (nd) {
             const popupContent = buildNodePopupContent(nd, nodeId, nd.latitude, nd.longitude, isOffline);
             nodeMarkers[nodeId].setPopupContent(popupContent);
@@ -1347,18 +1256,20 @@ function clearFireAnimationForNode(nodeId) {
     }
 }
 
+// ── applyFireAnimationForNode: trusts AI label directly, no re-thresholding
 function applyFireAnimationForNode(nodeId, sensorData) {
     if (!nodeId) return;
     resolvedNodeIds.delete(nodeId);
     _saveResolvedToStorage(resolvedNodeIds);
 
     if (nodeMarkers[nodeId]) {
-        nodeMarkers[nodeId].setIcon(makeFireNodeIcon());
+        const pred = (sensorData?.ai_prediction || nodeData[nodeId]?.ai_prediction || '').toLowerCase();
+        // "fire" = confirmed (red), "false" = possible (yellow) — trust the AI label
+        const isPossible = pred === 'false';
+        nodeMarkers[nodeId].setIcon(makeFireNodeIcon(isPossible));
+
         const el = nodeMarkers[nodeId].getElement();
-        if (el) {
-            el.classList.add('fire-node-active');
-            el.style.opacity = '1';
-        }
+        if (el) { el.classList.add('fire-node-active'); el.style.opacity = '1'; }
         const nd = sensorData || nodeData[nodeId];
         if (nd) {
             const popupContent = buildNodePopupContent(nd, nodeId, nd.latitude || nodeData[nodeId]?.latitude, nd.longitude || nodeData[nodeId]?.longitude, false);
@@ -1372,23 +1283,23 @@ function applyFireAnimationForNode(nodeId, sensorData) {
 
 function buildNodePopupContent(n, nid, lat, lng, offline) {
     const isResolved = resolvedNodeIds.has(nid);
-    const pred = (n.ai_prediction||'normal').toLowerCase();
+    const pred = (n.ai_prediction || 'normal').toLowerCase();
     const conf = n.confidence != null ? Number(n.confidence) : 0;
-    const isFire = pred === 'fire', isFalse = pred === 'false', hiConf = conf >= 0.70;
-    const stColor = isFire ? (hiConf ? '#ff4757' : '#ff9f1c') : isFalse ? '#f1c40f' : '#2ecc71';
-    const stLabel = isFire ? (hiConf ? '🔥 FIRE' : 'Possible Fire') : isFalse ? '⚠ Possible Fire' : 'Normal';
+    // Trust the AI label directly — "fire" = red, "false" = yellow
+    const isFire  = pred === 'fire';
+    const isFalse = pred === 'false';
+    const stColor = isFire ? '#ff4757' : isFalse ? '#f1c40f' : '#2ecc71';
+    const stLabel = isFire ? '🔥 FIRE' : isFalse ? '⚠ Possible Fire' : 'Normal';
     const lastUpdated = n.timestamp || n.updated_at || n.last_seen || new Date().toISOString();
     const lastTime = new Date(typeof lastUpdated === 'string' ? lastUpdated.replace(' ', 'T') : lastUpdated);
     const lastStr = isNaN(lastTime.getTime()) ? '—' : lastTime.toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
     const posNote = n.isUsingFallbackPosition ? `<div style="color:#ff9f1c;font-size:10px;margin-top:5px;">(Approx. position near gateway)</div>` : '';
-
     let aiStatusHtml = '';
     if (isResolved && (isFire || isFalse)) {
         aiStatusHtml = `<br><div style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:3px 8px;background:#0a1a0a88;border:1px solid #2ecc7166;border-radius:5px;color:#2ecc71;font-size:11px;font-weight:700;">✓ INCIDENT RESOLVED</div>`;
     } else {
         aiStatusHtml = `<b style="color:${stColor}">${stLabel}</b>`;
     }
-
     return `
         <div class="popup-title">📡 ${nid}</div>
         ${offline && !isFire && !isFalse ? `<div style="color:#ff9f1c;font-weight:600;margin:6px 0;font-size:12px;">⚠ OFFLINE · Last: ${lastStr}</div>` : ''}
@@ -1405,6 +1316,7 @@ function buildNodePopupContent(n, nid, lat, lng, offline) {
         <button class="popup-history-btn" onclick="(function(){window._flames_map && window._flames_map.closePopup(); openHistoryPanel('${nid}');})()">📊 View History</button>`;
 }
 
+// ── loadAndPlaceNodes: trusts AI label directly, no confidence re-thresholding
 async function loadAndPlaceNodes(silent=false){
     try{
         const res=await fetch(`${API_BASE()}/nodes`,{headers:authHeader(),cache:'no-cache'});
@@ -1423,16 +1335,28 @@ async function loadAndPlaceNodes(silent=false){
             if(lat==null||isNaN(lat)){const off=10+Math.random()*90,ang=Math.random()*2*Math.PI;lat=gw.lat+(off/111000)*Math.cos(ang);lng=gw.lng+(off/(111000*Math.cos(gw.lat*Math.PI/180)))*Math.sin(ang);fallback=true;}
             const lastUpdated=n.timestamp||n.updated_at||n.last_seen||new Date().toISOString();
             nodeData[nid]={...nodeData[nid]||{},...n,latitude:lat,longitude:lng,last_updated:lastUpdated,isUsingFallbackPosition:fallback};
+
+            // Trust AI label directly — no confidence re-thresholding
             const pred=(n.ai_prediction||'normal').toLowerCase();
-            const conf=n.confidence!=null?Number(n.confidence):0;
-            const isFire=pred==='fire', isFalse=pred==='false', hiConf=conf>=0.70;
+            const isFire  = pred === 'fire';
+            const isFalse = pred === 'false';
 
             const lastTime=new Date(typeof lastUpdated==='string'?lastUpdated.replace(' ','T'):lastUpdated);
             const minAgo=(Date.now()-lastTime.getTime())/60000;
             const offline = (minAgo > OFFLINE_MIN) && !isFire && !isFalse;
 
-            const isFireActive = (isFire && hiConf && !resolvedNodeIds.has(nid));
-            const activeIcon   = isFireActive ? makeFireNodeIcon() : (offline ? makeOfflineNodeIcon() : nodeIcon);
+            // fire = red, false = yellow (possible), both cleared if resolved
+            const isFireActive   = isFire  && !resolvedNodeIds.has(nid);
+            const isPossibleActive = isFalse && !resolvedNodeIds.has(nid);
+            const hasAnyAlert    = isFireActive || isPossibleActive;
+
+            const activeIcon = isFireActive
+                ? makeFireNodeIcon(false)      // red rings
+                : isPossibleActive
+                    ? makeFireNodeIcon(true)   // yellow rings
+                    : offline
+                        ? makeOfflineNodeIcon()
+                        : nodeIcon;
 
             const popupContent = buildNodePopupContent(
                 {...n, isUsingFallbackPosition: fallback}, nid, lat, lng, offline
@@ -1443,23 +1367,16 @@ async function loadAndPlaceNodes(silent=false){
                 nodeMarkers[nid].setLatLng([lat,lng]);
                 nodeMarkers[nid].setPopupContent(popupContent);
                 const el = nodeMarkers[nid].getElement();
-                if(el){
-                    el.style.opacity = '1';
-                    el.classList.toggle('fire-node-active', isFireActive);
-                }
+                if(el){ el.style.opacity='1'; el.classList.toggle('fire-node-active', hasAnyAlert); }
             } else {
                 const marker=L.marker([lat,lng],{icon:activeIcon,opacity:1}).addTo(map);
                 marker.bindPopup(popupContent);
                 marker.on('click',()=>{selectedNodeId=nid;updateSensorBar(nodeData[nid],nid);});
-                if(isFireActive){
-                    const el=marker.getElement();
-                    if(el) el.classList.add('fire-node-active');
-                }
+                if(hasAnyAlert){ const el=marker.getElement(); if(el) el.classList.add('fire-node-active'); }
                 nodeMarkers[nid]=marker;
             }
         });
         if(selectedNodeId&&nodeData[selectedNodeId])updateSensorBar(nodeData[selectedNodeId],selectedNodeId);
-        // Sync gateway status panel nodes cache and re-render to reflect latest online/offline
         _gwStatusNodes = nodes;
         renderGatewayStatusPanel();
     }catch(err){console.error('Failed to load nodes:',err);if(!silent)alert('Could not load sensor nodes.');}
@@ -1480,58 +1397,42 @@ function connectWebSocket(){
     ws.onmessage=event=>{
         try{
             const msg=JSON.parse(event.data);
-
             if(msg.type==='sensor_data'||msg.type==='new_reading'){
                 loadAndPlaceNodes(true);
                 if(_hm_node&&(!msg.node_id||msg.node_id===_hm_node))fetchHistory();
             }
-
             if(msg.type==='node_update'){
                 loadAndPlaceNodes(true);
                 if(_hm_node&&(!msg.node_id||msg.node_id===_hm_node))fetchHistory();
             }
-
             if(msg.type==='incident_update'){
                 if(msg.action==='resolved' && msg.node_id){
                     clearFireAnimationForNode(msg.node_id);
                     syncResolvedNodesFromAPI().then(()=> loadAndPlaceNodes(true));
                 } else {
                     const pred = (msg.ai_prediction||'').toLowerCase();
-                    const conf = msg.confidence != null ? Number(msg.confidence) : 0;
-                    const isFire = pred === 'fire' || pred === 'false';
-                    const hiConf = conf >= 0.70;
-
-                    if (isFire && hiConf && msg.node_id) {
+                    // Trust the AI label — fire or false both trigger animation
+                    if ((pred === 'fire' || pred === 'false') && msg.node_id) {
                         applyFireAnimationForNode(msg.node_id, {
                             ai_prediction: msg.ai_prediction,
-                            confidence: conf,
-                            temperature: msg.temperature,
-                            humidity: msg.humidity,
-                            flame: msg.flame,
-                            smoke: msg.smoke,
-                            timestamp: msg.timestamp,
-                            latitude: msg.latitude,
-                            longitude: msg.longitude,
-                        });
-                    } else if (msg.node_id && (pred === 'fire' || pred === 'false')) {
-                        applyFireAnimationForNode(msg.node_id, {
-                            ai_prediction: msg.ai_prediction,
-                            confidence: conf,
-                            timestamp: msg.timestamp,
+                            confidence:    msg.confidence,
+                            temperature:   msg.temperature,
+                            humidity:      msg.humidity,
+                            flame:         msg.flame,
+                            smoke:         msg.smoke,
+                            timestamp:     msg.timestamp,
+                            latitude:      msg.latitude,
+                            longitude:     msg.longitude,
                         });
                     }
                     loadAndPlaceNodes(true);
                 }
-
                 loadLiveIncidents(true);
-
                 if(_currentIncidentTab==='resolved') loadResolvedIncidents();
-
                 if(document.getElementById('incident-details-modal').classList.contains('open') && _detailsModalIncidentId){
                     openIncidentDetailsModal(_detailsModalIncidentId);
                 }
             }
-
             if(msg.type==='gateway_update'){
                 loadGatewaysOnMap(true);
                 loadGatewayStatusPanel(true);
@@ -1550,11 +1451,14 @@ function updateSensorBar(d,nodeId){
     document.getElementById('sb-smoke').textContent=d.smoke      !=null?`${d.smoke} ppm`  :'—';
     document.getElementById('sb-flame').textContent=d.flame      !=null?d.flame            :'—';
     ['sb-temp','sb-hum','sb-smoke','sb-flame'].forEach(id=>document.getElementById(id).className='sensor-tile-val');
-    const pred=(d.ai_prediction||'normal').toLowerCase(),conf=d.confidence!=null?Number(d.confidence):0;
-    if((pred==='fire'||pred==='false')&&conf>=0.50&&!resolvedNodeIds.has(nodeId)){document.getElementById('sb-smoke').className+=' alert';document.getElementById('sb-flame').className+=' alert';}
+    // Trust AI label — no confidence re-thresholding
+    const pred=(d.ai_prediction||'normal').toLowerCase();
+    if((pred==='fire'||pred==='false')&&!resolvedNodeIds.has(nodeId)){
+        document.getElementById('sb-smoke').className+=' alert';
+        document.getElementById('sb-flame').className+=' alert';
+    }
     const lastUpdated=d.last_updated?new Date(typeof d.last_updated==='string'?d.last_updated.replace(' ','T'):d.last_updated):null;
-    const predCur=(d.ai_prediction||'normal').toLowerCase();
-    const offline=lastUpdated&&(Date.now()-lastUpdated.getTime())/60000>OFFLINE_MIN&&predCur!=='fire'&&predCur!=='false';
+    const offline=lastUpdated&&(Date.now()-lastUpdated.getTime())/60000>OFFLINE_MIN&&pred!=='fire'&&pred!=='false';
     document.getElementById('sb-node-label').innerHTML=nodeId?`${nodeId}${offline?' <small style="color:#ff9f1c;">(offline)</small>':''}`:'No node';
     const s=offline?'opacity:.6;font-style:italic;':'';
     ['sb-temp','sb-hum','sb-smoke','sb-flame'].forEach(id=>document.getElementById(id).style=s);
@@ -1569,7 +1473,6 @@ async function loadGatewayStatusPanel(silent = false) {
     try {
         const btn = document.getElementById('gw-refresh-btn');
         if (btn) btn.classList.add('spinning');
-
         const [gwRes, nodesRes] = await Promise.all([
             fetch(`${API_BASE()}/gateways`, { headers: authHeader(), cache: 'no-cache' }),
             fetch(`${API_BASE()}/nodes`, { headers: authHeader(), cache: 'no-cache' })
@@ -1577,14 +1480,9 @@ async function loadGatewayStatusPanel(silent = false) {
         if (!gwRes.ok) throw new Error(`HTTP ${gwRes.status}`);
         _gwStatusData = await gwRes.json();
         _gwStatusNodes = nodesRes.ok ? await nodesRes.json() : [];
-
         renderGatewayStatusPanel();
-
-        const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        const el = document.getElementById('gw-last-refresh');
-        if (el) el.textContent = `Updated ${now}`;
-
-        if (btn) btn.classList.remove('spinning');
+        const btn2 = document.getElementById('gw-refresh-btn');
+        if (btn2) btn2.classList.remove('spinning');
     } catch (err) {
         if (!silent) {
             document.getElementById('gw-status-list').innerHTML = `<div class="gw-empty-state" style="color:#ff4757;">⚠ Failed to load gateways</div>`;
@@ -1595,21 +1493,26 @@ async function loadGatewayStatusPanel(silent = false) {
     }
 }
 
+// ── getNodeStatus: trusts AI label directly, no confidence re-thresholding
 function getNodeStatus(node) {
     const pred = (node.ai_prediction || 'normal').toLowerCase();
-    const conf = node.confidence != null ? Number(node.confidence) : 0;
-    const isFire = (pred === 'fire' || pred === 'false') && conf >= 0.50 && !resolvedNodeIds.has(node.node_id);
+    const isResolved = resolvedNodeIds.has(node.node_id);
+
+    // Trust the AI label — fire = confirmed (red), false = possible (yellow)
+    const isFireConfirmed = pred === 'fire'  && !isResolved;
+    const isPossible      = pred === 'false' && !isResolved;
 
     const lastUpdated = node.timestamp || node.updated_at || node.last_seen || null;
     let offline = false;
     if (lastUpdated) {
         const lastTime = new Date(typeof lastUpdated === 'string' ? lastUpdated.replace(' ', 'T') : lastUpdated);
         const minAgo = (Date.now() - lastTime.getTime()) / 60000;
-        offline = minAgo > OFFLINE_MIN && !isFire;
+        offline = minAgo > OFFLINE_MIN && !isFireConfirmed && !isPossible;
     }
 
-    if (isFire) return 'fire';
-    if (offline) return 'offline';
+    if (isFireConfirmed) return 'fire';
+    if (isPossible)      return 'possible';
+    if (offline)         return 'offline';
     return 'active';
 }
 
@@ -1625,7 +1528,6 @@ function renderGatewayStatusPanel() {
 
     const gwNodeMap = {};
     _gwStatusData.forEach(gw => { gwNodeMap[gw.gateway_id] = []; });
-
     _gwStatusNodes.forEach(node => {
         const gwId = node.gateway_id || node.gateway || null;
         if (gwId && gwNodeMap[gwId] !== undefined) {
@@ -1636,55 +1538,53 @@ function renderGatewayStatusPanel() {
         }
     });
 
-    let onlineCount = 0;
     const gwStatuses = _gwStatusData.map(gw => {
         const nodes = gwNodeMap[gw.gateway_id] || [];
         const nodeStatuses = nodes.map(n => getNodeStatus(n));
-        const hasFire = nodeStatuses.includes('fire');
-        const hasActive = nodeStatuses.includes('active');
+        const hasFire     = nodeStatuses.includes('fire');
+        const hasPossible = nodeStatuses.includes('possible');
+        const hasActive   = nodeStatuses.includes('active');
         const gwLastSeen = gw.last_seen || gw.updated_at || null;
         let gwOffline = true;
         if (gwLastSeen) {
             const t = new Date(typeof gwLastSeen === 'string' ? gwLastSeen.replace(' ', 'T') : gwLastSeen);
-            const minAgo = (Date.now() - t.getTime()) / 60000;
-            gwOffline = minAgo > OFFLINE_MIN;
+            gwOffline = (Date.now() - t.getTime()) / 60000 > OFFLINE_MIN;
         }
-        if (!gwLastSeen) {
-            gwOffline = !hasActive && !hasFire && nodes.length === 0;
-        }
-        const status = hasFire ? 'fire' : (gwOffline && !hasActive && !hasFire) ? 'offline' : 'online';
-        if (status !== 'offline') onlineCount++;
+        if (!gwLastSeen) gwOffline = !hasActive && !hasFire && !hasPossible && nodes.length === 0;
+        const status = hasFire ? 'fire' : hasPossible ? 'possible' : (gwOffline && !hasActive) ? 'offline' : 'online';
         return { gw, nodes, nodeStatuses, status };
     });
 
-    const tnEl = document.getElementById('gw-total-nodes-label'); if(tnEl) tnEl.textContent = `${_gwStatusNodes.length} node${_gwStatusNodes.length !== 1 ? 's' : ''}`;
+    const tnEl = document.getElementById('gw-total-nodes-label');
+    if(tnEl) tnEl.textContent = `${_gwStatusNodes.length} node${_gwStatusNodes.length !== 1 ? 's' : ''}`;
 
     const html = gwStatuses.map(({ gw, nodes, nodeStatuses, status }) => {
         const isExpanded = _gwStatusExpanded.has(gw.gateway_id);
-        const fireCount = nodeStatuses.filter(s => s === 'fire').length;
-        const offlineCount = nodeStatuses.filter(s => s === 'offline').length;
-        const activeCount = nodeStatuses.filter(s => s === 'active').length;
+        const fireCount     = nodeStatuses.filter(s => s === 'fire').length;
+        const possibleCount = nodeStatuses.filter(s => s === 'possible').length;
+        const offlineCount  = nodeStatuses.filter(s => s === 'offline').length;
+        const activeCount   = nodeStatuses.filter(s => s === 'active').length;
 
         const nodesHtml = nodes.length === 0
             ? '<div class="gw-no-nodes">No nodes assigned to this gateway</div>'
             : nodes.map((node, i) => {
                 const nStatus = nodeStatuses[i];
-                const lat = parseFloat(node.latitude);
-                const lng = parseFloat(node.longitude);
+                const lat = parseFloat(node.latitude), lng = parseFloat(node.longitude);
                 const hasCoords = !isNaN(lat) && lat !== 0 && !isNaN(lng) && lng !== 0;
                 const locName = node.location_name || node.name || '';
-                const pred = (node.ai_prediction || 'normal').toLowerCase();
-                const conf = node.confidence != null ? Number(node.confidence) : 0;
-                const fireLabel = nStatus === 'fire' ? '<span class="fire-label">🔥 FIRE</span>' : '';
-                const offlineLabel = nStatus === 'offline' ? '<span style="font-size:8px;color:#5a5a5a;background:#2a2a2a;border:1px solid #3a3a3a;border-radius:3px;padding:1px 4px;margin-left:3px;">⚫ OFFLINE</span>' : '';
                 const coordStr = hasCoords ? `${lat.toFixed(5)}, ${lng.toFixed(5)}` : 'No coordinates';
-                const flyBtn = hasCoords
-                    ? `<div class="gw-node-flyto">
-                         <button class="gw-node-flyto-btn" onclick="flyToNode('${node.node_id}',${lat},${lng})" title="Go to node on map">📍 Go</button>
-                       </div>`
+                const fireLabel = nStatus === 'fire'
+                    ? '<span class="fire-label">🔥 FIRE</span>'
+                    : nStatus === 'possible'
+                        ? '<span class="possible-label">⚠ POSSIBLE</span>'
+                        : '';
+                const offlineLabel = nStatus === 'offline'
+                    ? '<span style="font-size:8px;color:#5a5a5a;background:#2a2a2a;border:1px solid #3a3a3a;border-radius:3px;padding:1px 4px;margin-left:3px;">⚫ OFFLINE</span>'
                     : '';
-
-                return `<div class="gw-node-row" onclick="flyToNode('${node.node_id}',${hasCoords ? lat : 'null'},${hasCoords ? lng : 'null'})">
+                const flyBtn = hasCoords
+                    ? `<div class="gw-node-flyto"><button class="gw-node-flyto-btn" onclick="flyToNode('${node.node_id}',${lat},${lng})" title="Go to node on map">📍 Go</button></div>`
+                    : '';
+                return `<div class="gw-node-row" onclick="flyToNode('${node.node_id}',${hasCoords?lat:'null'},${hasCoords?lng:'null'})">
                     <div class="node-status-dot ${nStatus}"></div>
                     <div class="gw-node-info">
                         <div class="gw-node-id">${node.node_id} ${fireLabel}${offlineLabel}</div>
@@ -1696,22 +1596,23 @@ function renderGatewayStatusPanel() {
             }).join('');
 
         const metaBadges = [];
-        if (fireCount > 0) metaBadges.push(`<span style="color:#ff4757;font-size:8px;font-weight:700;">🔥 ${fireCount} fire</span>`);
-        if (offlineCount > 0) metaBadges.push(`<span style="color:#5a5a5a;font-size:8px;">⚫ ${offlineCount} offline</span>`);
-        if (activeCount > 0) metaBadges.push(`<span style="color:#2ecc71;font-size:8px;">● ${activeCount} online</span>`);
+        if (fireCount > 0)     metaBadges.push(`<span style="color:#ff4757;font-size:8px;font-weight:700;">🔥 ${fireCount} fire</span>`);
+        if (possibleCount > 0) metaBadges.push(`<span style="color:#f1c40f;font-size:8px;font-weight:700;">⚠ ${possibleCount} possible</span>`);
+        if (offlineCount > 0)  metaBadges.push(`<span style="color:#5a5a5a;font-size:8px;">⚫ ${offlineCount} offline</span>`);
+        if (activeCount > 0)   metaBadges.push(`<span style="color:#2ecc71;font-size:8px;">● ${activeCount} online</span>`);
 
-        return `<div class="gw-item${isExpanded ? ' expanded' : ''}" id="gwitem-${gw.gateway_id}">
+        return `<div class="gw-item${isExpanded?' expanded':''}" id="gwitem-${gw.gateway_id}">
             <div class="gw-item-header" onclick="toggleGatewayExpand('${gw.gateway_id}')">
                 <div class="gw-status-dot ${status}"></div>
                 <div class="gw-item-name">${gw.gateway_id}</div>
                 ${gw.location_name ? `<div class="gw-item-location">${gw.location_name}</div>` : ''}
                 <div class="gw-item-meta">
-                    <span class="gw-node-count-badge">${nodes.length} node${nodes.length !== 1 ? 's' : ''}</span>
+                    <span class="gw-node-count-badge">${nodes.length} node${nodes.length!==1?'s':''}</span>
                     <span class="gw-chevron">▼</span>
                 </div>
             </div>
             ${metaBadges.length > 0 ? `<div style="padding:0 10px 6px;display:flex;gap:6px;flex-wrap:wrap;">${metaBadges.join('')}</div>` : ''}
-            <div class="gw-nodes-list${isExpanded ? ' visible' : ''}" id="gwnodes-${gw.gateway_id}">
+            <div class="gw-nodes-list${isExpanded?' visible':''}" id="gwnodes-${gw.gateway_id}">
                 ${nodesHtml}
             </div>
         </div>`;
@@ -1724,44 +1625,26 @@ function toggleGatewayExpand(gwId) {
     const item = document.getElementById(`gwitem-${gwId}`);
     const nodesList = document.getElementById(`gwnodes-${gwId}`);
     if (!item || !nodesList) return;
-
     if (_gwStatusExpanded.has(gwId)) {
-        _gwStatusExpanded.delete(gwId);
-        item.classList.remove('expanded');
-        nodesList.classList.remove('visible');
+        _gwStatusExpanded.delete(gwId); item.classList.remove('expanded'); nodesList.classList.remove('visible');
     } else {
-        _gwStatusExpanded.add(gwId);
-        item.classList.add('expanded');
-        nodesList.classList.add('visible');
+        _gwStatusExpanded.add(gwId); item.classList.add('expanded'); nodesList.classList.add('visible');
     }
 }
 
 function flyToNode(nodeId, lat, lng) {
     if (lat === null || isNaN(lat) || lat === 0) {
         const nd = nodeData[nodeId];
-        if (nd && nd.latitude && !isNaN(nd.latitude)) {
-            lat = nd.latitude;
-            lng = nd.longitude;
-        } else {
-            alert(`No location available for node ${nodeId}`);
-            return;
-        }
+        if (nd && nd.latitude && !isNaN(nd.latitude)) { lat = nd.latitude; lng = nd.longitude; }
+        else { alert(`No location available for node ${nodeId}`); return; }
     }
     map.flyTo([lat, lng], 17, { animate: true, duration: 1.2 });
-    if (nodeMarkers[nodeId]) {
-        setTimeout(() => { nodeMarkers[nodeId].openPopup(); }, 1300);
-    }
-    if (nodeData[nodeId]) {
-        selectedNodeId = nodeId;
-        updateSensorBar(nodeData[nodeId], nodeId);
-    }
+    if (nodeMarkers[nodeId]) setTimeout(() => { nodeMarkers[nodeId].openPopup(); }, 1300);
+    if (nodeData[nodeId]) { selectedNodeId = nodeId; updateSensorBar(nodeData[nodeId], nodeId); }
 }
 
-function refreshGatewayPanel() {
-    loadGatewayStatusPanel(false);
-}
+function refreshGatewayPanel() { loadGatewayStatusPanel(false); }
 
-// Initial load and auto-refresh every 15s
 loadGatewayStatusPanel();
 setInterval(() => loadGatewayStatusPanel(true), 15000);
 
@@ -1777,13 +1660,8 @@ function renderPinned(){
         const item=document.createElement('div');item.className='pinned-item';
         item.innerHTML=`<div><div class="pinned-item-name">${pin.name||'Pinned Location'}</div><div class="pinned-item-coords">${pin.latitude.toFixed(5)}, ${pin.longitude.toFixed(5)}</div></div><div class="pinned-item-actions"><button class="btn-icon-sm" onclick="flyToPin(${pin.latitude},${pin.longitude})">📍</button><button class="btn-icon-sm" onclick="removePin(${pin.id})" style="color:var(--red)">✕</button></div>`;
         list.appendChild(item);
-        const pinnedIcon = L.icon({
-        iconUrl: 'icons/Pinpoint.png', 
-        iconSize: [55, 55],
-        iconAnchor: [20, 40],
-        popupAnchor: [0, -40]
-    });
-    pinnedMarkers[pin.id] = L.marker([pin.latitude, pin.longitude], { icon: pinnedIcon }).addTo(map).bindPopup(`<b>${pin.name||'Pinned'}</b><br>${pin.latitude.toFixed(5)}, ${pin.longitude.toFixed(5)}`)
+        const pinnedIcon = L.icon({iconUrl:'icons/Pinpoint.png',iconSize:[55,55],iconAnchor:[20,40],popupAnchor:[0,-40]});
+        pinnedMarkers[pin.id]=L.marker([pin.latitude,pin.longitude],{icon:pinnedIcon}).addTo(map).bindPopup(`<b>${pin.name||'Pinned'}</b><br>${pin.latitude.toFixed(5)}, ${pin.longitude.toFixed(5)}`);
     });
 }
 let pinnedListVisible=false;
@@ -1849,8 +1727,7 @@ function switchIncidentTab(tab) {
     document.getElementById('incident-list').style.display = tab==='live' ? 'flex' : 'none';
     document.getElementById('resolved-list').style.display = tab==='resolved' ? 'flex' : 'none';
     if (tab==='resolved') loadResolvedIncidents();
-    const titleEl = document.getElementById('incidents-panel-title');
-    titleEl.textContent = tab==='live' ? 'Live Incidents' : 'Resolved Incidents';
+    document.getElementById('incidents-panel-title').textContent = tab==='live' ? 'Live Incidents' : 'Resolved Incidents';
 }
 
 // ====================== LIVE INCIDENTS ======================
@@ -1868,14 +1745,13 @@ async function loadLiveIncidents(silent=false){
             listEl.innerHTML='<div class="node-placeholder">No active incidents right now</div>';
         } else {
             incidents.forEach(inc=>{
-                const pred      = (inc.ai_prediction||'').toLowerCase();
-                const isFire    = pred==='fire';
-                const confColor = inc.confidence_pct>=70?'var(--green)':inc.confidence_pct>=40?'var(--yellow)':'var(--orange)';
-                const predLabel = isFire?'🔥 FIRE':'⚠ POSSIBLE';
-                const rescueInfo = _incidentRescueMap[inc.incident_id];
-                const isRescued = rescueInfo && rescueInfo.status === 'rescued';
-                const isEnRoute = rescueInfo && rescueInfo.status === 'en_route';
-
+                const pred=(inc.ai_prediction||'').toLowerCase();
+                const isFire=pred==='fire';
+                const confColor=inc.confidence_pct>=70?'var(--green)':inc.confidence_pct>=40?'var(--yellow)':'var(--orange)';
+                const predLabel=isFire?'🔥 FIRE':'⚠ POSSIBLE';
+                const rescueInfo=_incidentRescueMap[inc.incident_id];
+                const isRescued=rescueInfo&&rescueInfo.status==='rescued';
+                const isEnRoute=rescueInfo&&rescueInfo.status==='en_route';
                 listEl.innerHTML+=`
                 <div class="incident-card" id="incident-card-${inc.incident_id}">
                     <div class="incident-title">${inc.location_name||`Node ${inc.node_id}`}</div>
@@ -1909,10 +1785,7 @@ async function loadResolvedIncidents() {
         const res = await fetch(`${API_BASE()}/incidents/resolved`, {headers:authHeader(),cache:'no-cache'});
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const incidents = await res.json();
-        if (!incidents.length) {
-            listEl.innerHTML='<div class="node-placeholder">No resolved incidents yet</div>';
-            return;
-        }
+        if (!incidents.length) { listEl.innerHTML='<div class="node-placeholder">No resolved incidents yet</div>'; return; }
         listEl.innerHTML = '';
         incidents.forEach(inc => {
             const rescueInfo = _incidentRescueMap[inc.incident_id];
@@ -1941,7 +1814,7 @@ async function loadResolvedIncidents() {
                 <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:5px;">
                     <div style="display:flex;align-items:center;gap:6px;min-width:0;">
                         <span class="resolved-tag" style="flex-shrink:0;">✓</span>
-                        <div class="resolved-card-title" style="margin-bottom:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${info.locationName||`Incident #${incId}`}</div>
+                        <div class="resolved-card-title" style="margin-bottom:0;">${info.locationName||`Incident #${incId}`}</div>
                     </div>
                     <button class="resolved-info-btn" title="View Details" onclick="openIncidentDetailsModal(${incId})">i</button>
                 </div>
@@ -1971,30 +1844,17 @@ async function openRescueModal(incidentId, nodeId, locationName) {
         if (!res.ok) throw new Error('Failed to load orgs');
         _availableOrganizations = await res.json();
         listEl.innerHTML = '';
-        if (!_availableOrganizations.length) {
-            listEl.innerHTML = '<div style="color:#5a3a2a;text-align:center;padding:16px;">No organizations registered</div>';
-            return;
-        }
+        if (!_availableOrganizations.length) { listEl.innerHTML = '<div style="color:#5a3a2a;text-align:center;padding:16px;">No organizations registered</div>'; return; }
         _availableOrganizations.forEach((org) => {
             const item = document.createElement('div');
             item.className = 'rescue-org-item';
             item.dataset.orgId = org.id;
             item.dataset.orgName = org.name;
-            item.innerHTML = `
-                <div class="rescue-org-icon">🏢</div>
-                <div>
-                    <div class="rescue-org-name">${org.name}</div>
-                    <div class="rescue-org-meta">ID: ${org.id}${org.invite_code?' · Code: '+org.invite_code:''}</div>
-                </div>`;
-            item.addEventListener('click', () => {
-                document.querySelectorAll('.rescue-org-item').forEach(el => el.classList.remove('selected'));
-                item.classList.add('selected');
-            });
+            item.innerHTML = `<div class="rescue-org-icon">🏢</div><div><div class="rescue-org-name">${org.name}</div><div class="rescue-org-meta">ID: ${org.id}${org.invite_code?' · Code: '+org.invite_code:''}</div></div>`;
+            item.addEventListener('click', () => { document.querySelectorAll('.rescue-org-item').forEach(el => el.classList.remove('selected')); item.classList.add('selected'); });
             listEl.appendChild(item);
         });
-    } catch(err) {
-        listEl.innerHTML = `<div style="color:#ff4757;text-align:center;padding:16px;">Failed: ${err.message}</div>`;
-    }
+    } catch(err) { listEl.innerHTML = `<div style="color:#ff4757;text-align:center;padding:16px;">Failed: ${err.message}</div>`; }
 }
 
 function closeRescueModal() {
@@ -2005,35 +1865,21 @@ function closeRescueModal() {
 async function confirmRescueDispatch() {
     const selected = document.querySelector('.rescue-org-item.selected');
     if (!selected) { alert('Please select an organization.'); return; }
-    const orgId = selected.dataset.orgId;
-    const orgName = selected.dataset.orgName;
+    const orgId = selected.dataset.orgId, orgName = selected.dataset.orgName;
     const incidentId = _pendingRescueIncidentId;
     if (!incidentId) return;
     const inc = _liveIncidentsCache.find(i => i.incident_id == incidentId);
     const now = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-    _incidentRescueMap[incidentId] = {
-        orgId, orgName,
-        status: 'en_route',
-        dispatchTime: now,
-        rescuedTime: null,
-        nodeId: inc?.node_id,
-        locationName: inc?.location_name || `Incident #${incidentId}`
-    };
+    _incidentRescueMap[incidentId] = {orgId,orgName,status:'en_route',dispatchTime:now,rescuedTime:null,nodeId:inc?.node_id,locationName:inc?.location_name||`Incident #${incidentId}`};
     try {
-        await fetch(`${API_BASE()}/incidents/${incidentId}/respond`, {
-            method: 'PATCH',
-            headers: {...authHeader(),'Content-Type':'application/json'},
-            body: JSON.stringify({organization_id: parseInt(orgId), organization_name: orgName})
-        });
+        await fetch(`${API_BASE()}/incidents/${incidentId}/respond`, {method:'PATCH',headers:{...authHeader(),'Content-Type':'application/json'},body:JSON.stringify({organization_id:parseInt(orgId),organization_name:orgName})});
     } catch {}
     closeRescueModal();
-    document.getElementById('respond-node-label').textContent = `Incident on ${inc?.node_id || incidentId}`;
+    document.getElementById('respond-node-label').textContent = `Incident on ${inc?.node_id||incidentId}`;
     document.getElementById('respond-org-display').textContent = orgName;
     document.getElementById('respond-modal').classList.add('open');
     loadLiveIncidents(true);
-    if (document.getElementById('incident-details-modal').classList.contains('open')) {
-        openIncidentDetailsModal(incidentId);
-    }
+    if (document.getElementById('incident-details-modal').classList.contains('open')) openIncidentDetailsModal(incidentId);
     if (document.getElementById('incident-map-modal').classList.contains('open')) {
         const inc2 = _liveIncidentsCache.find(i => i.incident_id == incidentId);
         if (inc2) openIncidentMapModal(inc2, true);
@@ -2043,132 +1889,84 @@ async function confirmRescueDispatch() {
 // ====================== RESOLVE INCIDENT ======================
 async function resolveIncident(incidentId, nodeId) {
     try {
-        const res = await fetch(`${API_BASE()}/incidents/${incidentId}/resolve`, {
-            method: 'PATCH',
-            headers: { ...authHeader(), 'Content-Type': 'application/json' },
-            body: JSON.stringify({ notes: 'Resolved via dashboard' })
-        });
-        if (!res.ok) throw new Error((await res.json()).detail || 'Failed');
-
+        const res = await fetch(`${API_BASE()}/incidents/${incidentId}/resolve`, {method:'PATCH',headers:{...authHeader(),'Content-Type':'application/json'},body:JSON.stringify({notes:'Resolved via dashboard'})});
+        if (!res.ok) throw new Error((await res.json()).detail||'Failed');
         const now = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
         if (_incidentRescueMap[incidentId]) {
             _incidentRescueMap[incidentId].status = 'rescued';
             _incidentRescueMap[incidentId].rescuedTime = now;
         } else {
             const inc = _liveIncidentsCache.find(i => i.incident_id == incidentId);
-            _incidentRescueMap[incidentId] = {
-                orgId: null, orgName: 'Manual Resolve',
-                status: 'rescued', dispatchTime: null, rescuedTime: now,
-                nodeId: nodeId, locationName: inc?.location_name
-            };
+            _incidentRescueMap[incidentId] = {orgId:null,orgName:'Manual Resolve',status:'rescued',dispatchTime:null,rescuedTime:now,nodeId,locationName:inc?.location_name};
         }
-
         clearFireAnimationForNode(nodeId);
         closeIncidentDetailsModal();
         closeIncidentMapModal();
-
         const card = document.getElementById(`incident-card-${incidentId}`);
         if (card) {
-            card.style.transition = 'opacity .4s, transform .4s';
-            card.style.opacity = '0';
-            card.style.transform = 'translateX(20px)';
-            setTimeout(() => {
-                loadLiveIncidents(true);
-                loadAndPlaceNodes(true);
-            }, 450);
-        } else {
-            loadLiveIncidents(true);
-            loadAndPlaceNodes(true);
-        }
-    } catch (err) {
-        alert(`Could not resolve: ${err.message}`);
-    }
+            card.style.transition='opacity .4s, transform .4s'; card.style.opacity='0'; card.style.transform='translateX(20px)';
+            setTimeout(()=>{loadLiveIncidents(true);loadAndPlaceNodes(true);},450);
+        } else { loadLiveIncidents(true); loadAndPlaceNodes(true); }
+    } catch (err) { alert(`Could not resolve: ${err.message}`); }
 }
 
 // ====================== INCIDENT MAP MODAL ======================
 let _incDetailMap = null, _incDetailRouteLayer = null, _incDetailMarkers = [];
 
 function openIncidentMapModal(inc, sidebarOnly=false) {
-    const modal = document.getElementById('incident-map-modal');
-    modal.classList.add('open');
+    document.getElementById('incident-map-modal').classList.add('open');
     const rescueInfo = _incidentRescueMap[inc.incident_id];
     const isRescued = rescueInfo && rescueInfo.status === 'rescued';
-    const isEnRoute = rescueInfo && rescueInfo.status === 'en_route';
     const gw = getPrimaryGateway();
     const distKm = calcDistance(gw.lat, gw.lng, parseFloat(inc.latitude), parseFloat(inc.longitude));
     const etaMin = Math.round(distKm / 0.4);
     const pred = (inc.ai_prediction||'').toLowerCase();
     const isFire = pred === 'fire';
-
-    const sidebar = document.getElementById('inc-map-sidebar');
-    sidebar.innerHTML = `
-        <div class="inc-map-info-group">
-            <div class="inc-map-info-label">Node Status</div>
-            <div class="inc-map-info-val inc-map-status-${isRescued?'resolved':'active'}">${isRescued?'✓ RESOLVED':isFire?'🔥 FIRE ACTIVE':'⚠ ACTIVE'}</div>
-        </div>
-        <div class="inc-map-info-group">
-            <div class="inc-map-info-label">Location</div>
-            <div class="inc-map-info-val" style="font-size:12px;">${inc.location_name||`Node ${inc.node_id}`}</div>
-        </div>
+    document.getElementById('inc-map-sidebar').innerHTML = `
+        <div class="inc-map-info-group"><div class="inc-map-info-label">Node Status</div>
+            <div class="inc-map-info-val inc-map-status-${isRescued?'resolved':'active'}">${isRescued?'✓ RESOLVED':isFire?'🔥 FIRE ACTIVE':'⚠ ACTIVE'}</div></div>
+        <div class="inc-map-info-group"><div class="inc-map-info-label">Location</div>
+            <div class="inc-map-info-val" style="font-size:12px;">${inc.location_name||`Node ${inc.node_id}`}</div></div>
         <div class="inc-route-stats">
-            <div class="inc-route-stat">
-                <div class="inc-route-stat-val">${distKm.toFixed(1)} km</div>
-                <div class="inc-route-stat-label">Distance</div>
-            </div>
-            <div class="inc-route-stat">
-                <div class="inc-route-stat-val">~${etaMin} min</div>
-                <div class="inc-route-stat-label">ETA</div>
-            </div>
+            <div class="inc-route-stat"><div class="inc-route-stat-val">${distKm.toFixed(1)} km</div><div class="inc-route-stat-label">Distance</div></div>
+            <div class="inc-route-stat"><div class="inc-route-stat-val">~${etaMin} min</div><div class="inc-route-stat-label">ETA</div></div>
         </div>
-        ${rescueInfo ? `
-        <div class="inc-rescue-status">
-            <div class="inc-rescue-status-label">Rescue Status</div>
+        ${rescueInfo?`<div class="inc-rescue-status"><div class="inc-rescue-status-label">Rescue Status</div>
             <div class="inc-rescue-org-name">🏢 ${rescueInfo.orgName}</div>
             <div class="inc-rescue-time">Dispatched: ${rescueInfo.dispatchTime||'—'}</div>
-            <div class="inc-rescue-status-badge ${rescueInfo.status==='rescued'?'rescued':'en-route'}">
-                ${rescueInfo.status==='rescued'?'✓ RESOLVED':'🚒 EN ROUTE'}
-            </div>
-        </div>` : ''}
+            <div class="inc-rescue-status-badge ${rescueInfo.status==='rescued'?'rescued':'en-route'}">${rescueInfo.status==='rescued'?'✓ RESOLVED':'🚒 EN ROUTE'}</div></div>`:''}
         <button class="inc-map-rescue-btn" onclick="closeIncidentMapModal();openRescueModal(${inc.incident_id},'${inc.node_id}','${(inc.location_name||'Node '+inc.node_id).replace(/'/g,"\\'")}')">🚒 DISPATCH RESCUE</button>
-        <button class="inc-map-resolve-btn" id="inc-map-resolve-${inc.incident_id}" onclick="resolveIncident(${inc.incident_id},'${inc.node_id}')" ${isRescued?'disabled':''}>✓ MARK RESOLVED</button>
-    `;
-
+        <button class="inc-map-resolve-btn" id="inc-map-resolve-${inc.incident_id}" onclick="resolveIncident(${inc.incident_id},'${inc.node_id}')" ${isRescued?'disabled':''}>✓ MARK RESOLVED</button>`;
     if (sidebarOnly) return;
-
     setTimeout(() => {
         if (_incDetailMap) { _incDetailMap.remove(); _incDetailMap = null; }
         _incDetailMarkers.forEach(m => { try{ m.remove(); } catch{} });
         _incDetailMarkers = [];
         if (_incDetailRouteLayer) { try{ _incDetailRouteLayer.remove(); } catch{} _incDetailRouteLayer = null; }
         const incLat = parseFloat(inc.latitude), incLng = parseFloat(inc.longitude);
-        _incDetailMap = L.map('incident-detail-map', {zoomControl:true, attributionControl:true}).setView([incLat, incLng], 15);
+        _incDetailMap = L.map('incident-detail-map',{zoomControl:true,attributionControl:true}).setView([incLat,incLng],15);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(_incDetailMap);
-        const incMarker = L.marker([incLat, incLng], {icon: makeFireNodeIcon()}).addTo(_incDetailMap);
+        const incMarker = L.marker([incLat,incLng],{icon:makeFireNodeIcon(false)}).addTo(_incDetailMap);
         incMarker.bindPopup(`<div style="font-weight:700;color:#ff9055;">🔥 Incident Location</div><div style="font-size:11px;color:#9a6a5a;">${inc.location_name||`Node ${inc.node_id}`}</div>`).openPopup();
         _incDetailMarkers.push(incMarker);
-        const gwMarker = L.marker([gw.lat, gw.lng], {icon: greenIcon}).addTo(_incDetailMap);
+        const gwMarker = L.marker([gw.lat,gw.lng],{icon:greenIcon}).addTo(_incDetailMap);
         gwMarker.bindPopup('<div style="font-weight:700;color:#2ecc71;">🏠 Gateway / Start Point</div>');
         _incDetailMarkers.push(gwMarker);
-        calculateDetailRoute(gw, {lat: incLat, lng: incLng});
+        calculateDetailRoute(gw, {lat:incLat,lng:incLng});
     }, 150);
 }
 
 async function calculateDetailRoute(start, end) {
     try {
-        const res = await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson', {
-            method: 'POST',
-            headers: {'Content-Type':'application/json','Authorization':ORS_API_KEY},
-            body: JSON.stringify({coordinates:[[start.lng,start.lat],[end.lng,end.lat]],preference:'fastest',units:'m'})
-        });
+        const res = await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson',{method:'POST',headers:{'Content-Type':'application/json','Authorization':ORS_API_KEY},body:JSON.stringify({coordinates:[[start.lng,start.lat],[end.lng,end.lat]],preference:'fastest',units:'m'})});
         if (!res.ok) throw new Error('Route API error');
         const data = await res.json();
         const coords = data.features[0].geometry.coordinates.map(c=>[c[1],c[0]]);
         const summary = data.features[0].properties.summary;
         if (_incDetailRouteLayer) _incDetailRouteLayer.remove();
-        _incDetailRouteLayer = L.polyline(coords, {color:'#ff4400',weight:5,opacity:.9,dashArray:'8,6'}).addTo(_incDetailMap);
-        _incDetailMap.fitBounds(_incDetailRouteLayer.getBounds(), {padding:[20,20]});
-        const dist = (summary.distance/1000).toFixed(2);
-        const time = Math.round(summary.duration/60);
+        _incDetailRouteLayer = L.polyline(coords,{color:'#ff4400',weight:5,opacity:.9,dashArray:'8,6'}).addTo(_incDetailMap);
+        _incDetailMap.fitBounds(_incDetailRouteLayer.getBounds(),{padding:[20,20]});
+        const dist = (summary.distance/1000).toFixed(2), time = Math.round(summary.duration/60);
         const statEls = document.querySelectorAll('.inc-route-stat-val');
         if (statEls[0]) statEls[0].textContent = dist + ' km';
         if (statEls[1]) statEls[1].textContent = '~' + time + ' min';
@@ -2178,12 +1976,9 @@ async function calculateDetailRoute(start, end) {
 function closeIncidentMapModal() {
     document.getElementById('incident-map-modal').classList.remove('open');
     if (_incDetailMap) { _incDetailMap.remove(); _incDetailMap = null; }
-    _incDetailMarkers = [];
-    _incDetailRouteLayer = null;
+    _incDetailMarkers = []; _incDetailRouteLayer = null;
 }
-document.getElementById('incident-map-modal').addEventListener('click', e => {
-    if (e.target === document.getElementById('incident-map-modal')) closeIncidentMapModal();
-});
+document.getElementById('incident-map-modal').addEventListener('click', e => { if (e.target===document.getElementById('incident-map-modal')) closeIncidentMapModal(); });
 
 // ====================== INCIDENT DETAILS MODAL ======================
 let _detailsModalIncidentId = null;
@@ -2196,176 +1991,130 @@ async function openIncidentDetailsModal(incidentId) {
     const inc = _liveIncidentsCache.find(i => i.incident_id == incidentId);
     const rescueInfo = _incidentRescueMap[incidentId];
     let resolvedData = null;
-    try {
-        const res = await fetch(`${API_BASE()}/incidents/${incidentId}`, {headers:authHeader()});
-        if (res.ok) resolvedData = await res.json();
-    } catch {}
+    try { const res = await fetch(`${API_BASE()}/incidents/${incidentId}`,{headers:authHeader()}); if(res.ok) resolvedData=await res.json(); } catch {}
     const data = resolvedData || inc || {};
     const pred = (data.ai_prediction||'').toLowerCase();
     const isFire = pred === 'fire';
     const isRescued = rescueInfo && rescueInfo.status === 'rescued';
     const isEnRoute = rescueInfo && rescueInfo.status === 'en_route';
     const isAlreadyResolved = data.status === 'resolved';
-
     body.innerHTML = `
         <div class="inc-details-section">
             <div class="inc-details-section-title">Incident Overview</div>
-            <div class="inc-details-row">
-                <span class="inc-details-row-label">Location</span>
-                <span class="inc-details-row-val">${data.location_name||`Node ${data.node_id}`}</span>
-            </div>
-            <div class="inc-details-row">
-                <span class="inc-details-row-label">Node ID</span>
-                <span class="inc-details-row-val" style="font-family:monospace;">${data.node_id||'—'}</span>
-            </div>
-            <div class="inc-details-row">
-                <span class="inc-details-row-label">AI Detection</span>
-                <span class="inc-details-row-val" style="color:${isFire?'var(--red)':'var(--yellow)'};">${isFire?'🔥 FIRE DETECTED':'⚠ Possible Fire'}</span>
-            </div>
-            <div class="inc-details-row">
-                <span class="inc-details-row-label">Confidence</span>
-                <span class="inc-details-row-val">${data.confidence_pct??'—'}%</span>
-            </div>
-            <div class="inc-details-row">
-                <span class="inc-details-row-label">Status</span>
-                <span class="inc-details-row-val">${(isRescued||isAlreadyResolved)?'<span style="color:#2ecc71;">✓ Resolved</span>':isEnRoute?'<span style="color:#f1c40f;">🚒 En Route</span>':'<span style="color:#ff4757;">Active</span>'}</span>
-            </div>
-            <div class="inc-details-row">
-                <span class="inc-details-row-label">Started</span>
-                <span class="inc-details-row-val" style="font-size:10px;">${data.started_at||'—'}</span>
-            </div>
-            <div class="inc-details-row">
-                <span class="inc-details-row-label">Last Updated</span>
-                <span class="inc-details-row-val" style="font-size:10px;">${data.timestamp||'—'}</span>
-            </div>
+            <div class="inc-details-row"><span class="inc-details-row-label">Location</span><span class="inc-details-row-val">${data.location_name||`Node ${data.node_id}`}</span></div>
+            <div class="inc-details-row"><span class="inc-details-row-label">Node ID</span><span class="inc-details-row-val" style="font-family:monospace;">${data.node_id||'—'}</span></div>
+            <div class="inc-details-row"><span class="inc-details-row-label">AI Detection</span><span class="inc-details-row-val" style="color:${isFire?'var(--red)':'var(--yellow)'};">${isFire?'🔥 FIRE DETECTED':'⚠ Possible Fire'}</span></div>
+            <div class="inc-details-row"><span class="inc-details-row-label">Confidence</span><span class="inc-details-row-val">${data.confidence_pct??'—'}%</span></div>
+            <div class="inc-details-row"><span class="inc-details-row-label">Status</span><span class="inc-details-row-val">${(isRescued||isAlreadyResolved)?'<span style="color:#2ecc71;">✓ Resolved</span>':isEnRoute?'<span style="color:#f1c40f;">🚒 En Route</span>':'<span style="color:#ff4757;">Active</span>'}</span></div>
+            <div class="inc-details-row"><span class="inc-details-row-label">Started</span><span class="inc-details-row-val" style="font-size:10px;">${data.started_at||'—'}</span></div>
+            <div class="inc-details-row"><span class="inc-details-row-label">Last Updated</span><span class="inc-details-row-val" style="font-size:10px;">${data.timestamp||'—'}</span></div>
         </div>
-
         <div class="inc-details-section">
             <div class="inc-details-section-title">Response Timeline</div>
             <div class="inc-response-timeline">
-                <div class="inc-timeline-item">
-                    <div class="inc-timeline-dot incident">🔥</div>
-                    <div class="inc-timeline-content">
-                        <div class="inc-timeline-action">Fire Detected</div>
-                        <div class="inc-timeline-time">${data.started_at||'—'}</div>
-                    </div>
-                </div>
-                ${rescueInfo ? `
-                <div class="inc-timeline-item">
-                    <div class="inc-timeline-dot dispatched">🚨</div>
-                    <div class="inc-timeline-content">
-                        <div class="inc-timeline-action">Rescue Dispatched</div>
-                        <div class="inc-timeline-time">${rescueInfo.dispatchTime||'—'}</div>
-                        <div class="inc-timeline-org">${rescueInfo.orgName}</div>
-                    </div>
-                </div>
-                <div class="inc-timeline-item">
-                    <div class="inc-timeline-dot en-route">🚒</div>
-                    <div class="inc-timeline-content">
-                        <div class="inc-timeline-action">En Route to Scene</div>
-                        <div class="inc-timeline-time">${rescueInfo.dispatchTime||'—'}</div>
-                        <div class="inc-timeline-org">${rescueInfo.orgName}</div>
-                    </div>
-                </div>
-                ${rescueInfo.status==='rescued'?`
-                <div class="inc-timeline-item">
-                    <div class="inc-timeline-dot rescued">✓</div>
-                    <div class="inc-timeline-content">
-                        <div class="inc-timeline-action">Incident Resolved</div>
-                        <div class="inc-timeline-time">${rescueInfo.rescuedTime||'—'}</div>
-                        <div class="inc-timeline-org">${rescueInfo.orgName}</div>
-                    </div>
-                </div>`:''}`
-                : '<div class="no-response-msg">No rescue dispatched yet</div>'}
+                <div class="inc-timeline-item"><div class="inc-timeline-dot incident">🔥</div><div class="inc-timeline-content"><div class="inc-timeline-action">Fire Detected</div><div class="inc-timeline-time">${data.started_at||'—'}</div></div></div>
+                ${rescueInfo?`
+                <div class="inc-timeline-item"><div class="inc-timeline-dot dispatched">🚨</div><div class="inc-timeline-content"><div class="inc-timeline-action">Rescue Dispatched</div><div class="inc-timeline-time">${rescueInfo.dispatchTime||'—'}</div><div class="inc-timeline-org">${rescueInfo.orgName}</div></div></div>
+                <div class="inc-timeline-item"><div class="inc-timeline-dot en-route">🚒</div><div class="inc-timeline-content"><div class="inc-timeline-action">En Route to Scene</div><div class="inc-timeline-time">${rescueInfo.dispatchTime||'—'}</div><div class="inc-timeline-org">${rescueInfo.orgName}</div></div></div>
+                ${rescueInfo.status==='rescued'?`<div class="inc-timeline-item"><div class="inc-timeline-dot rescued">✓</div><div class="inc-timeline-content"><div class="inc-timeline-action">Incident Resolved</div><div class="inc-timeline-time">${rescueInfo.rescuedTime||'—'}</div><div class="inc-timeline-org">${rescueInfo.orgName}</div></div></div>`:''}`
+                :'<div class="no-response-msg">No rescue dispatched yet</div>'}
             </div>
         </div>
-
-        ${data.temperature||data.humidity||data.smoke ? `
+        ${data.temperature||data.humidity||data.smoke?`
         <div class="inc-details-section">
             <div class="inc-details-section-title">Sensor Readings at Incident</div>
             ${data.temperature!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Temperature</span><span class="inc-details-row-val" style="color:#ff904f;">${data.temperature}°C</span></div>`:''}
             ${data.humidity!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Humidity</span><span class="inc-details-row-val" style="color:#6db8ff;">${data.humidity}%</span></div>`:''}
             ${data.smoke!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Smoke</span><span class="inc-details-row-val">${data.smoke} ppm</span></div>`:''}
             ${data.flame!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Flame Sensor</span><span class="inc-details-row-val">${data.flame}</span></div>`:''}
-        </div>` : ''}
-
-        ${(!isRescued && !isAlreadyResolved) ? `
+        </div>`:''}
+        ${(!isRescued&&!isAlreadyResolved)?`
         <div class="inc-details-action-row">
-            <button class="inc-details-rescue-btn" onclick="closeIncidentDetailsModal();openRescueModal(${incidentId},'${data.node_id||''}','${(data.location_name||'Node '+(data.node_id||'')).replace(/'/g,"\\'")}')">
-                🚒 Dispatch Rescue
-            </button>
-            <button class="inc-details-resolve-btn" id="details-resolve-btn-${incidentId}" onclick="resolveIncident(${incidentId},'${data.node_id||''}')">
-                ✓ Mark Resolved
-            </button>
-        </div>` : `
-        <div style="margin-top:16px;padding:10px;background:#0a1a0a55;border:1px solid #2ecc7144;border-radius:9px;text-align:center;color:#2ecc71;font-size:12px;font-weight:600;">
-            ✓ This incident has been resolved
-        </div>`}
-    `;
+            <button class="inc-details-rescue-btn" onclick="closeIncidentDetailsModal();openRescueModal(${incidentId},'${data.node_id||''}','${(data.location_name||'Node '+(data.node_id||'')).replace(/'/g,"\\'")}')">🚒 Dispatch Rescue</button>
+            <button class="inc-details-resolve-btn" id="details-resolve-btn-${incidentId}" onclick="resolveIncident(${incidentId},'${data.node_id||''}')">✓ Mark Resolved</button>
+        </div>`:`
+        <div style="margin-top:16px;padding:10px;background:#0a1a0a55;border:1px solid #2ecc7144;border-radius:9px;text-align:center;color:#2ecc71;font-size:12px;font-weight:600;">✓ This incident has been resolved</div>`}`;
 }
 
-function closeIncidentDetailsModal() {
-    document.getElementById('incident-details-modal').classList.remove('open');
-    _detailsModalIncidentId = null;
-}
-document.getElementById('incident-details-modal').addEventListener('click', e => {
-    if (e.target === document.getElementById('incident-details-modal')) closeIncidentDetailsModal();
-});
+function closeIncidentDetailsModal() { document.getElementById('incident-details-modal').classList.remove('open'); _detailsModalIncidentId = null; }
+document.getElementById('incident-details-modal').addEventListener('click', e => { if(e.target===document.getElementById('incident-details-modal')) closeIncidentDetailsModal(); });
 
 // ====================== HELPER: Distance calc ======================
-function calcDistance(lat1, lng1, lat2, lng2) {
-    const R = 6371;
-    const dLat = (lat2-lat1)*Math.PI/180;
-    const dLon = (lng2-lng1)*Math.PI/180;
-    const a = Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+function calcDistance(lat1,lng1,lat2,lng2){
+    const R=6371,dLat=(lat2-lat1)*Math.PI/180,dLon=(lng2-lng1)*Math.PI/180;
+    const a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
     return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 
 // ====================== HISTORY PANEL ======================
-let _hm_node=null,_hm_limit=50,_hm_metric='temperature',_hm_rows_cache=[];
+let _hm_node=null, _hm_limit=50, _hm_metric='temperature', _hm_rows_cache=[];
+let _hm_initial_load = true;
+
 function openHistoryPanel(nodeId){
-    _hm_node=nodeId;_hm_metric='temperature';_hm_rows_cache=[];
-    document.getElementById('hp-node-id').textContent=nodeId;
-    document.getElementById('hp-record-count').textContent='0 readings';
-    document.getElementById('hp-live-badge').style.display='inline-flex';
-    document.querySelectorAll('.hp-limit-btn').forEach(b=>b.classList.remove('active'));
+    _hm_node = nodeId;
+    _hm_metric = 'temperature';
+    _hm_rows_cache = [];
+    _hm_initial_load = true;
+    document.getElementById('hp-node-id').textContent = nodeId;
+    document.getElementById('hp-record-count').textContent = '0 readings';
+    document.getElementById('hp-live-badge').style.display = 'inline-flex';
+    document.querySelectorAll('.hp-limit-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.hp-limit-btn')[1].classList.add('active');
-    _hm_limit=50;
-    document.querySelectorAll('.hp-chart-tab').forEach(b=>b.classList.toggle('active',b.dataset.metric==='temperature'));
-    document.getElementById('hp-chart-label').textContent=CHART_METRICS['temperature'].label;
+    _hm_limit = 50;
+    document.querySelectorAll('.hp-chart-tab').forEach(b => b.classList.toggle('active', b.dataset.metric==='temperature'));
+    document.getElementById('hp-chart-label').textContent = CHART_METRICS['temperature'].label;
     document.getElementById('right-default-view').classList.add('hidden');
     document.getElementById('right-history-view').classList.add('visible');
     fetchHistory();
 }
+
 function closeHistoryPanel(){
     document.getElementById('right-history-view').classList.remove('visible');
     document.getElementById('right-default-view').classList.remove('hidden');
-    _hm_node=null;_hm_rows_cache=[];
+    _hm_node=null; _hm_rows_cache=[];
     document.getElementById('hp-live-badge').style.display='none';
     document.getElementById('hp-table-body').innerHTML='<div class="hp-state"><div>Select a node to view its history</div></div>';
     document.getElementById('hp-stats').innerHTML='';
     document.getElementById('hp-record-count').textContent='0 readings';
     renderSparkline([]);
 }
+
 function setHistoryLimit(n){
-    _hm_limit=n;
-    document.querySelectorAll('.hp-limit-btn').forEach(b=>b.classList.toggle('active',parseInt(b.textContent)===n));
+    _hm_limit = n;
+    _hm_initial_load = true;
+    document.querySelectorAll('.hp-limit-btn').forEach(b => b.classList.toggle('active', parseInt(b.textContent)===n));
     fetchHistory();
 }
+
 async function fetchHistory(){
-    if(!_hm_node)return;
-    const bodyEl=document.getElementById('hp-table-body');
-    bodyEl.innerHTML='<div class="hp-state"><div class="hp-spinner"></div>Loading…</div>';
-    document.getElementById('hp-stats').innerHTML='';renderSparkline([]);
+    if(!_hm_node) return;
+    const bodyEl = document.getElementById('hp-table-body');
+    if (_hm_initial_load) {
+        bodyEl.innerHTML = '<div class="hp-state"><div class="hp-spinner"></div>Loading…</div>';
+        document.getElementById('hp-stats').innerHTML = '';
+        renderSparkline([]);
+    }
     try{
-        const res=await fetch(`${API_BASE()}/history/${encodeURIComponent(_hm_node)}?limit=${_hm_limit}`,{headers:authHeader(),cache:'no-cache'});
-        if(!res.ok)throw new Error(`HTTP ${res.status}`);
-        const rows=await res.json();
-        document.getElementById('hp-record-count').textContent=`${rows.length} readings`;
-        if(!rows.length){bodyEl.innerHTML=`<div class="hp-state">No history for <strong>${_hm_node}</strong>.</div>`;return;}
-        renderStats(rows);renderSparkline(rows);renderTable(rows);
-    }catch(err){bodyEl.innerHTML=`<div class="hp-state" style="color:#ff4757;">⚠ Failed: ${err.message}</div>`;}
+        const res = await fetch(`${API_BASE()}/history/${encodeURIComponent(_hm_node)}?limit=${_hm_limit}`,{headers:authHeader(),cache:'no-cache'});
+        if(!res.ok) throw new Error(`HTTP ${res.status}`);
+        const rows = await res.json();
+        document.getElementById('hp-record-count').textContent = `${rows.length} readings`;
+        if(!rows.length){
+            bodyEl.innerHTML = `<div class="hp-state">No history for <strong>${_hm_node}</strong>.</div>`;
+            _hm_initial_load = false;
+            return;
+        }
+        renderStats(rows);
+        renderSparkline(rows);
+        renderTable(rows);
+        _hm_initial_load = false;
+    }catch(err){
+        if(_hm_initial_load){
+            bodyEl.innerHTML = `<div class="hp-state" style="color:#ff4757;">⚠ Failed: ${err.message}</div>`;
+        }
+    }
 }
+
 function renderStats(rows){
     const temps=rows.map(r=>r.temperature).filter(v=>v!=null);
     const smokes=rows.map(r=>r.smoke).filter(v=>v!=null);
@@ -2379,27 +2128,24 @@ function renderStats(rows){
         <div class="hp-stat"><span class="hp-stat-label">MAX TEMP</span><span class="hp-stat-val">${max(temps)}°C</span></div>
         <div class="hp-stat"><span class="hp-stat-label">AVG SMOKE</span><span class="hp-stat-val">${avg(smokes)} ppm</span></div>
         <div class="hp-stat"><span class="hp-stat-label">AVG HUM</span><span class="hp-stat-val">${avg(hums)}%</span></div>
-        <div class="hp-stat" style="${fires>0?'border-color:#ff475577;':''}">
-            <span class="hp-stat-label">🔥 FIRE</span>
-            <span class="hp-stat-val" style="${fires>0?'color:#ff4757;':''}">${fires}</span>
-        </div>
-        <div class="hp-stat" style="${possible>0?'border-color:#f1c40f77;':''}">
-            <span class="hp-stat-label">⚠ POSSIBLE</span>
-            <span class="hp-stat-val" style="${possible>0?'color:#f1c40f;':''}">${possible}</span>
-        </div>`;
+        <div class="hp-stat" style="${fires>0?'border-color:#ff475577;':''}"><span class="hp-stat-label">🔥 FIRE</span><span class="hp-stat-val" style="${fires>0?'color:#ff4757;':''}">${fires}</span></div>
+        <div class="hp-stat" style="${possible>0?'border-color:#f1c40f77;':''}"><span class="hp-stat-label">⚠ POSSIBLE</span><span class="hp-stat-val" style="${possible>0?'color:#f1c40f;':''}">${possible}</span></div>`;
 }
+
 const CHART_METRICS={
     temperature:{label:'Temperature Trend (°C)',unit:'°C',color:'#ff6b35',key:'temperature'},
     humidity:{label:'Humidity Trend (%)',unit:'%',color:'#3d9cff',key:'humidity'},
     smoke:{label:'Smoke Trend (ppm)',unit:' ppm',color:'#c8c8c8',key:'smoke'},
     flame:{label:'Flame Sensor Trend',unit:'',color:'#ff4757',key:'flame'},
 };
+
 function switchChartMetric(metric){
     _hm_metric=metric;
     document.querySelectorAll('.hp-chart-tab').forEach(b=>b.classList.toggle('active',b.dataset.metric===metric));
     document.getElementById('hp-chart-label').textContent=CHART_METRICS[metric].label;
     renderSparkline(_hm_rows_cache);
 }
+
 function renderSparkline(rows){
     _hm_rows_cache=rows;
     const svg=document.getElementById('hp-chart-svg');
@@ -2421,6 +2167,7 @@ function renderSparkline(rows){
         <text x="${P+2}" y="${H-3}" fill="#4a2a1a" font-size="9">${rMin.toFixed(1)}${cfg.unit}</text>
         <text x="${P+2}" y="13" fill="#4a2a1a" font-size="9">${rMax.toFixed(1)}${cfg.unit}</text>`;
 }
+
 function formatTimestamp(raw){
     if(!raw)return'—';
     const s=raw.toString().replace('T',' ').replace(/\.\d+Z?$/,'');
@@ -2429,22 +2176,16 @@ function formatTimestamp(raw){
     const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     return`${months[parseInt(m,10)-1]||m} ${parseInt(day,10)}, ${t||''}`;
 }
+
 function renderTable(rows){
     document.getElementById('hp-table-body').innerHTML=`
     <table class="hp-table">
-        <thead>
-            <tr>
-                <th class="c-num">#</th>
-                <th class="c-ts">Timestamp</th>
-                <th class="c-val" style="text-align:right;">Temp °C</th>
-                <th class="c-val" style="text-align:right;">Hum %</th>
-                <th class="c-val" style="text-align:right;">Smoke</th>
-                <th class="c-val" style="text-align:right;">Flame</th>
-                <th class="c-ai">AI</th>
-                <th class="c-conf" style="text-align:right;">Conf.</th>
-                <th class="c-rssi" style="text-align:right;">RSSI</th>
-            </tr>
-        </thead>
+        <thead><tr>
+            <th class="c-num">#</th><th class="c-ts">Timestamp</th>
+            <th class="c-val" style="text-align:right;">Temp °C</th><th class="c-val" style="text-align:right;">Hum %</th>
+            <th class="c-val" style="text-align:right;">Smoke</th><th class="c-val" style="text-align:right;">Flame</th>
+            <th class="c-ai">AI</th><th class="c-conf" style="text-align:right;">Conf.</th><th class="c-rssi" style="text-align:right;">RSSI</th>
+        </tr></thead>
         <tbody>
             ${rows.map((r,i)=>{
                 const rp=r.ai_prediction||'',pred=rp.toLowerCase();
@@ -2452,22 +2193,17 @@ function renderTable(rows){
                 const cp=cr!=null?(cr<=1?cr*100:cr):null;
                 const cs=cp!=null?cp.toFixed(1):'—';
                 const cc=cp!=null?(cp>=70?'#2ecc71':cp>=40?'#f1c40f':'#ff9f1c'):'#5a3a2a';
-                const ab=pred==='fire'
-                    ?'<span class="ai-badge ai-fire">Active Fire</span>'
-                    :pred==='false'
-                    ?'<span class="ai-badge ai-possible">⚠ Possible</span>'
-                    :pred==='normal'
-                    ?'<span class="ai-badge ai-normal">Normal</span>'
-                    :rp?`<span class="ai-badge ai-unknown">${rp}</span>`
-                    :'<span style="color:#5a3a2a">—</span>';
+                // Trust AI label for badge colour — fire=red, false=yellow, normal=green
+                const ab=pred==='fire'?'<span class="ai-badge ai-fire">Active Fire</span>'
+                    :pred==='false'?'<span class="ai-badge ai-possible">⚠ Possible</span>'
+                    :pred==='normal'?'<span class="ai-badge ai-normal">Normal</span>'
+                    :rp?`<span class="ai-badge ai-unknown">${rp}</span>`:'<span style="color:#5a3a2a">—</span>';
                 const ts=formatTimestamp(r.local_timestamp||r.timestamp);
                 return`<tr>
                     <td class="c-num" style="color:#3a2a1a;font-size:9px;">${i+1}</td>
                     <td class="c-ts" style="color:#5a3a2a;font-size:9px;">${ts}</td>
-                    <td class="c-val">${r.temperature??'—'}</td>
-                    <td class="c-val">${r.humidity??'—'}</td>
-                    <td class="c-val">${r.smoke??'—'}</td>
-                    <td class="c-val">${r.flame??'—'}</td>
+                    <td class="c-val">${r.temperature??'—'}</td><td class="c-val">${r.humidity??'—'}</td>
+                    <td class="c-val">${r.smoke??'—'}</td><td class="c-val">${r.flame??'—'}</td>
                     <td class="c-ai">${ab}</td>
                     <td class="c-conf" style="color:${cc};font-weight:600;font-family:monospace;">${cs}%</td>
                     <td class="c-rssi">${r.rssi??'—'}</td>
