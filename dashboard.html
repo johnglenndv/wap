@@ -1337,15 +1337,18 @@ async function loadAndPlaceNodes(silent=false){
             if(!valid){lat=nodeData[nid]?.latitude;lng=nodeData[nid]?.longitude;}
             let fallback=false;
             if(lat==null||isNaN(lat)){const off=10+Math.random()*90,ang=Math.random()*2*Math.PI;lat=gw.lat+(off/111000)*Math.cos(ang);lng=gw.lng+(off/(111000*Math.cos(gw.lat*Math.PI/180)))*Math.sin(ang);fallback=true;}
-            const lastUpdated=n.timestamp||n.updated_at||n.last_seen||new Date().toISOString();
-            nodeData[nid]={...nodeData[nid]||{},...n,latitude:lat,longitude:lng,last_updated:lastUpdated,isUsingFallbackPosition:fallback};
+
+            // Always use UTC timestamp for offline calculation
+            const utcTimestamp = n.timestamp || n.updated_at || n.last_seen || new Date().toISOString();
+            nodeData[nid]={...nodeData[nid]||{},...n,latitude:lat,longitude:lng,last_updated:utcTimestamp,isUsingFallbackPosition:fallback};
 
             // Trust AI label directly — no confidence re-thresholding
             const pred=(n.ai_prediction||'normal').toLowerCase();
             const isFire  = pred === 'fire';
             const isFalse = pred === 'false';
 
-            const lastTime=new Date(typeof lastUpdated==='string'?lastUpdated.replace(' ','T'):lastUpdated);
+            // Parse UTC timestamp correctly by appending 'Z' so JS treats it as UTC not local
+            const lastTime=new Date(typeof utcTimestamp==='string'?utcTimestamp.replace(' ','T')+'Z':utcTimestamp);
             const minAgo=(Date.now()-lastTime.getTime())/60000;
             const offline = (minAgo > OFFLINE_MIN) && !isFire && !isFalse;
 
