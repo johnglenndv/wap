@@ -1285,14 +1285,18 @@ function buildNodePopupContent(n, nid, lat, lng, offline) {
     const isResolved = resolvedNodeIds.has(nid);
     const pred = (n.ai_prediction || 'normal').toLowerCase();
     const conf = n.confidence != null ? Number(n.confidence) : 0;
-    // Trust the AI label directly — "fire" = red, "false" = yellow
     const isFire  = pred === 'fire';
     const isFalse = pred === 'false';
     const stColor = isFire ? '#ff4757' : isFalse ? '#f1c40f' : '#2ecc71';
     const stLabel = isFire ? '🔥 FIRE' : isFalse ? '⚠ Possible Fire' : 'Normal';
-    const lastUpdated = n.timestamp || n.updated_at || n.last_seen || new Date().toISOString();
+    
+    // Use local_timestamp for display (PH time), fall back to timestamp for others
+    const lastUpdated = n.local_timestamp || n.timestamp || n.updated_at || n.last_seen || new Date().toISOString();
     const lastTime = new Date(typeof lastUpdated === 'string' ? lastUpdated.replace(' ', 'T') : lastUpdated);
-    const lastStr = isNaN(lastTime.getTime()) ? '—' : lastTime.toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    const lastStr = n.local_timestamp
+        ? String(n.local_timestamp).replace('T', ' ').slice(0, 16)
+        : (isNaN(lastTime.getTime()) ? '—' : lastTime.toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}));
+
     const posNote = n.isUsingFallbackPosition ? `<div style="color:#ff9f1c;font-size:10px;margin-top:5px;">(Approx. position near gateway)</div>` : '';
     let aiStatusHtml = '';
     if (isResolved && (isFire || isFalse)) {
