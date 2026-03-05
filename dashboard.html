@@ -81,9 +81,9 @@ body{background:var(--bg-deep);font-family:Arial,sans-serif;color:var(--text);tr
 .theme-switch{position:relative;display:inline-block;width:52px;height:26px;}
 .theme-switch input{opacity:0;width:0;height:0;}
 .slider{position:absolute;cursor:pointer;inset:0;background:#2a1a14;border-radius:26px;transition:.4s;}
-.slider:before{position:absolute;content:"☀️";font-size:13px;height:20px;width:20px;left:3px;top:3px;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:.4s;}
+.slider:before{position:absolute;content:"🌙";font-size:13px;height:20px;width:20px;left:3px;top:3px;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:.4s;}
 input:checked+.slider{background:#c8a08855;}
-input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
+input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .side-profile-card{background:linear-gradient(135deg,#3a0a0444,#2a1a0a33);border:1px solid #5a2a1a55;border-radius:12px;padding:16px;margin-bottom:14px;display:flex;flex-direction:column;gap:8px;}
 .side-profile-avatar{width:48px;height:48px;border-radius:50%;border:2px solid var(--accent);margin-bottom:4px;}
 .side-profile-username{font-size:16px;font-weight:700;color:var(--text);}
@@ -971,6 +971,15 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
+// ── Helper: parse a DB timestamp string as UTC (appends Z if no tz info present)
+function parseUtc(ts) {
+    if (!ts) return null;
+    if (typeof ts !== 'string') return new Date(ts);
+    const s = ts.replace(' ', 'T');
+    // If already has timezone info, parse as-is; otherwise treat as UTC
+    return new Date(s.includes('Z') || s.includes('+') ? s : s + 'Z');
+}
+
 const API_BASE = () => localStorage.getItem('flames_api') || 'https://flamesapp.up.railway.app';
 const TOKEN    = () => localStorage.getItem('flames_token');
 const authHeader = () => ({ 'Authorization': `Bearer ${TOKEN()}` });
@@ -1156,7 +1165,6 @@ const redIcon      = L.icon({iconUrl:'icons/EndPoint.png',iconSize:[60,60],iconA
 const nodeIcon     = L.icon({iconUrl:'icons/Node.png',iconSize:[50,50],iconAnchor:[18,18]});
 const gwIcon       = L.icon({iconUrl:'icons/Gateway.png',iconSize:[55,55],iconAnchor:[20,20]});
 
-// ── makeFireNodeIcon: isPossible=false → red rings, isPossible=true → yellow rings
 function makeFireNodeIcon(isPossible) {
     const cls = isPossible ? 'possible' : '';
     return L.divIcon({
@@ -1239,9 +1247,8 @@ function clearFireAnimationForNode(nodeId) {
         const nd = nodeData[nodeId];
         let isOffline = false;
         if (nd) {
-            const lastUpdated = nd.last_updated || nd.timestamp || nd.updated_at || null;
-            if (lastUpdated) {
-                const lastTime = new Date(typeof lastUpdated === 'string' ? lastUpdated.replace(' ', 'T') : lastUpdated);
+            const lastTime = parseUtc(nd.last_updated);
+            if (lastTime) {
                 const minAgo = (Date.now() - lastTime.getTime()) / 60000;
                 isOffline = minAgo > OFFLINE_MIN;
             }
@@ -1256,7 +1263,6 @@ function clearFireAnimationForNode(nodeId) {
     }
 }
 
-// ── applyFireAnimationForNode: trusts AI label directly, no re-thresholding
 function applyFireAnimationForNode(nodeId, sensorData) {
     if (!nodeId) return;
     resolvedNodeIds.delete(nodeId);
@@ -1264,7 +1270,6 @@ function applyFireAnimationForNode(nodeId, sensorData) {
 
     if (nodeMarkers[nodeId]) {
         const pred = (sensorData?.ai_prediction || nodeData[nodeId]?.ai_prediction || '').toLowerCase();
-        // "fire" = confirmed (red), "false" = possible (yellow) — trust the AI label
         const isPossible = pred === 'false';
         nodeMarkers[nodeId].setIcon(makeFireNodeIcon(isPossible));
 
@@ -1289,13 +1294,16 @@ function buildNodePopupContent(n, nid, lat, lng, offline) {
     const isFalse = pred === 'false';
     const stColor = isFire ? '#ff4757' : isFalse ? '#f1c40f' : '#2ecc71';
     const stLabel = isFire ? '🔥 FIRE' : isFalse ? '⚠ Possible Fire' : 'Normal';
-    
-    // Use local_timestamp for display (PH time), fall back to timestamp for others
-    const lastUpdated = n.local_timestamp || n.timestamp || n.updated_at || n.last_seen || new Date().toISOString();
-    const lastTime = new Date(typeof lastUpdated === 'string' ? lastUpdated.replace(' ', 'T') : lastUpdated);
+
+    // Use local_timestamp for display (PH time), fall back to timestamp
     const lastStr = n.local_timestamp
         ? String(n.local_timestamp).replace('T', ' ').slice(0, 16)
-        : (isNaN(lastTime.getTime()) ? '—' : lastTime.toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}));
+        : (() => {
+            const t = parseUtc(n.timestamp || n.updated_at || n.last_seen);
+            return t && !isNaN(t.getTime())
+                ? t.toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})
+                : '—';
+        })();
 
     const posNote = n.isUsingFallbackPosition ? `<div style="color:#ff9f1c;font-size:10px;margin-top:5px;">(Approx. position near gateway)</div>` : '';
     let aiStatusHtml = '';
@@ -1320,7 +1328,6 @@ function buildNodePopupContent(n, nid, lat, lng, offline) {
         <button class="popup-history-btn" onclick="(function(){window._flames_map && window._flames_map.closePopup(); openHistoryPanel('${nid}');})()">📊 View History</button>`;
 }
 
-// ── loadAndPlaceNodes: trusts AI label directly, no confidence re-thresholding
 async function loadAndPlaceNodes(silent=false){
     try{
         const res=await fetch(`${API_BASE()}/nodes`,{headers:authHeader(),cache:'no-cache'});
@@ -1338,29 +1345,27 @@ async function loadAndPlaceNodes(silent=false){
             let fallback=false;
             if(lat==null||isNaN(lat)){const off=10+Math.random()*90,ang=Math.random()*2*Math.PI;lat=gw.lat+(off/111000)*Math.cos(ang);lng=gw.lng+(off/(111000*Math.cos(gw.lat*Math.PI/180)))*Math.sin(ang);fallback=true;}
 
-            // Always use UTC timestamp for offline calculation
+            // Always use UTC timestamp (n.timestamp) for offline calculation
             const utcTimestamp = n.timestamp || n.updated_at || n.last_seen || new Date().toISOString();
             nodeData[nid]={...nodeData[nid]||{},...n,latitude:lat,longitude:lng,last_updated:utcTimestamp,isUsingFallbackPosition:fallback};
 
-            // Trust AI label directly — no confidence re-thresholding
             const pred=(n.ai_prediction||'normal').toLowerCase();
             const isFire  = pred === 'fire';
             const isFalse = pred === 'false';
 
-            // Parse UTC timestamp correctly by appending 'Z' so JS treats it as UTC not local
-            const lastTime=new Date(typeof utcTimestamp==='string'?utcTimestamp.replace(' ','T')+'Z':utcTimestamp);
-            const minAgo=(Date.now()-lastTime.getTime())/60000;
+            // Parse UTC timestamp correctly using parseUtc helper
+            const lastTime = parseUtc(utcTimestamp);
+            const minAgo = lastTime ? (Date.now() - lastTime.getTime()) / 60000 : 0;
             const offline = (minAgo > OFFLINE_MIN) && !isFire && !isFalse;
 
-            // fire = red, false = yellow (possible), both cleared if resolved
-            const isFireActive   = isFire  && !resolvedNodeIds.has(nid);
+            const isFireActive     = isFire  && !resolvedNodeIds.has(nid);
             const isPossibleActive = isFalse && !resolvedNodeIds.has(nid);
-            const hasAnyAlert    = isFireActive || isPossibleActive;
+            const hasAnyAlert      = isFireActive || isPossibleActive;
 
             const activeIcon = isFireActive
-                ? makeFireNodeIcon(false)      // red rings
+                ? makeFireNodeIcon(false)
                 : isPossibleActive
-                    ? makeFireNodeIcon(true)   // yellow rings
+                    ? makeFireNodeIcon(true)
                     : offline
                         ? makeOfflineNodeIcon()
                         : nodeIcon;
@@ -1418,7 +1423,6 @@ function connectWebSocket(){
                     syncResolvedNodesFromAPI().then(()=> loadAndPlaceNodes(true));
                 } else {
                     const pred = (msg.ai_prediction||'').toLowerCase();
-                    // Trust the AI label — fire or false both trigger animation
                     if ((pred === 'fire' || pred === 'false') && msg.node_id) {
                         applyFireAnimationForNode(msg.node_id, {
                             ai_prediction: msg.ai_prediction,
@@ -1458,14 +1462,14 @@ function updateSensorBar(d,nodeId){
     document.getElementById('sb-smoke').textContent=d.smoke      !=null?`${d.smoke} ppm`  :'—';
     document.getElementById('sb-flame').textContent=d.flame      !=null?d.flame            :'—';
     ['sb-temp','sb-hum','sb-smoke','sb-flame'].forEach(id=>document.getElementById(id).className='sensor-tile-val');
-    // Trust AI label — no confidence re-thresholding
     const pred=(d.ai_prediction||'normal').toLowerCase();
     if((pred==='fire'||pred==='false')&&!resolvedNodeIds.has(nodeId)){
         document.getElementById('sb-smoke').className+=' alert';
         document.getElementById('sb-flame').className+=' alert';
     }
-    const lastUpdated=d.last_updated?new Date(typeof d.last_updated==='string'?d.last_updated.replace(' ','T'):d.last_updated):null;
-    const offline=lastUpdated&&(Date.now()-lastUpdated.getTime())/60000>OFFLINE_MIN&&pred!=='fire'&&pred!=='false';
+    // Use parseUtc for correct offline detection
+    const lastTime = parseUtc(d.last_updated);
+    const offline = lastTime && (Date.now()-lastTime.getTime())/60000>OFFLINE_MIN && pred!=='fire' && pred!=='false';
     document.getElementById('sb-node-label').innerHTML=nodeId?`${nodeId}${offline?' <small style="color:#ff9f1c;">(offline)</small>':''}`:'No node';
     const s=offline?'opacity:.6;font-style:italic;':'';
     ['sb-temp','sb-hum','sb-smoke','sb-flame'].forEach(id=>document.getElementById(id).style=s);
@@ -1500,21 +1504,22 @@ async function loadGatewayStatusPanel(silent = false) {
     }
 }
 
-// ── getNodeStatus: trusts AI label directly, no confidence re-thresholding
 function getNodeStatus(node) {
     const pred = (node.ai_prediction || 'normal').toLowerCase();
     const isResolved = resolvedNodeIds.has(node.node_id);
 
-    // Trust the AI label — fire = confirmed (red), false = possible (yellow)
     const isFireConfirmed = pred === 'fire'  && !isResolved;
     const isPossible      = pred === 'false' && !isResolved;
 
     const lastUpdated = node.timestamp || node.updated_at || node.last_seen || null;
     let offline = false;
     if (lastUpdated) {
-        const lastTime = new Date(typeof lastUpdated === 'string' ? lastUpdated.replace(' ', 'T') : lastUpdated);
-        const minAgo = (Date.now() - lastTime.getTime()) / 60000;
-        offline = minAgo > OFFLINE_MIN && !isFireConfirmed && !isPossible;
+        // Use parseUtc for correct UTC-aware offline detection
+        const lastTime = parseUtc(lastUpdated);
+        if (lastTime) {
+            const minAgo = (Date.now() - lastTime.getTime()) / 60000;
+            offline = minAgo > OFFLINE_MIN && !isFireConfirmed && !isPossible;
+        }
     }
 
     if (isFireConfirmed) return 'fire';
@@ -1554,8 +1559,9 @@ function renderGatewayStatusPanel() {
         const gwLastSeen = gw.last_seen || gw.updated_at || null;
         let gwOffline = true;
         if (gwLastSeen) {
-            const t = new Date(typeof gwLastSeen === 'string' ? gwLastSeen.replace(' ', 'T') : gwLastSeen);
-            gwOffline = (Date.now() - t.getTime()) / 60000 > OFFLINE_MIN;
+            // Use parseUtc for correct UTC-aware gateway offline detection
+            const t = parseUtc(gwLastSeen);
+            if (t) gwOffline = (Date.now() - t.getTime()) / 60000 > OFFLINE_MIN;
         }
         if (!gwLastSeen) gwOffline = !hasActive && !hasFire && !hasPossible && nodes.length === 0;
         const status = hasFire ? 'fire' : hasPossible ? 'possible' : (gwOffline && !hasActive) ? 'offline' : 'online';
@@ -2200,7 +2206,6 @@ function renderTable(rows){
                 const cp=cr!=null?(cr<=1?cr*100:cr):null;
                 const cs=cp!=null?cp.toFixed(1):'—';
                 const cc=cp!=null?(cp>=70?'#2ecc71':cp>=40?'#f1c40f':'#ff9f1c'):'#5a3a2a';
-                // Trust AI label for badge colour — fire=red, false=yellow, normal=green
                 const ab=pred==='fire'?'<span class="ai-badge ai-fire">Active Fire</span>'
                     :pred==='false'?'<span class="ai-badge ai-possible">⚠ Possible</span>'
                     :pred==='normal'?'<span class="ai-badge ai-normal">Normal</span>'
