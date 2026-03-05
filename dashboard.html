@@ -1726,7 +1726,7 @@ document.getElementById('clear-route').addEventListener('click',()=>{if(routingC
 document.getElementById('close-info-btn').addEventListener('click',()=>{if(routingControl){map.removeLayer(routingControl);routingControl=null;}routeMarkers.forEach(m=>map.removeLayer(m));routeMarkers=[];waypoints=[];document.getElementById('route-info-box').style.display='none';});
 map.on('click',e=>{if(waypoints.length<2){waypoints.push(e.latlng);routeMarkers.push(L.marker(e.latlng,{icon:waypoints.length===1?greenIcon:redIcon}).addTo(map));}});
 async function calculateRoute(start,end){
-    try{const res=await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson',{method:'POST',headers:{'Content-Type':'application/json','Authorization':ORS_API_KEY},body:JSON.stringify({coordinates:[[start.lng,start.lat],[end.lng,end.lat]],preference:'fastest',units:'m'})});if(!res.ok)throw new Error('Routing API error');const data=await res.json();const coords=data.features[0].geometry.coordinates.map(c=>[c[1],c[0]]);const summary=data.features[0].properties.summary;if(routingControl)map.removeLayer(routingControl);routingControl=L.polyline(coords,{color:'#ff3300',weight:6,opacity:.9,dashArray:'1,10'}).addTo(map);const dist=(summary.distance/1000).toFixed(2),time=Math.round(summary.duration/60);document.getElementById('route-info-box').style.display='flex';document.getElementById('route-dist').innerHTML=`<img src="icons/distance.png"> ${dist} km`;document.getElementById('route-time').innerHTML=`<img src="icons/minutes.png"> ~${time} min`;map.fitBounds(routingControl.getBounds());}
+    try{const res=await fetch('https://api.openrouteservice.org/v2/directions/driving-hgv/geojson',{method:'POST',headers:{'Content-Type':'application/json','Authorization':ORS_API_KEY},body:JSON.stringify({coordinates:[[start.lng,start.lat],[end.lng,end.lat]],preference:'fastest',units:'m'})});if(!res.ok)throw new Error('Routing API error');const data=await res.json();const coords=data.features[0].geometry.coordinates.map(c=>[c[1],c[0]]);const summary=data.features[0].properties.summary;if(routingControl)map.removeLayer(routingControl);routingControl=L.polyline(coords,{color:'#ff3300',weight:6,opacity:.9,dashArray:'1,10'}).addTo(map);const dist=(summary.distance/1000).toFixed(2),time=Math.round(summary.duration/60);document.getElementById('route-info-box').style.display='flex';document.getElementById('route-dist').innerHTML=`<img src="icons/distance.png"> ${dist} km`;document.getElementById('route-time').innerHTML=`<img src="icons/minutes.png"> ~${time} min`;map.fitBounds(routingControl.getBounds());}
     catch{alert('Routing failed. No road available.');}
 }
 function routeToIncident(lat,lng){const gw=getPrimaryGateway();waypoints=[gw,{lat,lng}];routeMarkers.push(L.marker([gw.lat,gw.lng],{icon:greenIcon}).addTo(map));routeMarkers.push(L.marker([lat,lng],{icon:redIcon}).addTo(map));calculateRoute(gw,{lat,lng});map.flyTo([lat,lng],14);}
@@ -1950,6 +1950,7 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
             <div class="inc-rescue-status-badge ${rescueInfo.status==='rescued'?'rescued':'en-route'}">${rescueInfo.status==='rescued'?'✓ RESOLVED':'🚒 EN ROUTE'}</div></div>`:''}
         <button class="inc-map-rescue-btn" onclick="closeIncidentMapModal();openRescueModal(${inc.incident_id},'${inc.node_id}','${(inc.location_name||'Node '+inc.node_id).replace(/'/g,"\\'")}')">🚒 DISPATCH RESCUE</button>
         <button class="inc-map-resolve-btn" id="inc-map-resolve-${inc.incident_id}" onclick="resolveIncident(${inc.incident_id},'${inc.node_id}')" ${isRescued?'disabled':''}>✓ MARK RESOLVED</button>`;
+    
     if (sidebarOnly) return;
     setTimeout(() => {
         if (_incDetailMap) { _incDetailMap.remove(); _incDetailMap = null; }
@@ -1959,19 +1960,44 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
         const incLat = parseFloat(inc.latitude), incLng = parseFloat(inc.longitude);
         _incDetailMap = L.map('incident-detail-map',{zoomControl:true,attributionControl:true}).setView([incLat,incLng],15);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(_incDetailMap);
-        const incMarker = L.marker([incLat,incLng],{icon:makeFireNodeIcon(false)}).addTo(_incDetailMap);
-        incMarker.bindPopup(`<div style="font-weight:700;color:#ff9055;">🔥 Incident Location</div><div style="font-size:11px;color:#9a6a5a;">${inc.location_name||`Node ${inc.node_id}`}</div>`).openPopup();
-        _incDetailMarkers.push(incMarker);
-        const gwMarker = L.marker([gw.lat,gw.lng],{icon:greenIcon}).addTo(_incDetailMap);
+              // ── Keep original pulsing fire node icon ──
+        const fireMarker = L.marker([incLat, incLng], {
+            icon: makeFireNodeIcon(false)   // your animated flame icon stays
+        })
+        .addTo(_incDetailMap);
+        fireMarker.bindPopup(`
+            <div style="font-weight:700;color:#ff9055;">🔥 Incident Location</div>
+            <div style="font-size:11px;color:#9a6a5a;">
+                ${inc.location_name || `Node ${inc.node_id}`}
+            </div>
+        `).openPopup();
+        _incDetailMarkers.push(fireMarker);
+        // ── ADD red pin marker on top (same location) ──
+        const redIcon = L.icon({
+            iconUrl: 'icons/EndPoint.png',      // ← make sure this file exists
+            iconSize: [60, 60],                 // width × height
+            iconAnchor: [24, 60],               // pin tip at bottom center
+            popupAnchor: [0, -55],
+            zIndexOffset: 100                // makes red pin appear ABOVE fire icon
+        });
+        const redPin = L.marker([incLat, incLng], { icon: redIcon })
+            .addTo(_incDetailMap);
+        // Optional: small label on red pin (uncomment if you want it)
+        // redPin.bindPopup('<div style="color:#ff4757;font-weight:bold;">End Point</div>');
+        _incDetailMarkers.push(redPin);
+        // Gateway (green start) stays the same
+        const gw = getPrimaryGateway();
+        const gwMarker = L.marker([gw.lat, gw.lng], {icon: greenIcon})
+            .addTo(_incDetailMap);
         gwMarker.bindPopup('<div style="font-weight:700;color:#2ecc71;">🏠 Gateway / Start Point</div>');
         _incDetailMarkers.push(gwMarker);
-        calculateDetailRoute(gw, {lat:incLat,lng:incLng});
+        calculateDetailRoute(gw, {lat:incLat, lng:incLng});
     }, 150);
 }
 
 async function calculateDetailRoute(start, end) {
     try {
-        const res = await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson',{method:'POST',headers:{'Content-Type':'application/json','Authorization':ORS_API_KEY},body:JSON.stringify({coordinates:[[start.lng,start.lat],[end.lng,end.lat]],preference:'fastest',units:'m'})});
+        const res = await fetch('https://api.openrouteservice.org/v2/directions/driving-hgv/geojson',{method:'POST',headers:{'Content-Type':'application/json','Authorization':ORS_API_KEY},body:JSON.stringify({coordinates:[[start.lng,start.lat],[end.lng,end.lat]],preference:'fastest',units:'m'})});
         if (!res.ok) throw new Error('Route API error');
         const data = await res.json();
         const coords = data.features[0].geometry.coordinates.map(c=>[c[1],c[0]]);
