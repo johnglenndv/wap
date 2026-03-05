@@ -971,415 +971,12 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
-// ====================== CH ALGORITHM ROUTING ======================
-// Contraction Hierarchies (CH) routing engine — embedded inline.
-//
-// PHASE 1 — PREPROCESSING (runs once per bounding box):
-//   • Fetches road graph from OpenStreetMap Overpass API
-//   • Computes node importance via edge-difference heuristic
-//   • Contracts nodes in order of importance (least → most important)
-//   • Adds SHORTCUT edges between neighbours of each contracted node
-//     so shortest paths are preserved in the upward graph
-//
-// PHASE 2 — QUERY (runs per route request):
-//   • Bidirectional Dijkstra that only relaxes UPWARD edges
-//     (edges pointing to higher-ranked nodes)
-//   • Forward search from source + backward search from target
-//   • Optimal path = min( fwdDist[v] + bwdDist[v] ) over all v
-//   • Shortcut edges are unpacked to recover the real road path
-//
-// Results are cached per bounding box (LRU, 5 entries) so repeat
-// routes in the same area skip preprocessing entirely.
-// ================================================================
-
-'use strict';
-
-// ── Min-Heap (priority queue for Dijkstra) ──────────────────────
-class MinHeap {
-    constructor() { this._h = []; }
-    get size() { return this._h.length; }
-    empty()    { return this._h.length === 0; }
-    push(item) { this._h.push(item); this._bubbleUp(this._h.length - 1); }
-    pop() {
-        const top = this._h[0], last = this._h.pop();
-        if (this._h.length > 0) { this._h[0] = last; this._sinkDown(0); }
-        return top;
-    }
-    _bubbleUp(i) {
-        while (i > 0) {
-            const p = (i - 1) >> 1;
-            if (this._h[p][0] <= this._h[i][0]) break;
-            [this._h[p], this._h[i]] = [this._h[i], this._h[p]]; i = p;
-        }
-    }
-    _sinkDown(i) {
-        const n = this._h.length;
-        while (true) {
-            let min = i; const l = 2*i+1, r = 2*i+2;
-            if (l < n && this._h[l][0] < this._h[min][0]) min = l;
-            if (r < n && this._h[r][0] < this._h[min][0]) min = r;
-            if (min === i) break;
-            [this._h[min], this._h[i]] = [this._h[i], this._h[min]]; i = min;
-        }
-    }
-}
-
-// ── Haversine distance (km) ─────────────────────────────────────
-function haversine(lat1, lng1, lat2, lng2) {
-    const R = 6371, dLat = (lat2-lat1)*Math.PI/180, dLng = (lng2-lng1)*Math.PI/180;
-    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
-
-// ── Road Graph ──────────────────────────────────────────────────
-// Stores nodes and directed forward/backward adjacency lists.
-// shortcutVia ≠ null means this edge is a CH shortcut.
-class RoadGraph {
-    constructor() {
-        this.nodes    = new Map(); // id → { lat, lng, rank }
-        this.fwdEdges = new Map(); // id → [{ to, weight, shortcutVia }]
-        this.bwdEdges = new Map(); // id → [{ to, weight, shortcutVia }]
-    }
-    addNode(id, lat, lng) { if (!this.nodes.has(id)) this.nodes.set(id, { lat, lng, rank: 0 }); }
-    addEdge(from, to, weight, shortcutVia = null, directed = false) {
-        if (!this.fwdEdges.has(from)) this.fwdEdges.set(from, []);
-        if (!this.bwdEdges.has(to))   this.bwdEdges.set(to,   []);
-        this.fwdEdges.get(from).push({ to, weight, shortcutVia });
-        this.bwdEdges.get(to).push({ to: from, weight, shortcutVia });
-        if (!directed) {
-            if (!this.fwdEdges.has(to))   this.fwdEdges.set(to,   []);
-            if (!this.bwdEdges.has(from)) this.bwdEdges.set(from, []);
-            this.fwdEdges.get(to).push({ to: from, weight, shortcutVia });
-            this.bwdEdges.get(from).push({ to, weight, shortcutVia });
-        }
-    }
-    nodeCount() { return this.nodes.size; }
-    edgeCount()  { let n = 0; this.fwdEdges.forEach(a => n += a.length); return n; }
-}
-
-// ── OSM highway speed table ─────────────────────────────────────
-const ROAD_SPEEDS = {
-    motorway:90, motorway_link:60, trunk:70, trunk_link:50,
-    primary:50,  primary_link:40,  secondary:40, secondary_link:30,
-    tertiary:30, tertiary_link:25, residential:20, living_street:10,
-    unclassified:25, road:25, service:15
-};
-const EXCLUDED_TAGS = new Set(['pedestrian','footway','cycleway','path','steps','bridleway','track','construction']);
-
-// ── Overpass JSON → RoadGraph ───────────────────────────────────
-function overpassToGraph(elements) {
-    const graph = new RoadGraph(), osmNodes = new Map();
-    elements.forEach(el => { if (el.type === 'node') osmNodes.set(String(el.id), { lat: el.lat, lng: el.lon }); });
-    elements.forEach(el => {
-        if (el.type !== 'way') return;
-        const tag = el.tags?.highway;
-        if (!tag || EXCLUDED_TAGS.has(tag)) return;
-        const speedKph = ROAD_SPEEDS[tag] || 20;
-        const isOneway = el.tags?.oneway === 'yes' || el.tags?.junction === 'roundabout';
-        const nodeIds  = el.nodes.map(String);
-        nodeIds.forEach(id => { const n = osmNodes.get(id); if (n) graph.addNode(id, n.lat, n.lng); });
-        for (let i = 0; i < nodeIds.length - 1; i++) {
-            const a = nodeIds[i], b = nodeIds[i+1];
-            const na = osmNodes.get(a), nb = osmNodes.get(b);
-            if (!na || !nb) continue;
-            const timeSec = (haversine(na.lat, na.lng, nb.lat, nb.lng) / speedKph) * 3600;
-            graph.addEdge(a, b, timeSec, null, isOneway);
-        }
-    });
-    return graph;
-}
-
-// ── CH Preprocessor ────────────────────────────────────────────
-// Contracts nodes in order of importance.
-// For each contracted node v, adds shortcuts between its
-// uncontracted neighbours if v lies on the shortest path.
-class CHPreprocessor {
-    constructor(graph) { this.graph = graph; this.contracted = new Set(); }
-
-    // Edge-difference heuristic: shortcuts_needed - edges_removed
-    _computeImportance(v) {
-        if (this.contracted.has(v)) return Infinity;
-        const fwd = (this.graph.fwdEdges.get(v)||[]).filter(e=>!this.contracted.has(e.to));
-        const bwd = (this.graph.bwdEdges.get(v)||[]).filter(e=>!this.contracted.has(e.to));
-        let shortcuts = 0;
-        for (const u of bwd) {
-            for (const w of fwd) {
-                if (u.to === w.to) continue;
-                if (this._witnessSearch(u.to, w.to, v, u.weight+w.weight, 10) > u.weight+w.weight) shortcuts++;
-            }
-        }
-        return shortcuts - fwd.length - bwd.length;
-    }
-
-    // Limited Dijkstra: shortest path u→w avoiding node `avoid`
-    _witnessSearch(source, target, avoid, maxDist, maxSettled) {
-        const dist = new Map([[source, 0]]), pq = new MinHeap();
-        pq.push([0, source]); let settled = 0;
-        while (!pq.empty() && settled < maxSettled) {
-            const [d, u] = pq.pop();
-            if (d > (dist.get(u)??Infinity)) continue;
-            if (u === avoid) continue;
-            if (d > maxDist) break;
-            if (u === target) return d;
-            settled++;
-            for (const e of (this.graph.fwdEdges.get(u)||[])) {
-                if (this.contracted.has(e.to)) continue;
-                const nd = d + e.weight;
-                if (nd < (dist.get(e.to)??Infinity)) { dist.set(e.to, nd); pq.push([nd, e.to]); }
-            }
-        }
-        return dist.get(target) ?? Infinity;
-    }
-
-    // Contract node v: mark contracted, add shortcuts where needed
-    _contractNode(v) {
-        this.contracted.add(v);
-        const fwd = (this.graph.fwdEdges.get(v)||[]).filter(e=>!this.contracted.has(e.to));
-        const bwd = (this.graph.bwdEdges.get(v)||[]).filter(e=>!this.contracted.has(e.to));
-        for (const u of bwd) {
-            for (const w of fwd) {
-                if (u.to === w.to) continue;
-                const maxDist = u.weight + w.weight;
-                if (this._witnessSearch(u.to, w.to, v, maxDist, 15) > maxDist) {
-                    if (!this.graph.fwdEdges.has(u.to)) this.graph.fwdEdges.set(u.to, []);
-                    if (!this.graph.bwdEdges.has(w.to)) this.graph.bwdEdges.set(w.to, []);
-                    this.graph.fwdEdges.get(u.to).push({ to: w.to, weight: maxDist, shortcutVia: v });
-                    this.graph.bwdEdges.get(w.to).push({ to: u.to, weight: maxDist, shortcutVia: v });
-                }
-            }
-        }
-    }
-
-    // Full preprocessing: rank all nodes, contract in order
-    preprocess() {
-        const t0 = performance.now(), nodes = [...this.graph.nodes.keys()], n = nodes.length;
-        const importance = new Map();
-        nodes.forEach(v => importance.set(v, this._computeImportance(v)));
-        const order = nodes.slice().sort((a,b) => importance.get(a) - importance.get(b));
-        order.forEach((id, rank) => { this.graph.nodes.get(id).rank = rank; });
-        let contracted = 0;
-        for (const v of order) {
-            this._contractNode(v); contracted++;
-            // Periodically re-rank neighbours to reflect contractions
-            if (contracted % Math.max(1, Math.floor(n * 0.05)) === 0) {
-                const nb = new Set();
-                (this.graph.fwdEdges.get(v)||[]).forEach(e => nb.add(e.to));
-                (this.graph.bwdEdges.get(v)||[]).forEach(e => nb.add(e.to));
-                nb.forEach(id => { if (!this.contracted.has(id)) importance.set(id, this._computeImportance(id)); });
-            }
-        }
-        const elapsed = (performance.now()-t0).toFixed(1);
-        console.log(`[CH] Preprocessing — ${n} nodes, ${this.graph.edgeCount()} edges (incl. shortcuts), ${elapsed}ms`);
-        return elapsed;
-    }
-}
-
-// ── CH Query ────────────────────────────────────────────────────
-// Bidirectional Dijkstra on the contracted graph.
-// Only relaxes UPWARD edges (higher-ranked neighbours).
-class CHQuery {
-    constructor(graph) { this.graph = graph; }
-
-    // Snap a lat/lng to the nearest graph node
-    nearestNode(lat, lng) {
-        let best = null, bestDist = Infinity;
-        this.graph.nodes.forEach((n, id) => {
-            const d = haversine(lat, lng, n.lat, n.lng);
-            if (d < bestDist) { bestDist = d; best = id; }
-        });
-        return best;
-    }
-
-    query(sourceId, targetId) {
-        const t0 = performance.now();
-        const fwdDist = new Map([[sourceId,0]]), bwdDist = new Map([[targetId,0]]);
-        const fwdPrev = new Map(), bwdPrev = new Map();
-        const fwdPQ = new MinHeap(), bwdPQ = new MinHeap();
-        const fwdSettled = new Set(), bwdSettled = new Set();
-        fwdPQ.push([0,sourceId]); bwdPQ.push([0,targetId]);
-        let bestDist = Infinity, meetNode = null;
-
-        const relax = (pq, dist, prev, settled, edgeMap) => {
-            if (pq.empty()) return;
-            const [d, u] = pq.pop();
-            if (settled.has(u) || d > (dist.get(u)??Infinity)) return;
-            settled.add(u);
-            const uRank = this.graph.nodes.get(u)?.rank ?? 0;
-            for (const e of (edgeMap.get(u)||[])) {
-                const vRank = this.graph.nodes.get(e.to)?.rank ?? 0;
-                if (vRank <= uRank) continue; // CH: only upward edges
-                const nd = d + e.weight;
-                if (nd < (dist.get(e.to)??Infinity)) {
-                    dist.set(e.to, nd);
-                    prev.set(e.to, { from: u, via: e.shortcutVia });
-                    pq.push([nd, e.to]);
-                }
-            }
-        };
-
-        while (!fwdPQ.empty() || !bwdPQ.empty()) {
-            relax(fwdPQ, fwdDist, fwdPrev, fwdSettled, this.graph.fwdEdges);
-            relax(bwdPQ, bwdDist, bwdPrev, bwdSettled, this.graph.bwdEdges);
-            // Check for meeting node
-            for (const v of fwdSettled) {
-                if (bwdDist.has(v)) {
-                    const total = fwdDist.get(v) + bwdDist.get(v);
-                    if (total < bestDist) { bestDist = total; meetNode = v; }
-                }
-            }
-        }
-
-        const elapsed = (performance.now()-t0).toFixed(2);
-        console.log(`[CH] Query → ${bestDist.toFixed(1)}s, meet@${meetNode}, ${elapsed}ms`);
-        if (!meetNode || bestDist === Infinity) return null;
-        const path = this._unpackPath(sourceId, targetId, meetNode, fwdPrev, bwdPrev);
-        return { path, durationSec: bestDist, queryMs: elapsed };
-    }
-
-    // Unpack forward + backward halves, inserting shortcut via-nodes
-    _unpackPath(source, target, meet, fwdPrev, bwdPrev) {
-        const fwdNodes = []; let cur = meet;
-        while (cur !== undefined && cur !== source) {
-            fwdNodes.push(cur);
-            const p = fwdPrev.get(cur); if (!p) break;
-            if (p.via) fwdNodes.push(p.via);
-            cur = p.from;
-        }
-        fwdNodes.push(source); fwdNodes.reverse();
-        const bwdNodes = []; cur = meet;
-        while (cur !== undefined && cur !== target) {
-            const p = bwdPrev.get(cur); if (!p) break;
-            if (p.via) bwdNodes.push(p.via);
-            bwdNodes.push(p.from);
-            cur = p.from;
-        }
-        return [...fwdNodes, ...bwdNodes];
-    }
-}
-
-// ── Overpass API fetch ──────────────────────────────────────────
-async function fetchOSMRoads(bbox) {
-    const { minLat, minLng, maxLat, maxLng } = bbox;
-    const query = `[out:json][timeout:30];(way["highway"](${minLat},${minLng},${maxLat},${maxLng}););(._;>;);out body;`;
-    const res = await fetch('https://overpass-api.de/api/interpreter', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'data=' + encodeURIComponent(query)
-    });
-    if (!res.ok) throw new Error(`Overpass API error: ${res.status}`);
-    return (await res.json()).elements;
-}
-
-// Bounding box with padding around two points
-function buildBBox(lat1, lng1, lat2, lng2, paddingKm = 1.5) {
-    const padLat = paddingKm / 111;
-    const padLng = paddingKm / (111 * Math.cos(((lat1+lat2)/2) * Math.PI/180));
-    return { minLat: Math.min(lat1,lat2)-padLat, minLng: Math.min(lng1,lng2)-padLng,
-             maxLat: Math.max(lat1,lat2)+padLat, maxLng: Math.max(lng1,lng2)+padLng };
-}
-
-// Convert node-id path → [[lat,lng]] for Leaflet
-function pathToCoords(graph, nodeIds) {
-    return nodeIds.map(id => graph.nodes.get(id)).filter(Boolean).map(n => [n.lat, n.lng]);
-}
-
-// Sum haversine distances along a node-id path
-function pathDistanceKm(graph, nodeIds) {
-    let dist = 0;
-    for (let i = 0; i < nodeIds.length-1; i++) {
-        const a = graph.nodes.get(nodeIds[i]), b = graph.nodes.get(nodeIds[i+1]);
-        if (a && b) dist += haversine(a.lat, a.lng, b.lat, b.lng);
-    }
-    return dist;
-}
-
-// Simple LRU cache so the same area doesn't re-fetch on repeat routes
-class GraphCache {
-    constructor(max = 5) { this._map = new Map(); this._max = max; }
-    _key(b) { return [b.minLat,b.minLng,b.maxLat,b.maxLng].map(v=>v.toFixed(4)).join(','); }
-    get(b)   { return this._map.get(this._key(b)) || null; }
-    set(b,v) {
-        const k = this._key(b);
-        if (this._map.size >= this._max) this._map.delete(this._map.keys().next().value);
-        this._map.set(k, v);
-    }
-}
-const _graphCache = new GraphCache(5);
-
-// ── Status overlay shown on map during CH processing ────────────
-function showCHStatus(msg) {
-    let el = document.getElementById('ch-status-box');
-    if (!el) {
-        el = document.createElement('div'); el.id = 'ch-status-box';
-        el.style.cssText = `position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-            z-index:2000;background:#1a0805f0;border:2px solid #e14f00;border-radius:12px;
-            padding:14px 20px;min-width:240px;color:#f0d0b8;font-size:12px;text-align:center;
-            box-shadow:0 0 30px #00000088;pointer-events:none;font-family:Arial,sans-serif;line-height:1.7;`;
-        const wrap = document.querySelector('.flames-map-wrap');
-        (wrap || document.body).appendChild(el);
-    }
-    if (msg === null) { el.remove(); return; }
-    el.innerHTML = `<div style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;
-        color:#ff7033;margin-bottom:6px;">CH ROUTING ENGINE</div><div>${msg}</div>`;
-}
-
-// ── Public CHRouter API ─────────────────────────────────────────
-const CHRouter = {
-    async route(start, end, options = {}) {
-        const log = options.onStatus || (() => {});
-        try {
-            log('Fetching road network from OpenStreetMap…');
-            const bbox   = buildBBox(start.lat, start.lng, end.lat, end.lng);
-            let cached   = _graphCache.get(bbox);
-            let graph, prepMs;
-            if (cached) {
-                graph = cached.graph; prepMs = cached.prepMs;
-                log(`Using cached graph (${graph.nodeCount()} nodes)`);
-            } else {
-                const elements = await fetchOSMRoads(bbox);
-                log(`Parsing ${elements.length} OSM elements…`);
-                graph = overpassToGraph(elements);
-                log(`Graph: ${graph.nodeCount()} nodes, ${graph.edgeCount()} edges`);
-                if (graph.nodeCount() < 2) throw new Error('No road data found. Try a different area.');
-                log('Running CH preprocessing (node contraction)…');
-                prepMs = new CHPreprocessor(graph).preprocess();
-                log(`Preprocessing done in ${prepMs}ms — ${graph.edgeCount()} edges after shortcuts`);
-                _graphCache.set(bbox, { graph, prepMs });
-            }
-            log('Running CH bidirectional Dijkstra query…');
-            const chq      = new CHQuery(graph);
-            const sourceId = chq.nearestNode(start.lat, start.lng);
-            const targetId = chq.nearestNode(end.lat,   end.lng);
-            if (!sourceId || !targetId) throw new Error('Could not snap start/end to road network.');
-            log(`Snapped source=${sourceId}, target=${targetId}`);
-            const result = chq.query(sourceId, targetId);
-            if (!result || !result.path || result.path.length < 2) throw new Error('No path found between these points.');
-            const coords      = pathToCoords(graph, result.path);
-            const distanceKm  = pathDistanceKm(graph, result.path);
-            const durationMin = result.durationSec > 0
-                ? Math.round(result.durationSec / 60)
-                : Math.round((distanceKm / 30) * 60);
-            log(`Route: ${distanceKm.toFixed(2)} km, ~${durationMin} min, ${result.path.length} nodes`);
-            return { coords, distanceKm: parseFloat(distanceKm.toFixed(2)), durationMin,
-                     nodeCount: graph.nodeCount(), edgeCount: graph.edgeCount(),
-                     prepMs, queryMs: result.queryMs };
-        } catch (err) {
-            console.error('[CH] Routing error:', err.message);
-            log(`Error: ${err.message}`);
-            return null;
-        }
-    },
-    clearCache() { _graphCache._map.clear(); console.log('[CH] Cache cleared.'); }
-};
-window.CHRouter = CHRouter;
-
-// ====================== END CH ALGORITHM ROUTING ======================
-
-// ── Helper: parse a DB timestamp string as UTC
+// ── Helper: parse a DB timestamp string as UTC (appends Z if no tz info present)
 function parseUtc(ts) {
     if (!ts) return null;
     if (typeof ts !== 'string') return new Date(ts);
     const s = ts.replace(' ', 'T');
+    // If already has timezone info, parse as-is; otherwise treat as UTC
     return new Date(s.includes('Z') || s.includes('+') ? s : s + 'Z');
 }
 
@@ -1619,6 +1216,7 @@ loadGatewaysOnMap();
 let nodeMarkers={},nodeData={},selectedNodeId=null;
 const OFFLINE_MIN=3;
 
+// ── Resolved node tracking ──
 const RESOLVED_STORAGE_KEY = 'flames_resolved_nodes';
 function _loadResolvedFromStorage() {
     try { const raw = localStorage.getItem(RESOLVED_STORAGE_KEY); return raw ? new Set(JSON.parse(raw)) : new Set(); }
@@ -1650,12 +1248,18 @@ function clearFireAnimationForNode(nodeId) {
         let isOffline = false;
         if (nd) {
             const lastTime = parseUtc(nd.last_updated);
-            if (lastTime) { const minAgo = (Date.now() - lastTime.getTime()) / 60000; isOffline = minAgo > OFFLINE_MIN; }
+            if (lastTime) {
+                const minAgo = (Date.now() - lastTime.getTime()) / 60000;
+                isOffline = minAgo > OFFLINE_MIN;
+            }
         }
         nodeMarkers[nodeId].setIcon(isOffline ? makeOfflineNodeIcon() : nodeIcon);
         const el = nodeMarkers[nodeId].getElement();
         if (el) { el.classList.remove('fire-node-active'); el.style.opacity = '1'; }
-        if (nd) { const popupContent = buildNodePopupContent(nd, nodeId, nd.latitude, nd.longitude, isOffline); nodeMarkers[nodeId].setPopupContent(popupContent); }
+        if (nd) {
+            const popupContent = buildNodePopupContent(nd, nodeId, nd.latitude, nd.longitude, isOffline);
+            nodeMarkers[nodeId].setPopupContent(popupContent);
+        }
     }
 }
 
@@ -1663,16 +1267,23 @@ function applyFireAnimationForNode(nodeId, sensorData) {
     if (!nodeId) return;
     resolvedNodeIds.delete(nodeId);
     _saveResolvedToStorage(resolvedNodeIds);
+
     if (nodeMarkers[nodeId]) {
         const pred = (sensorData?.ai_prediction || nodeData[nodeId]?.ai_prediction || '').toLowerCase();
         const isPossible = pred === 'false';
         nodeMarkers[nodeId].setIcon(makeFireNodeIcon(isPossible));
+
         const el = nodeMarkers[nodeId].getElement();
         if (el) { el.classList.add('fire-node-active'); el.style.opacity = '1'; }
         const nd = sensorData || nodeData[nodeId];
-        if (nd) { const popupContent = buildNodePopupContent(nd, nodeId, nd.latitude || nodeData[nodeId]?.latitude, nd.longitude || nodeData[nodeId]?.longitude, false); nodeMarkers[nodeId].setPopupContent(popupContent); }
+        if (nd) {
+            const popupContent = buildNodePopupContent(nd, nodeId, nd.latitude || nodeData[nodeId]?.latitude, nd.longitude || nodeData[nodeId]?.longitude, false);
+            nodeMarkers[nodeId].setPopupContent(popupContent);
+        }
     }
-    if (sensorData && nodeData[nodeId]) { Object.assign(nodeData[nodeId], sensorData); }
+    if (sensorData && nodeData[nodeId]) {
+        Object.assign(nodeData[nodeId], sensorData);
+    }
 }
 
 function buildNodePopupContent(n, nid, lat, lng, offline) {
@@ -1683,12 +1294,17 @@ function buildNodePopupContent(n, nid, lat, lng, offline) {
     const isFalse = pred === 'false';
     const stColor = isFire ? '#ff4757' : isFalse ? '#f1c40f' : '#2ecc71';
     const stLabel = isFire ? '🔥 FIRE' : isFalse ? '⚠ Possible Fire' : 'Normal';
+
+    // Use local_timestamp for display (PH time), fall back to timestamp
     const lastStr = n.local_timestamp
         ? String(n.local_timestamp).replace('T', ' ').slice(0, 16)
         : (() => {
             const t = parseUtc(n.timestamp || n.updated_at || n.last_seen);
-            return t && !isNaN(t.getTime()) ? t.toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+            return t && !isNaN(t.getTime())
+                ? t.toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})
+                : '—';
         })();
+
     const posNote = n.isUsingFallbackPosition ? `<div style="color:#ff9f1c;font-size:10px;margin-top:5px;">(Approx. position near gateway)</div>` : '';
     let aiStatusHtml = '';
     if (isResolved && (isFire || isFalse)) {
@@ -1728,19 +1344,36 @@ async function loadAndPlaceNodes(silent=false){
             if(!valid){lat=nodeData[nid]?.latitude;lng=nodeData[nid]?.longitude;}
             let fallback=false;
             if(lat==null||isNaN(lat)){const off=10+Math.random()*90,ang=Math.random()*2*Math.PI;lat=gw.lat+(off/111000)*Math.cos(ang);lng=gw.lng+(off/(111000*Math.cos(gw.lat*Math.PI/180)))*Math.sin(ang);fallback=true;}
+
+            // Always use UTC timestamp (n.timestamp) for offline calculation
             const utcTimestamp = n.timestamp || n.updated_at || n.last_seen || new Date().toISOString();
             nodeData[nid]={...nodeData[nid]||{},...n,latitude:lat,longitude:lng,last_updated:utcTimestamp,isUsingFallbackPosition:fallback};
+
             const pred=(n.ai_prediction||'normal').toLowerCase();
             const isFire  = pred === 'fire';
             const isFalse = pred === 'false';
+
+            // Parse UTC timestamp correctly using parseUtc helper
             const lastTime = parseUtc(utcTimestamp);
             const minAgo = lastTime ? (Date.now() - lastTime.getTime()) / 60000 : 0;
             const offline = (minAgo > OFFLINE_MIN) && !isFire && !isFalse;
+
             const isFireActive     = isFire  && !resolvedNodeIds.has(nid);
             const isPossibleActive = isFalse && !resolvedNodeIds.has(nid);
             const hasAnyAlert      = isFireActive || isPossibleActive;
-            const activeIcon = isFireActive ? makeFireNodeIcon(false) : isPossibleActive ? makeFireNodeIcon(true) : offline ? makeOfflineNodeIcon() : nodeIcon;
-            const popupContent = buildNodePopupContent({...n, isUsingFallbackPosition: fallback}, nid, lat, lng, offline);
+
+            const activeIcon = isFireActive
+                ? makeFireNodeIcon(false)
+                : isPossibleActive
+                    ? makeFireNodeIcon(true)
+                    : offline
+                        ? makeOfflineNodeIcon()
+                        : nodeIcon;
+
+            const popupContent = buildNodePopupContent(
+                {...n, isUsingFallbackPosition: fallback}, nid, lat, lng, offline
+            );
+
             if(nodeMarkers[nid]){
                 nodeMarkers[nid].setIcon(activeIcon);
                 nodeMarkers[nid].setLatLng([lat,lng]);
@@ -1792,10 +1425,15 @@ function connectWebSocket(){
                     const pred = (msg.ai_prediction||'').toLowerCase();
                     if ((pred === 'fire' || pred === 'false') && msg.node_id) {
                         applyFireAnimationForNode(msg.node_id, {
-                            ai_prediction: msg.ai_prediction, confidence: msg.confidence,
-                            temperature: msg.temperature, humidity: msg.humidity,
-                            flame: msg.flame, smoke: msg.smoke,
-                            timestamp: msg.timestamp, latitude: msg.latitude, longitude: msg.longitude,
+                            ai_prediction: msg.ai_prediction,
+                            confidence:    msg.confidence,
+                            temperature:   msg.temperature,
+                            humidity:      msg.humidity,
+                            flame:         msg.flame,
+                            smoke:         msg.smoke,
+                            timestamp:     msg.timestamp,
+                            latitude:      msg.latitude,
+                            longitude:     msg.longitude,
                         });
                     }
                     loadAndPlaceNodes(true);
@@ -1829,6 +1467,7 @@ function updateSensorBar(d,nodeId){
         document.getElementById('sb-smoke').className+=' alert';
         document.getElementById('sb-flame').className+=' alert';
     }
+    // Use parseUtc for correct offline detection
     const lastTime = parseUtc(d.last_updated);
     const offline = lastTime && (Date.now()-lastTime.getTime())/60000>OFFLINE_MIN && pred!=='fire' && pred!=='false';
     document.getElementById('sb-node-label').innerHTML=nodeId?`${nodeId}${offline?' <small style="color:#ff9f1c;">(offline)</small>':''}`:'No node';
@@ -1837,7 +1476,9 @@ function updateSensorBar(d,nodeId){
 }
 
 // ====================== GATEWAY STATUS PANEL ======================
-let _gwStatusExpanded = new Set(), _gwStatusData = [], _gwStatusNodes = [];
+let _gwStatusExpanded = new Set();
+let _gwStatusData = [];
+let _gwStatusNodes = [];
 
 async function loadGatewayStatusPanel(silent = false) {
     try {
@@ -1854,7 +1495,9 @@ async function loadGatewayStatusPanel(silent = false) {
         const btn2 = document.getElementById('gw-refresh-btn');
         if (btn2) btn2.classList.remove('spinning');
     } catch (err) {
-        if (!silent) { document.getElementById('gw-status-list').innerHTML = `<div class="gw-empty-state" style="color:#ff4757;">⚠ Failed to load gateways</div>`; }
+        if (!silent) {
+            document.getElementById('gw-status-list').innerHTML = `<div class="gw-empty-state" style="color:#ff4757;">⚠ Failed to load gateways</div>`;
+        }
         const btn = document.getElementById('gw-refresh-btn');
         if (btn) btn.classList.remove('spinning');
         console.error('Gateway panel error:', err);
@@ -1864,14 +1507,21 @@ async function loadGatewayStatusPanel(silent = false) {
 function getNodeStatus(node) {
     const pred = (node.ai_prediction || 'normal').toLowerCase();
     const isResolved = resolvedNodeIds.has(node.node_id);
+
     const isFireConfirmed = pred === 'fire'  && !isResolved;
     const isPossible      = pred === 'false' && !isResolved;
+
     const lastUpdated = node.timestamp || node.updated_at || node.last_seen || null;
     let offline = false;
     if (lastUpdated) {
+        // Use parseUtc for correct UTC-aware offline detection
         const lastTime = parseUtc(lastUpdated);
-        if (lastTime) { const minAgo = (Date.now() - lastTime.getTime()) / 60000; offline = minAgo > OFFLINE_MIN && !isFireConfirmed && !isPossible; }
+        if (lastTime) {
+            const minAgo = (Date.now() - lastTime.getTime()) / 60000;
+            offline = minAgo > OFFLINE_MIN && !isFireConfirmed && !isPossible;
+        }
     }
+
     if (isFireConfirmed) return 'fire';
     if (isPossible)      return 'possible';
     if (offline)         return 'offline';
@@ -1881,45 +1531,72 @@ function getNodeStatus(node) {
 function renderGatewayStatusPanel() {
     const listEl = document.getElementById('gw-status-list');
     if (!listEl) return;
+
     if (!_gwStatusData.length) {
         listEl.innerHTML = '<div class="gw-empty-state">🏠 No gateways registered</div>';
         const tn = document.getElementById('gw-total-nodes-label'); if(tn) tn.textContent = '0 nodes';
         return;
     }
+
     const gwNodeMap = {};
     _gwStatusData.forEach(gw => { gwNodeMap[gw.gateway_id] = []; });
     _gwStatusNodes.forEach(node => {
         const gwId = node.gateway_id || node.gateway || null;
-        if (gwId && gwNodeMap[gwId] !== undefined) { gwNodeMap[gwId].push(node); }
-        else { const firstGwId = _gwStatusData[0]?.gateway_id; if (firstGwId) gwNodeMap[firstGwId].push(node); }
+        if (gwId && gwNodeMap[gwId] !== undefined) {
+            gwNodeMap[gwId].push(node);
+        } else {
+            const firstGwId = _gwStatusData[0]?.gateway_id;
+            if (firstGwId) gwNodeMap[firstGwId].push(node);
+        }
     });
+
     const gwStatuses = _gwStatusData.map(gw => {
         const nodes = gwNodeMap[gw.gateway_id] || [];
         const nodeStatuses = nodes.map(n => getNodeStatus(n));
-        const hasFire = nodeStatuses.includes('fire'), hasPossible = nodeStatuses.includes('possible'), hasActive = nodeStatuses.includes('active');
+        const hasFire     = nodeStatuses.includes('fire');
+        const hasPossible = nodeStatuses.includes('possible');
+        const hasActive   = nodeStatuses.includes('active');
         const gwLastSeen = gw.last_seen || gw.updated_at || null;
         let gwOffline = true;
-        if (gwLastSeen) { const t = parseUtc(gwLastSeen); if (t) gwOffline = (Date.now() - t.getTime()) / 60000 > OFFLINE_MIN; }
+        if (gwLastSeen) {
+            // Use parseUtc for correct UTC-aware gateway offline detection
+            const t = parseUtc(gwLastSeen);
+            if (t) gwOffline = (Date.now() - t.getTime()) / 60000 > OFFLINE_MIN;
+        }
         if (!gwLastSeen) gwOffline = !hasActive && !hasFire && !hasPossible && nodes.length === 0;
         const status = hasFire ? 'fire' : hasPossible ? 'possible' : (gwOffline && !hasActive) ? 'offline' : 'online';
         return { gw, nodes, nodeStatuses, status };
     });
+
     const tnEl = document.getElementById('gw-total-nodes-label');
     if(tnEl) tnEl.textContent = `${_gwStatusNodes.length} node${_gwStatusNodes.length !== 1 ? 's' : ''}`;
+
     const html = gwStatuses.map(({ gw, nodes, nodeStatuses, status }) => {
         const isExpanded = _gwStatusExpanded.has(gw.gateway_id);
-        const fireCount = nodeStatuses.filter(s=>s==='fire').length, possibleCount = nodeStatuses.filter(s=>s==='possible').length;
-        const offlineCount = nodeStatuses.filter(s=>s==='offline').length, activeCount = nodeStatuses.filter(s=>s==='active').length;
-        const nodesHtml = nodes.length === 0 ? '<div class="gw-no-nodes">No nodes assigned to this gateway</div>'
+        const fireCount     = nodeStatuses.filter(s => s === 'fire').length;
+        const possibleCount = nodeStatuses.filter(s => s === 'possible').length;
+        const offlineCount  = nodeStatuses.filter(s => s === 'offline').length;
+        const activeCount   = nodeStatuses.filter(s => s === 'active').length;
+
+        const nodesHtml = nodes.length === 0
+            ? '<div class="gw-no-nodes">No nodes assigned to this gateway</div>'
             : nodes.map((node, i) => {
                 const nStatus = nodeStatuses[i];
                 const lat = parseFloat(node.latitude), lng = parseFloat(node.longitude);
                 const hasCoords = !isNaN(lat) && lat !== 0 && !isNaN(lng) && lng !== 0;
                 const locName = node.location_name || node.name || '';
                 const coordStr = hasCoords ? `${lat.toFixed(5)}, ${lng.toFixed(5)}` : 'No coordinates';
-                const fireLabel = nStatus==='fire' ? '<span class="fire-label">🔥 FIRE</span>' : nStatus==='possible' ? '<span class="possible-label">⚠ POSSIBLE</span>' : '';
-                const offlineLabel = nStatus==='offline' ? '<span style="font-size:8px;color:#5a5a5a;background:#2a2a2a;border:1px solid #3a3a3a;border-radius:3px;padding:1px 4px;margin-left:3px;">⚫ OFFLINE</span>' : '';
-                const flyBtn = hasCoords ? `<div class="gw-node-flyto"><button class="gw-node-flyto-btn" onclick="flyToNode('${node.node_id}',${lat},${lng})" title="Go to node on map">📍 Go</button></div>` : '';
+                const fireLabel = nStatus === 'fire'
+                    ? '<span class="fire-label">🔥 FIRE</span>'
+                    : nStatus === 'possible'
+                        ? '<span class="possible-label">⚠ POSSIBLE</span>'
+                        : '';
+                const offlineLabel = nStatus === 'offline'
+                    ? '<span style="font-size:8px;color:#5a5a5a;background:#2a2a2a;border:1px solid #3a3a3a;border-radius:3px;padding:1px 4px;margin-left:3px;">⚫ OFFLINE</span>'
+                    : '';
+                const flyBtn = hasCoords
+                    ? `<div class="gw-node-flyto"><button class="gw-node-flyto-btn" onclick="flyToNode('${node.node_id}',${lat},${lng})" title="Go to node on map">📍 Go</button></div>`
+                    : '';
                 return `<div class="gw-node-row" onclick="flyToNode('${node.node_id}',${hasCoords?lat:'null'},${hasCoords?lng:'null'})">
                     <div class="node-status-dot ${nStatus}"></div>
                     <div class="gw-node-info">
@@ -1930,31 +1607,44 @@ function renderGatewayStatusPanel() {
                     ${flyBtn}
                 </div>`;
             }).join('');
+
         const metaBadges = [];
-        if (fireCount>0)     metaBadges.push(`<span style="color:#ff4757;font-size:8px;font-weight:700;">🔥 ${fireCount} fire</span>`);
-        if (possibleCount>0) metaBadges.push(`<span style="color:#f1c40f;font-size:8px;font-weight:700;">⚠ ${possibleCount} possible</span>`);
-        if (offlineCount>0)  metaBadges.push(`<span style="color:#5a5a5a;font-size:8px;">⚫ ${offlineCount} offline</span>`);
-        if (activeCount>0)   metaBadges.push(`<span style="color:#2ecc71;font-size:8px;">● ${activeCount} online</span>`);
+        if (fireCount > 0)     metaBadges.push(`<span style="color:#ff4757;font-size:8px;font-weight:700;">🔥 ${fireCount} fire</span>`);
+        if (possibleCount > 0) metaBadges.push(`<span style="color:#f1c40f;font-size:8px;font-weight:700;">⚠ ${possibleCount} possible</span>`);
+        if (offlineCount > 0)  metaBadges.push(`<span style="color:#5a5a5a;font-size:8px;">⚫ ${offlineCount} offline</span>`);
+        if (activeCount > 0)   metaBadges.push(`<span style="color:#2ecc71;font-size:8px;">● ${activeCount} online</span>`);
+
         return `<div class="gw-item${isExpanded?' expanded':''}" id="gwitem-${gw.gateway_id}">
             <div class="gw-item-header" onclick="toggleGatewayExpand('${gw.gateway_id}')">
                 <div class="gw-status-dot ${status}"></div>
                 <div class="gw-item-name">${gw.gateway_id}</div>
                 ${gw.location_name ? `<div class="gw-item-location">${gw.location_name}</div>` : ''}
-                <div class="gw-item-meta"><span class="gw-node-count-badge">${nodes.length} node${nodes.length!==1?'s':''}</span><span class="gw-chevron">▼</span></div>
+                <div class="gw-item-meta">
+                    <span class="gw-node-count-badge">${nodes.length} node${nodes.length!==1?'s':''}</span>
+                    <span class="gw-chevron">▼</span>
+                </div>
             </div>
             ${metaBadges.length > 0 ? `<div style="padding:0 10px 6px;display:flex;gap:6px;flex-wrap:wrap;">${metaBadges.join('')}</div>` : ''}
-            <div class="gw-nodes-list${isExpanded?' visible':''}" id="gwnodes-${gw.gateway_id}">${nodesHtml}</div>
+            <div class="gw-nodes-list${isExpanded?' visible':''}" id="gwnodes-${gw.gateway_id}">
+                ${nodesHtml}
+            </div>
         </div>`;
     }).join('');
+
     listEl.innerHTML = html;
 }
 
 function toggleGatewayExpand(gwId) {
-    const item = document.getElementById(`gwitem-${gwId}`), nodesList = document.getElementById(`gwnodes-${gwId}`);
+    const item = document.getElementById(`gwitem-${gwId}`);
+    const nodesList = document.getElementById(`gwnodes-${gwId}`);
     if (!item || !nodesList) return;
-    if (_gwStatusExpanded.has(gwId)) { _gwStatusExpanded.delete(gwId); item.classList.remove('expanded'); nodesList.classList.remove('visible'); }
-    else { _gwStatusExpanded.add(gwId); item.classList.add('expanded'); nodesList.classList.add('visible'); }
+    if (_gwStatusExpanded.has(gwId)) {
+        _gwStatusExpanded.delete(gwId); item.classList.remove('expanded'); nodesList.classList.remove('visible');
+    } else {
+        _gwStatusExpanded.add(gwId); item.classList.add('expanded'); nodesList.classList.add('visible');
+    }
 }
+
 function flyToNode(nodeId, lat, lng) {
     if (lat === null || isNaN(lat) || lat === 0) {
         const nd = nodeData[nodeId];
@@ -1965,7 +1655,9 @@ function flyToNode(nodeId, lat, lng) {
     if (nodeMarkers[nodeId]) setTimeout(() => { nodeMarkers[nodeId].openPopup(); }, 1300);
     if (nodeData[nodeId]) { selectedNodeId = nodeId; updateSensorBar(nodeData[nodeId], nodeId); }
 }
+
 function refreshGatewayPanel() { loadGatewayStatusPanel(false); }
+
 loadGatewayStatusPanel();
 setInterval(() => loadGatewayStatusPanel(true), 15000);
 
@@ -2026,104 +1718,18 @@ async function handleSearch(val){
 function clearSearchInput(){document.getElementById('mapSearchInput').value='';document.getElementById('suggestionsBox').style.display='none';document.getElementById('clearSearch').style.display='none';document.getElementById('search-icon-img').style.display='block';}
 
 // ====================== ROUTE ======================
-// Uses the CH Algorithm implemented above.
-// ORS_API_KEY kept for possible fallback reference but routing
-// now runs entirely through CHRouter (Overpass + CH engine).
-let routingControl=null, waypoints=[], routeMarkers=[];
-
+let routingControl=null,waypoints=[],routeMarkers=[];
+const ORS_API_KEY='eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImEyYTEzN2QzOGRlNzQzNzQ5MTMwZTg1NzVkMTJlMzFiIiwiaCI6Im11cm11cjY0In0=';
 document.getElementById('route-btn').addEventListener('click',()=>document.getElementById('route-menu').classList.toggle('visible'));
-
-document.getElementById('calc-route').addEventListener('click',()=>{
-    if(waypoints.length===2){
-        calculateRoute(waypoints[0],waypoints[1]);
-        document.getElementById('route-menu').classList.remove('visible');
-    } else {
-        alert('Click to place Start Point (green), then End Point (red), then press Calculate.');
-        waypoints=[];
-        routeMarkers.forEach(m=>map.removeLayer(m));
-        routeMarkers=[];
-        if(routingControl){map.removeLayer(routingControl);routingControl=null;}
-    }
-});
-
-document.getElementById('clear-route').addEventListener('click',()=>{
-    if(routingControl){map.removeLayer(routingControl);routingControl=null;}
-    routeMarkers.forEach(m=>map.removeLayer(m));
-    routeMarkers=[];waypoints=[];
-    document.getElementById('route-info-box').style.display='none';
-    document.getElementById('route-menu').classList.remove('visible');
-    showCHStatus(null);
-});
-
-document.getElementById('close-info-btn').addEventListener('click',()=>{
-    if(routingControl){map.removeLayer(routingControl);routingControl=null;}
-    routeMarkers.forEach(m=>map.removeLayer(m));
-    routeMarkers=[];waypoints=[];
-    document.getElementById('route-info-box').style.display='none';
-});
-
-map.on('click',e=>{
-    if(waypoints.length<2){
-        waypoints.push(e.latlng);
-        routeMarkers.push(L.marker(e.latlng,{icon:waypoints.length===1?greenIcon:redIcon}).addTo(map));
-    }
-});
-
-// CH ALGORITHM ROUTING — main map route calculation
-async function calculateRoute(start, end) {
-    showCHStatus('Initializing CH routing engine…');
-    const result = await CHRouter.route(
-        { lat: start.lat, lng: start.lng },
-        { lat: end.lat,   lng: end.lng   },
-        { onStatus(msg) { showCHStatus(msg); console.log('[CH]', msg); } }
-    );
-    showCHStatus(null);
-    if (!result) {
-        alert('CH routing failed — no road path found between these points.');
-        return;
-    }
-    if (routingControl) map.removeLayer(routingControl);
-    routingControl = L.polyline(result.coords, { color:'#ff3300', weight:6, opacity:.9, dashArray:'1,10' }).addTo(map);
-    map.fitBounds(routingControl.getBounds());
-    document.getElementById('route-info-box').style.display = 'flex';
-    document.getElementById('route-dist').innerHTML = `<img src="icons/distance.png"> ${result.distanceKm} km`;
-    document.getElementById('route-time').innerHTML = `<img src="icons/minutes.png"> ~${result.durationMin} min`;
-    // Clear waypoint pins after successful route
-    routeMarkers.forEach(m => map.removeLayer(m));
-    routeMarkers = []; waypoints = [];
-    console.log(`🔥 CH Metrics — nodes:${result.nodeCount} edges:${result.edgeCount} prep:${result.prepMs}ms query:${result.queryMs}ms`);
+document.getElementById('calc-route').addEventListener('click',()=>{if(waypoints.length===2){calculateRoute(waypoints[0],waypoints[1]);document.getElementById('route-menu').classList.remove('visible');}else{alert('Click to place Start Point (green), then End Point (red).');waypoints=[];routeMarkers.forEach(m=>map.removeLayer(m));routeMarkers=[];if(routingControl){map.removeLayer(routingControl);routingControl=null;}}});
+document.getElementById('clear-route').addEventListener('click',()=>{if(routingControl){map.removeLayer(routingControl);routingControl=null;}routeMarkers.forEach(m=>map.removeLayer(m));routeMarkers=[];waypoints=[];document.getElementById('route-info-box').style.display='none';document.getElementById('route-menu').classList.remove('visible');});
+document.getElementById('close-info-btn').addEventListener('click',()=>{if(routingControl){map.removeLayer(routingControl);routingControl=null;}routeMarkers.forEach(m=>map.removeLayer(m));routeMarkers=[];waypoints=[];document.getElementById('route-info-box').style.display='none';});
+map.on('click',e=>{if(waypoints.length<2){waypoints.push(e.latlng);routeMarkers.push(L.marker(e.latlng,{icon:waypoints.length===1?greenIcon:redIcon}).addTo(map));}});
+async function calculateRoute(start,end){
+    try{const res=await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson',{method:'POST',headers:{'Content-Type':'application/json','Authorization':ORS_API_KEY},body:JSON.stringify({coordinates:[[start.lng,start.lat],[end.lng,end.lat]],preference:'fastest',units:'m'})});if(!res.ok)throw new Error('Routing API error');const data=await res.json();const coords=data.features[0].geometry.coordinates.map(c=>[c[1],c[0]]);const summary=data.features[0].properties.summary;if(routingControl)map.removeLayer(routingControl);routingControl=L.polyline(coords,{color:'#ff3300',weight:6,opacity:.9,dashArray:'1,10'}).addTo(map);const dist=(summary.distance/1000).toFixed(2),time=Math.round(summary.duration/60);document.getElementById('route-info-box').style.display='flex';document.getElementById('route-dist').innerHTML=`<img src="icons/distance.png"> ${dist} km`;document.getElementById('route-time').innerHTML=`<img src="icons/minutes.png"> ~${time} min`;map.fitBounds(routingControl.getBounds());}
+    catch{alert('Routing failed. No road available.');}
 }
-
-// CH ALGORITHM ROUTING — incident detail map route calculation
-async function calculateDetailRoute(start, end) {
-    const statEls = document.querySelectorAll('.inc-route-stat-val');
-    const result = await CHRouter.route(
-        { lat: start.lat, lng: start.lng },
-        { lat: end.lat,   lng: end.lng   },
-        { onStatus(msg) { console.log('[CH-detail]', msg); } }
-    );
-    if (!result) {
-        console.warn('[CH] Detail route failed.');
-        if (statEls[0]) statEls[0].textContent = 'N/A';
-        if (statEls[1]) statEls[1].textContent = 'N/A';
-        return;
-    }
-    if (_incDetailRouteLayer) _incDetailRouteLayer.remove();
-    _incDetailRouteLayer = L.polyline(result.coords, { color:'#ff4400', weight:5, opacity:.9, dashArray:'8,6' }).addTo(_incDetailMap);
-    _incDetailMap.fitBounds(_incDetailRouteLayer.getBounds(), { padding:[20,20] });
-    if (statEls[0]) statEls[0].textContent = result.distanceKm + ' km';
-    if (statEls[1]) statEls[1].textContent = '~' + result.durationMin + ' min';
-    console.log(`🔥 CH Detail — prep:${result.prepMs}ms query:${result.queryMs}ms`);
-}
-
-function routeToIncident(lat,lng){
-    const gw=getPrimaryGateway();
-    waypoints=[gw,{lat,lng}];
-    routeMarkers.push(L.marker([gw.lat,gw.lng],{icon:greenIcon}).addTo(map));
-    routeMarkers.push(L.marker([lat,lng],{icon:redIcon}).addTo(map));
-    calculateRoute(gw,{lat,lng});
-    map.flyTo([lat,lng],14);
-}
+function routeToIncident(lat,lng){const gw=getPrimaryGateway();waypoints=[gw,{lat,lng}];routeMarkers.push(L.marker([gw.lat,gw.lng],{icon:greenIcon}).addTo(map));routeMarkers.push(L.marker([lat,lng],{icon:redIcon}).addTo(map));calculateRoute(gw,{lat,lng});map.flyTo([lat,lng],14);}
 
 // ====================== INCIDENT TABS ======================
 let _currentIncidentTab = 'live';
@@ -2235,7 +1841,9 @@ async function loadResolvedIncidents() {
 }
 
 // ====================== RESCUE / RESPOND SYSTEM ======================
-let _incidentRescueMap = {}, _pendingRescueIncidentId = null, _availableOrganizations = [];
+let _incidentRescueMap = {};
+let _pendingRescueIncidentId = null;
+let _availableOrganizations = [];
 
 async function openRescueModal(incidentId, nodeId, locationName) {
     _pendingRescueIncidentId = incidentId;
@@ -2253,7 +1861,8 @@ async function openRescueModal(incidentId, nodeId, locationName) {
         _availableOrganizations.forEach((org) => {
             const item = document.createElement('div');
             item.className = 'rescue-org-item';
-            item.dataset.orgId = org.id; item.dataset.orgName = org.name;
+            item.dataset.orgId = org.id;
+            item.dataset.orgName = org.name;
             item.innerHTML = `<div class="rescue-org-icon">🏢</div><div><div class="rescue-org-name">${org.name}</div><div class="rescue-org-meta">ID: ${org.id}${org.invite_code?' · Code: '+org.invite_code:''}</div></div>`;
             item.addEventListener('click', () => { document.querySelectorAll('.rescue-org-item').forEach(el => el.classList.remove('selected')); item.classList.add('selected'); });
             listEl.appendChild(item);
@@ -2261,17 +1870,23 @@ async function openRescueModal(incidentId, nodeId, locationName) {
     } catch(err) { listEl.innerHTML = `<div style="color:#ff4757;text-align:center;padding:16px;">Failed: ${err.message}</div>`; }
 }
 
-function closeRescueModal() { document.getElementById('rescue-modal').classList.remove('open'); _pendingRescueIncidentId = null; }
+function closeRescueModal() {
+    document.getElementById('rescue-modal').classList.remove('open');
+    _pendingRescueIncidentId = null;
+}
 
 async function confirmRescueDispatch() {
     const selected = document.querySelector('.rescue-org-item.selected');
     if (!selected) { alert('Please select an organization.'); return; }
     const orgId = selected.dataset.orgId, orgName = selected.dataset.orgName;
-    const incidentId = _pendingRescueIncidentId; if (!incidentId) return;
+    const incidentId = _pendingRescueIncidentId;
+    if (!incidentId) return;
     const inc = _liveIncidentsCache.find(i => i.incident_id == incidentId);
     const now = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
     _incidentRescueMap[incidentId] = {orgId,orgName,status:'en_route',dispatchTime:now,rescuedTime:null,nodeId:inc?.node_id,locationName:inc?.location_name||`Incident #${incidentId}`};
-    try { await fetch(`${API_BASE()}/incidents/${incidentId}/respond`, {method:'PATCH',headers:{...authHeader(),'Content-Type':'application/json'},body:JSON.stringify({organization_id:parseInt(orgId),organization_name:orgName})}); } catch {}
+    try {
+        await fetch(`${API_BASE()}/incidents/${incidentId}/respond`, {method:'PATCH',headers:{...authHeader(),'Content-Type':'application/json'},body:JSON.stringify({organization_id:parseInt(orgId),organization_name:orgName})});
+    } catch {}
     closeRescueModal();
     document.getElementById('respond-node-label').textContent = `Incident on ${inc?.node_id||incidentId}`;
     document.getElementById('respond-org-display').textContent = orgName;
@@ -2290,13 +1905,16 @@ async function resolveIncident(incidentId, nodeId) {
         const res = await fetch(`${API_BASE()}/incidents/${incidentId}/resolve`, {method:'PATCH',headers:{...authHeader(),'Content-Type':'application/json'},body:JSON.stringify({notes:'Resolved via dashboard'})});
         if (!res.ok) throw new Error((await res.json()).detail||'Failed');
         const now = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-        if (_incidentRescueMap[incidentId]) { _incidentRescueMap[incidentId].status = 'rescued'; _incidentRescueMap[incidentId].rescuedTime = now; }
-        else {
+        if (_incidentRescueMap[incidentId]) {
+            _incidentRescueMap[incidentId].status = 'rescued';
+            _incidentRescueMap[incidentId].rescuedTime = now;
+        } else {
             const inc = _liveIncidentsCache.find(i => i.incident_id == incidentId);
             _incidentRescueMap[incidentId] = {orgId:null,orgName:'Manual Resolve',status:'rescued',dispatchTime:null,rescuedTime:now,nodeId,locationName:inc?.location_name};
         }
         clearFireAnimationForNode(nodeId);
-        closeIncidentDetailsModal(); closeIncidentMapModal();
+        closeIncidentDetailsModal();
+        closeIncidentMapModal();
         const card = document.getElementById(`incident-card-${incidentId}`);
         if (card) {
             card.style.transition='opacity .4s, transform .4s'; card.style.opacity='0'; card.style.transform='translateX(20px)';
@@ -2347,9 +1965,25 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
         const gwMarker = L.marker([gw.lat,gw.lng],{icon:greenIcon}).addTo(_incDetailMap);
         gwMarker.bindPopup('<div style="font-weight:700;color:#2ecc71;">🏠 Gateway / Start Point</div>');
         _incDetailMarkers.push(gwMarker);
-        // CH ALGORITHM ROUTING — route in incident detail modal
-        calculateDetailRoute(gw, {lat:incLat, lng:incLng});
+        calculateDetailRoute(gw, {lat:incLat,lng:incLng});
     }, 150);
+}
+
+async function calculateDetailRoute(start, end) {
+    try {
+        const res = await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson',{method:'POST',headers:{'Content-Type':'application/json','Authorization':ORS_API_KEY},body:JSON.stringify({coordinates:[[start.lng,start.lat],[end.lng,end.lat]],preference:'fastest',units:'m'})});
+        if (!res.ok) throw new Error('Route API error');
+        const data = await res.json();
+        const coords = data.features[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+        const summary = data.features[0].properties.summary;
+        if (_incDetailRouteLayer) _incDetailRouteLayer.remove();
+        _incDetailRouteLayer = L.polyline(coords,{color:'#ff4400',weight:5,opacity:.9,dashArray:'8,6'}).addTo(_incDetailMap);
+        _incDetailMap.fitBounds(_incDetailRouteLayer.getBounds(),{padding:[20,20]});
+        const dist = (summary.distance/1000).toFixed(2), time = Math.round(summary.duration/60);
+        const statEls = document.querySelectorAll('.inc-route-stat-val');
+        if (statEls[0]) statEls[0].textContent = dist + ' km';
+        if (statEls[1]) statEls[1].textContent = '~' + time + ' min';
+    } catch(e) { console.warn('Detail route calc failed:', e.message); }
 }
 
 function closeIncidentMapModal() {
@@ -2430,7 +2064,10 @@ let _hm_node=null, _hm_limit=50, _hm_metric='temperature', _hm_rows_cache=[];
 let _hm_initial_load = true;
 
 function openHistoryPanel(nodeId){
-    _hm_node = nodeId; _hm_metric = 'temperature'; _hm_rows_cache = []; _hm_initial_load = true;
+    _hm_node = nodeId;
+    _hm_metric = 'temperature';
+    _hm_rows_cache = [];
+    _hm_initial_load = true;
     document.getElementById('hp-node-id').textContent = nodeId;
     document.getElementById('hp-record-count').textContent = '0 readings';
     document.getElementById('hp-live-badge').style.display = 'inline-flex';
@@ -2456,7 +2093,8 @@ function closeHistoryPanel(){
 }
 
 function setHistoryLimit(n){
-    _hm_limit = n; _hm_initial_load = true;
+    _hm_limit = n;
+    _hm_initial_load = true;
     document.querySelectorAll('.hp-limit-btn').forEach(b => b.classList.toggle('active', parseInt(b.textContent)===n));
     fetchHistory();
 }
@@ -2464,16 +2102,30 @@ function setHistoryLimit(n){
 async function fetchHistory(){
     if(!_hm_node) return;
     const bodyEl = document.getElementById('hp-table-body');
-    if (_hm_initial_load) { bodyEl.innerHTML = '<div class="hp-state"><div class="hp-spinner"></div>Loading…</div>'; document.getElementById('hp-stats').innerHTML = ''; renderSparkline([]); }
+    if (_hm_initial_load) {
+        bodyEl.innerHTML = '<div class="hp-state"><div class="hp-spinner"></div>Loading…</div>';
+        document.getElementById('hp-stats').innerHTML = '';
+        renderSparkline([]);
+    }
     try{
         const res = await fetch(`${API_BASE()}/history/${encodeURIComponent(_hm_node)}?limit=${_hm_limit}`,{headers:authHeader(),cache:'no-cache'});
         if(!res.ok) throw new Error(`HTTP ${res.status}`);
         const rows = await res.json();
         document.getElementById('hp-record-count').textContent = `${rows.length} readings`;
-        if(!rows.length){ bodyEl.innerHTML = `<div class="hp-state">No history for <strong>${_hm_node}</strong>.</div>`; _hm_initial_load = false; return; }
-        renderStats(rows); renderSparkline(rows); renderTable(rows);
+        if(!rows.length){
+            bodyEl.innerHTML = `<div class="hp-state">No history for <strong>${_hm_node}</strong>.</div>`;
+            _hm_initial_load = false;
+            return;
+        }
+        renderStats(rows);
+        renderSparkline(rows);
+        renderTable(rows);
         _hm_initial_load = false;
-    }catch(err){ if(_hm_initial_load){ bodyEl.innerHTML = `<div class="hp-state" style="color:#ff4757;">⚠ Failed: ${err.message}</div>`; } }
+    }catch(err){
+        if(_hm_initial_load){
+            bodyEl.innerHTML = `<div class="hp-state" style="color:#ff4757;">⚠ Failed: ${err.message}</div>`;
+        }
+    }
 }
 
 function renderStats(rows){
