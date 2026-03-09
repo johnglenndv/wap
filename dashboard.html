@@ -1177,7 +1177,7 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 <div id="incident-map-modal">
     <div class="inc-map-box">
         <div class="inc-map-header">
-            <h2>🔥 Incident Full Details</h2>
+            <h2>Incident Full Details</h2>
             <div class="inc-map-header-badges">
                 <span class="inc-map-algo-badge">🚒 CH ROUTE</span>
                 <span class="inc-map-close" onclick="closeIncidentMapModal()">✕</span>
@@ -1940,7 +1940,7 @@ function buildNodePopupContent(n, nid, lat, lng, offline) {
     const isFire  = pred === 'fire';
     const isFalse = pred === 'false';
     const stColor = isFire ? '#ff4757' : isFalse ? '#f1c40f' : '#2ecc71';
-    const stLabel = isFire ? '🔥 FIRE' : isFalse ? '⚠ Possible Fire' : 'Normal';
+    const stLabel = isFire ? 'Active Fire' : isFalse ? '⚠ Possible Fire' : 'Normal';
 
     // Use local_timestamp for display (PH time), fall back to timestamp
     const lastStr = n.local_timestamp
@@ -1972,7 +1972,7 @@ function buildNodePopupContent(n, nid, lat, lng, offline) {
             ${aiStatusHtml}
             <br><small style="color:${(offline && !isFire && !isFalse) ? '#ff9f1c' : '#7a5a4a'};">Updated: ${lastStr}</small>
         </div>
-        <button class="popup-history-btn" onclick="(function(){window._flames_map && window._flames_map.closePopup(); openHistoryPanel('${nid}');})()">📊 View History</button>`;
+        <button class="popup-history-btn" onclick="(function(){window._flames_map && window._flames_map.closePopup(); openHistoryPanel('${nid}');})()">View History</button>`;
 }
 
 async function loadAndPlaceNodes(silent=false){
@@ -2687,7 +2687,7 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
                 </div>
             </div>
             <div class="inc-traffic-row" style="margin-top:4px;">
-                <span class="inc-traffic-label">Traffic</span>
+                <span class="inc-traffic-label">Traffic Condition</span>
                 <span class="inc-traffic-badge free" id="imd-traffic-badge">⏳ Loading…</span>
             </div>
         </div>
