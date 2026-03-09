@@ -2667,7 +2667,7 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
             <div class="inc-sidebar-section-title">Sensor Readings</div>
             <div class="inc-sensor-grid">
                 ${inc.temperature!=null?`<div class="inc-sensor-tile"><div class="inc-sensor-tile-val">${inc.temperature}°C</div><div class="inc-sensor-tile-label">Temp</div></div>`:''}
-               <div class="inc-sensor-tile"><div class="inc-sensor-tile-val" style="color:#6db8ff;">${inc.humidity??'—'}%</div><div class="inc-sensor-tile-label">Humidity</div></div>
+                ${inc.humidity!=null?`<div class="inc-sensor-tile"><div class="inc-sensor-tile-val" style="color:#6db8ff;">${inc.humidity}%</div><div class="inc-sensor-tile-label">Humidity</div></div>`:''}
                 ${inc.smoke!=null?`<div class="inc-sensor-tile"><div class="inc-sensor-tile-val" style="color:#c8c8c8;">${inc.smoke}</div><div class="inc-sensor-tile-label">Smoke ppm</div></div>`:''}
                 ${inc.flame!=null?`<div class="inc-sensor-tile"><div class="inc-sensor-tile-val" style="color:#ff4757;">${inc.flame}</div><div class="inc-sensor-tile-label">Flame</div></div>`:''}
             </div>
