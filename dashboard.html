@@ -1390,11 +1390,12 @@ let _trafficTickerRunning   = false;
 function _startTrafficTicker() {
     if (_trafficTickerRunning) return;
     _trafficTickerRunning = true;
-    async function tick(now) {
+    async function tick() {
         if (!_activeRouteState && !_activeDetailRouteState) {
             _trafficTickerRunning = false;
             return;
         }
+        const now = Date.now(); // Unix ms — consistent with lastFetch timestamps
         if (_activeRouteState) {
             const age = now - (_activeRouteState.lastFetch || 0);
             if (age >= TRAFFIC_LIVE_INTERVAL) {
