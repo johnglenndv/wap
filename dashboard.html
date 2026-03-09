@@ -1045,7 +1045,7 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
             <div id="route-info-box">
                 <!-- top row: badge + close -->
                 <div class="rib-top">
-                    <span class="ch-badge">🚒 CH ROUTE</span>
+                    <span class="ch-badge">CH ROUTE</span>
                     <button id="close-info-btn">×</button>
                 </div>
                 <!-- grid: distance | ETA | speed -->
@@ -2403,7 +2403,7 @@ async function calculateRoute(start, end) {
         document.getElementById('route-info-box').style.display = 'flex';
         const { label: timeLabel } = getFiretruckSpeed();
         document.getElementById('route-dist').innerHTML = `<img src="icons/distance.png" style="width:14px;"> ${rt.distKm} km`;
-        document.querySelector('.ch-badge').textContent = `🚒 ${timeLabel}`;
+        document.querySelector('.ch-badge').textContent = `${timeLabel}`;
 
         // Adjust ETA if traffic available
         let etaMin = rt.timeMins;
