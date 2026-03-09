@@ -164,7 +164,7 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 .inc-zoom-btn:hover{background:#e14f0022;}
 .inc-zoom-div{height:1px;background:#e14f0044;}
 /* TOMTOM traffic code — route menu shifted down to make room for traffic toggle btn */
-.route-menu{position:absolute;top:175px;right:10px;z-index:1001;background:#2a0a06ee;border:2px solid var(--accent);border-radius:10px;padding:3px 8px;display:none;align-items:center;gap:3px;box-shadow:0 4px 15px #00000055;}
+.route-menu{position:absolute;top:175px;right:10px;z-index:1001;background:#2a0a06ee;border:2px solid var(--accent);border-radius:10px;padding:8px 10px;display:none;flex-direction:column;gap:3px;box-shadow:0 4px 15px #00000055;min-width:160px;}
 [data-theme="light"] .route-menu{background:#fff8f5f5;box-shadow:0 4px 15px #00000022;}
 .route-menu.visible{display:flex;}
 .route-menu button{background:none;border:none;color:white;padding:7px 10px;cursor:pointer;font-family:Arial,sans-serif;font-size:13px;border-radius:5px;transition:background .2s;}
@@ -856,6 +856,34 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 .gw-org-dropdown-item.danger:hover{background:#ff475722;}
 [data-theme="light"] .gw-org-dropdown-item.danger:hover{background:#ffeeee;}
 
+/* ===================== VEHICLE SELECTOR ===================== */
+.vehicle-selector{display:flex;gap:4px;margin-top:6px;}
+.vehicle-btn{flex:1;padding:5px 3px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;border:1px solid #4a1a0a55;background:#2a0a0444;color:#7a5a4a;transition:.2s;text-align:center;line-height:1.4;}
+[data-theme="light"] .vehicle-btn{background:#f5e8e055;border-color:#c0907866;color:#7a4030;}
+.vehicle-btn:hover{border-color:var(--accent);color:var(--text);}
+.vehicle-btn.active{background:linear-gradient(135deg,#3a1a00,#6b3000);border-color:var(--accent);color:#ff9055;}
+[data-theme="light"] .vehicle-btn.active{background:linear-gradient(135deg,#ffe0c8,#ffd0b0);border-color:var(--accent);color:#8a2000;}
+.vehicle-eta-row{display:flex;gap:4px;margin-top:5px;}
+.vehicle-eta-chip{flex:1;background:#1a0a0444;border:1px solid #3a1a0a44;border-radius:6px;padding:4px 3px;text-align:center;}
+[data-theme="light"] .vehicle-eta-chip{background:#f5e8e055;border-color:#c0907866;}
+.vehicle-eta-chip-val{font-size:11px;font-weight:700;color:#f1c40f;}
+[data-theme="light"] .vehicle-eta-chip-val{color:#8a6400;}
+.vehicle-eta-chip-lbl{font-size:8px;color:#5a3a2a;letter-spacing:.5px;text-transform:uppercase;margin-top:1px;}
+[data-theme="light"] .vehicle-eta-chip-lbl{color:#7a4030;}
+.inc-vehicle-selector{display:flex;gap:4px;margin-bottom:6px;}
+.inc-vehicle-btn{flex:1;padding:6px 4px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;border:1px solid #3a1a0a44;background:#1a0a0444;color:#7a5a4a;transition:.2s;text-align:center;line-height:1.4;}
+[data-theme="light"] .inc-vehicle-btn{background:#f5e8e055;border-color:#c0907866;color:#7a4030;}
+.inc-vehicle-btn:hover{border-color:var(--accent);color:var(--text);}
+.inc-vehicle-btn.active{background:linear-gradient(135deg,#3a1a00,#6b3000);border-color:var(--accent);color:#ff9055;}
+[data-theme="light"] .inc-vehicle-btn.active{background:linear-gradient(135deg,#ffe0c8,#ffd0b0);border-color:var(--accent);color:#8a2000;}
+.inc-vehicle-eta-row{display:flex;gap:4px;margin-top:4px;margin-bottom:4px;}
+.inc-vehicle-eta-chip{flex:1;background:#1a0a0444;border:1px solid #3a1a0a44;border-radius:6px;padding:4px 3px;text-align:center;}
+[data-theme="light"] .inc-vehicle-eta-chip{background:#f5e8e055;border-color:#c0907866;}
+.inc-vehicle-eta-chip-val{font-size:11px;font-weight:700;color:#f1c40f;}
+[data-theme="light"] .inc-vehicle-eta-chip-val{color:#8a6400;}
+.inc-vehicle-eta-chip-lbl{font-size:8px;color:#5a3a2a;letter-spacing:.5px;text-transform:uppercase;margin-top:1px;}
+[data-theme="light"] .inc-vehicle-eta-chip-lbl{color:#7a4030;}
+
 /* ===================== RESPONSIVE ===================== */
 /* ── Laptop (1024-1280px) ── */
 @media (max-width:1280px) and (min-width:901px){
@@ -1036,9 +1064,19 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
             <button class="map-btn" id="locate-btn"><img src="icons/showmylocation.png" alt="Locate"></button>
             <button class="map-btn" id="route-btn"><img src="icons/RoutePlanner.png" alt="Route"></button>
             <div class="route-menu" id="route-menu">
-                <button id="calc-route">Calculate</button>
-                <span class="route-divider">|</span>
-                <button id="clear-route">Clear</button>
+                <div style="display:flex;flex-direction:column;gap:6px;padding:4px 2px;">
+                    <div style="font-size:9px;color:#9a6a5a;letter-spacing:1px;text-align:center;text-transform:uppercase;">Vehicle Type</div>
+                    <div style="display:flex;gap:4px;">
+                        <button class="vehicle-btn" id="vbtn-motor" onclick="selectVehicle('motor')">🏍<br>Motor</button>
+                        <button class="vehicle-btn active" id="vbtn-small" onclick="selectVehicle('small')">🚒<br>Small</button>
+                        <button class="vehicle-btn" id="vbtn-big" onclick="selectVehicle('big')">🚛<br>Big</button>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:4px;justify-content:center;">
+                        <button id="calc-route">Calculate</button>
+                        <span class="route-divider">|</span>
+                        <button id="clear-route">Clear</button>
+                    </div>
+                </div>
             </div>
             <div id="route-info-box">
                 <!-- top row: time period + traffic badge + close -->
@@ -1049,6 +1087,8 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
                     </div>
                     <button id="close-info-btn">×</button>
                 </div>
+                <!-- vehicle selector -->
+                <!-- (selector is in the route-menu popup above) -->
                 <!-- grid: distance | ETA | speed -->
                 <div class="rib-grid">
                     <div class="rib-cell">
@@ -1057,7 +1097,7 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
                     </div>
                     <div class="rib-cell">
                         <span id="route-time" class="rib-cell-val" style="color:var(--yellow);display:flex;align-items:center;gap:3px;"><img src="icons/minutes.png" style="width:14px;"> 0 min</span>
-                        <span class="rib-cell-label">ETA</span>
+                        <span class="rib-cell-label">ETA (Selected)</span>
                     </div>
                     <div class="rib-cell">
                         <span id="route-traffic-speed" class="rib-cell-val" style="color:#4da8ff;font-weight:700;">— km/h</span>
@@ -1214,6 +1254,15 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
         <div style="font-size:32px;text-align:center;margin-bottom:8px;">🚒</div>
         <div class="rescue-box-title">DISPATCH RESCUE</div>
         <div class="rescue-box-sub" id="rescue-modal-sub">Select the organization to respond to this incident</div>
+        <!-- Vehicle type selector -->
+        <div style="margin:8px 0 4px;">
+            <div style="font-size:9px;color:#9a6a5a;letter-spacing:1px;text-align:center;text-transform:uppercase;margin-bottom:5px;">Vehicle Type</div>
+            <div style="display:flex;gap:6px;">
+                <button class="inc-vehicle-btn" id="rescue-vbtn-motor" onclick="selectRescueVehicle('motor')">🏍<br>Motor</button>
+                <button class="inc-vehicle-btn active" id="rescue-vbtn-small" onclick="selectRescueVehicle('small')">🚒<br>Small</button>
+                <button class="inc-vehicle-btn" id="rescue-vbtn-big" onclick="selectRescueVehicle('big')">🚛<br>Big Truck</button>
+            </div>
+        </div>
         <div class="rescue-org-list" id="rescue-org-list"></div>
         <button class="rescue-confirm-btn" onclick="confirmRescueDispatch()">🚒 CONFIRM DISPATCH</button>
         <button class="rescue-cancel-btn" onclick="closeRescueModal()">Cancel</button>
@@ -1439,16 +1488,21 @@ function _applyMainRouteTraffic(traffic, rt) {
     if (!_activeRouteState) return;
     _routeGradientLayers.forEach(l => { try { map.removeLayer(l); } catch {} });
     _routeGradientLayers = _drawGradientRoute(_activeRouteState.coords, traffic, map, 6);
-    _updateRouteTrafficUI(traffic);
     const { label: peakLabel } = getFiretruckSpeed();
     const chBadge = document.querySelector('.ch-badge');
     if (chBadge) chBadge.textContent = rt.isFallback ? 'Straight-line' : peakLabel;
-    let etaMin = rt.timeMins;
-    if (traffic && traffic.avgJam > 3) etaMin = Math.round(rt.timeMins * 1.15 * (1 + traffic.avgJam / 20));
+    // Vehicle-aware ETA
+    const etaMin = getVehicleETA(rt.timeMins, traffic, _selectedVehicle);
     document.getElementById('route-time').innerHTML =
         `<img src="icons/minutes.png"> ~${etaMin} min`
         + (rt.isFallback ? ' <span style="font-size:9px;color:#f1c40f;">(est.)</span>' : '')
         + (traffic && traffic.avgJam > 3 ? ' <span style="font-size:9px;color:#ff6b35;">(traffic)</span>' : '');
+    // Vehicle-adjusted live speed
+    const vt = VEHICLE_TYPES[_selectedVehicle];
+    const speedEl = document.getElementById('route-traffic-speed');
+    if (traffic && speedEl) speedEl.textContent = `${Math.round(traffic.avgSpeed * vt.speedMult)} km/h`;
+    // Traffic badge
+    _updateRouteTrafficUI(traffic);
 }
 
 // Apply traffic to incident modal route
@@ -1460,17 +1514,21 @@ function _applyDetailRouteTraffic(traffic, rt) {
     const elEtaLbl = document.getElementById('imd-eta-label');
     const elSpeed  = document.getElementById('imd-speed');
     const elTraf   = document.getElementById('imd-traffic-badge');
+    const elAlgo   = document.getElementById('imd-algo');
     const { label: dLabel } = getFiretruckSpeed();
-    let etaMin = rt.timeMins;
-    if (traffic && traffic.avgJam > 3) etaMin = Math.round(rt.timeMins * 1.15 * (1 + traffic.avgJam / 20));
+    const vt = VEHICLE_TYPES[_selectedVehicle];
+    // Vehicle-aware ETA
+    const etaMin = getVehicleETA(rt.timeMins, traffic, _selectedVehicle);
     if (elEta) elEta.textContent = `~${etaMin} min` + (rt.isFallback ? ' (est.)' : '');
-    if (elAlgo) elAlgo.textContent = rt.isFallback ? 'Straight-line' : `CH · ${dLabel}`;
+    if (elAlgo) elAlgo.textContent = rt.isFallback ? 'Straight-line' : dLabel;
     if (traffic) {
         const tj = _jamLabel(traffic.avgJam);
         const col = tj.cls==='free'?'#2ecc71':tj.cls==='moderate'?'#f1c40f':tj.cls==='heavy'?'#ff6b35':'#ff4757';
-        if (elEtaLbl) elEtaLbl.innerHTML = `ETA (CH) <span style="color:${col};font-size:8px;margin-left:2px;">${tj.text}</span>`;
-        if (elSpeed)  elSpeed.textContent = traffic.avgSpeed + ' km/h';
+        if (elEtaLbl) elEtaLbl.innerHTML = `ETA · ${vt.label} <span style="color:${col};font-size:8px;margin-left:2px;">${tj.text}</span>`;
+        if (elSpeed)  elSpeed.textContent = Math.round(traffic.avgSpeed * vt.speedMult) + ' km/h';
         if (elTraf)  { elTraf.textContent = tj.text; elTraf.className = `inc-traffic-badge ${tj.cls}`; }
+    } else {
+        if (elEtaLbl) elEtaLbl.textContent = `ETA · ${vt.label}`;
     }
 }
 
@@ -1535,11 +1593,11 @@ function _drawGradientRoute(coords, traffic, mapTarget, weight = 6) {
     return layers;
 }
 function _updateRouteTrafficUI(traffic) {
-    const badgeEl   = document.getElementById('route-traffic-badge');
-    const speedEl   = document.getElementById('route-traffic-speed');
+    const badgeEl = document.getElementById('route-traffic-badge');
+    const speedEl = document.getElementById('route-traffic-speed');
     if (!traffic) {
-        if (badgeEl)   badgeEl.style.display = 'none';
-        if (speedEl)   speedEl.textContent = '— km/h';
+        if (badgeEl) badgeEl.style.display = 'none';
+        if (speedEl) speedEl.textContent = '— km/h';
         return;
     }
     const lbl = _jamLabel(traffic.avgJam);
@@ -1548,7 +1606,10 @@ function _updateRouteTrafficUI(traffic) {
         badgeEl.className = `traffic-badge ${lbl.cls} live`;
         badgeEl.style.display = 'inline-block';
     }
-    if (speedEl) speedEl.textContent = `${traffic.avgSpeed} km/h`;
+    // Speed is set by _applyMainRouteTraffic with vehicle adjustment — only set here as fallback
+    if (speedEl && speedEl.textContent === '— km/h') {
+        speedEl.textContent = `${Math.round(traffic.avgSpeed * (VEHICLE_TYPES[_selectedVehicle]?.speedMult || 1))} km/h`;
+    }
 }
 function toggleTrafficLayer() {
     const btn = document.getElementById('traffic-toggle-btn');
@@ -1580,6 +1641,44 @@ function getFiretruckSpeed() {
     if (time >= 22  || time < 5)   return { speed: 35, factor: 1.3, label: 'Late Night 🌙' }; //10pm to 5am
     if (time >= 5   && time < 6)   return { speed: 33, factor: 1.3, label: 'Early Morning 🌄' }; //5am to 6am
     return { speed: 25, factor: 1.5, label: '☀️Normal' };
+}
+
+// ── Vehicle type system ───────────────────────────────────────────────────────
+// speedMult  : multiplier on base speed  (higher = faster = lower ETA)
+// trafficMult: how much traffic jams affect this vehicle (higher = more affected)
+const VEHICLE_TYPES = {
+    motor: { speedMult: 1.4,  trafficMult: 0.6, label: '🏍 Motor',       shortLabel: 'Motor' },
+    small: { speedMult: 1.0,  trafficMult: 1.0, label: '🚒 Small Truck', shortLabel: 'Small' },
+    big:   { speedMult: 0.75, trafficMult: 1.3, label: '🚛 Big Truck',   shortLabel: 'Big'   },
+};
+let _selectedVehicle = 'small';
+
+function getVehicleETA(baseTimeMins, traffic, vehicleType) {
+    const vt = VEHICLE_TYPES[vehicleType];
+    // Base ETA adjusted for vehicle speed
+    let eta = Math.round(baseTimeMins / vt.speedMult);
+    // Traffic impact scaled by vehicle's traffic sensitivity
+    if (traffic && traffic.avgJam > 3) {
+        eta = Math.round(eta * (1.15 + (traffic.avgJam / 20) * vt.trafficMult));
+    }
+    return Math.max(1, eta);
+}
+
+function selectVehicle(type) {
+    _selectedVehicle = type;
+    // Sync buttons — main map
+    ['motor','small','big'].forEach(v => {
+        const b = document.getElementById(`vbtn-${v}`);
+        if (b) b.classList.toggle('active', v === type);
+    });
+    // Sync buttons — incident modal
+    ['motor','small','big'].forEach(v => {
+        const b = document.getElementById(`inc-vbtn-${v}`);
+        if (b) b.classList.toggle('active', v === type);
+    });
+    // Re-apply ETA with new vehicle
+    if (_activeRouteState) _applyMainRouteTraffic(_activeRouteState.lastTraffic, _activeRouteState.rt);
+    if (_activeDetailRouteState && _incDetailMap) _applyDetailRouteTraffic(_activeDetailRouteState.lastTraffic, _activeDetailRouteState.rt);
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------------------------
@@ -2444,17 +2543,13 @@ async function calculateRoute(start, end) {
         document.getElementById('route-info-box').style.display = 'flex';
         const { label: timeLabel } = getFiretruckSpeed();
         document.getElementById('route-dist').innerHTML = `<img src="icons/distance.png" style="width:14px;"> ${rt.distKm} km`;
-        document.querySelector('.ch-badge').textContent = timeLabel;
+        document.querySelector('.ch-badge').textContent = rt.isFallback ? 'Straight-line' : timeLabel;
 
-        // Adjust ETA if traffic available
-        let etaMin = rt.timeMins;
-        if (traffic && traffic.avgJam > 3) {
-            etaMin = Math.round(rt.timeMins * (1 + (traffic.avgJam / 20)));
-        }
+        // Vehicle-aware ETA
+        const etaMin = getVehicleETA(rt.timeMins, traffic, _selectedVehicle);
         document.getElementById('route-time').innerHTML = `<img src="icons/minutes.png" style="width:14px;"> ~${etaMin} min${rt.isFallback ? ' <span style="font-size:9px;color:#f1c40f;">(est.)</span>' : ''}`;
         _updateRouteTrafficUI(traffic);
         map.fitBounds(L.polyline(rt.coords).getBounds(), { padding: [20, 20] });
-        // TOMTOM traffic code — start 2-min auto-refresh while this route is displayed
         _activateMainRoute(rt.coords, rt);
     } catch (e) { alert('Routing failed: ' + e.message); }
 }
@@ -2508,7 +2603,7 @@ async function loadLiveIncidents(silent=false){
                     <div class="incident-meta">Status: <span class="${inc.status_class}">${inc.status}</span>${isEnRoute?` · <span style="color:#f1c40f;font-weight:600;">🚒 En Route</span>`:isRescued?` · <span style="color:#2ecc71;font-weight:600;">✓ Rescued</span>`:''}</div>
                     <div class="incident-meta">AI: <strong>${predLabel}</strong> <span style="color:${confColor};font-weight:600;">(${inc.confidence_pct}%)</span></div>
                     <div class="incident-meta">Started: <span style="color:var(--text);">${formatTimestamp(inc.started_at)}</span></div>
-                    ${rescueInfo?`<div class="incident-meta" style="color:#6db8ff;font-size:10px;">🏢 ${rescueInfo.orgName}${rescueInfo.dispatchTime?' · Dispatched: '+rescueInfo.dispatchTime:''}</div>`:''}
+                    ${rescueInfo?`<div class="incident-meta" style="color:#6db8ff;font-size:10px;">🏢 ${rescueInfo.orgName}${rescueInfo.vehicleLabel?' · '+rescueInfo.vehicleLabel:''}${rescueInfo.dispatchTime?' · Dispatched: '+rescueInfo.dispatchTime:''}</div>`:''}
                     <div class="incident-btn-row1">
                         <button class="btn-show-map" onclick="openIncidentMapModal(${JSON.stringify(inc).replace(/"/g,'&quot;')})">🗺 Show Map &amp; Route</button>
                         <button class="btn-details" onclick="openIncidentDetailsModal(${inc.incident_id})">📋 Details</button>
@@ -2588,6 +2683,12 @@ async function openRescueModal(incidentId, nodeId, locationName) {
     _pendingRescueIncidentId = incidentId;
     document.getElementById('rescue-modal-sub').textContent = `Dispatching rescue to: ${locationName}`;
     document.querySelectorAll('.rescue-org-item').forEach(el => el.classList.remove('selected'));
+    // Sync rescue vehicle to current selected vehicle
+    _rescueVehicleType = _selectedVehicle;
+    ['motor','small','big'].forEach(v => {
+        const b = document.getElementById(`rescue-vbtn-${v}`);
+        if (b) b.classList.toggle('active', v === _rescueVehicleType);
+    });
     const listEl = document.getElementById('rescue-org-list');
     listEl.innerHTML = '<div style="color:#5a3a2a;text-align:center;padding:16px;">Loading organizations…</div>';
     document.getElementById('rescue-modal').classList.add('open');
@@ -2614,6 +2715,15 @@ function closeRescueModal() {
     _pendingRescueIncidentId = null;
 }
 
+let _rescueVehicleType = 'small';
+function selectRescueVehicle(type) {
+    _rescueVehicleType = type;
+    ['motor','small','big'].forEach(v => {
+        const b = document.getElementById(`rescue-vbtn-${v}`);
+        if (b) b.classList.toggle('active', v === type);
+    });
+}
+
 async function confirmRescueDispatch() {
     const selected = document.querySelector('.rescue-org-item.selected');
     if (!selected) { alert('Please select an organization.'); return; }
@@ -2622,7 +2732,8 @@ async function confirmRescueDispatch() {
     if (!incidentId) return;
     const inc = _liveIncidentsCache.find(i => i.incident_id == incidentId);
     const now = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',hour12:true});
-    _incidentRescueMap[incidentId] = {orgId,orgName,status:'en_route',dispatchTime:now,rescuedTime:null,nodeId:inc?.node_id,locationName:inc?.location_name||`Incident #${incidentId}`};
+    const vt = VEHICLE_TYPES[_rescueVehicleType];
+    _incidentRescueMap[incidentId] = {orgId,orgName,status:'en_route',dispatchTime:now,rescuedTime:null,nodeId:inc?.node_id,locationName:inc?.location_name||`Incident #${incidentId}`,vehicleType:_rescueVehicleType,vehicleLabel:vt.label};
     try {
         await fetch(`${API_BASE()}/incidents/${incidentId}/respond`, {method:'PATCH',headers:{...authHeader(),'Content-Type':'application/json'},body:JSON.stringify({organization_id:parseInt(orgId),organization_name:orgName})});
     } catch {}
@@ -2696,7 +2807,8 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
     const gw = getPrimaryGateway();
     const distKm = calcDistance(gw.lat, gw.lng, parseFloat(inc.latitude), parseFloat(inc.longitude));
     const { speed, factor } = getFiretruckSpeed();
-    const etaMin = Math.round((distKm * factor) / speed * 60);  //BALANCE LANG FOR FIRE TRUCKS
+    const baseTimeMins = Math.round((distKm * factor) / speed * 60);
+    const etaMin = getVehicleETA(baseTimeMins, null, _selectedVehicle);  // vehicle-aware initial ETA
     const pred = (inc.ai_prediction||'').toLowerCase();
     const isFire = pred === 'fire';
     document.getElementById('inc-map-sidebar').innerHTML = `
@@ -2733,6 +2845,13 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
         <!-- Route Stats 2×2 grid — updated by calculateDetailRoute -->
         <div class="inc-sidebar-section">
             <div class="inc-sidebar-section-title">CH Routing · OSRM</div>
+            <!-- vehicle selector -->
+            <div class="inc-vehicle-selector">
+                <button class="inc-vehicle-btn ${_selectedVehicle==='motor'?'active':''}" id="inc-vbtn-motor" onclick="selectVehicle('motor')">🏍<br>Motor</button>
+                <button class="inc-vehicle-btn ${_selectedVehicle==='small'?'active':''}" id="inc-vbtn-small" onclick="selectVehicle('small')">🚒<br>Small</button>
+                <button class="inc-vehicle-btn ${_selectedVehicle==='big'?'active':''}" id="inc-vbtn-big" onclick="selectVehicle('big')">🚛<br>Big</button>
+            </div>
+            <!-- per-vehicle ETA chips removed — ETA adjusts based on selected vehicle -->
             <div class="inc-route-stats-grid">
                 <div class="inc-route-stat green">
                     <div class="inc-route-stat-val green" id="imd-dist">${distKm.toFixed(1)} km</div>
@@ -2780,6 +2899,7 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
             <div class="inc-rescue-card">
                 <div class="inc-rescue-status-label">Responding Unit</div>
                 <div class="inc-rescue-org-name">🏢 ${rescueInfo.orgName}</div>
+                ${rescueInfo.vehicleLabel?`<div class="inc-rescue-time" style="color:#ff9055;">${rescueInfo.vehicleLabel}</div>`:''}
                 <div class="inc-rescue-time">Dispatched: ${rescueInfo.dispatchTime||'—'}</div>
                 <div class="inc-rescue-status-badge ${rescueInfo.status==='rescued'?'rescued':'en-route'}">${rescueInfo.status==='rescued'?'✓ RESOLVED':'🚒 EN ROUTE'}</div>
             </div>
@@ -2851,17 +2971,19 @@ async function calculateDetailRoute(start, end) {
         if (elDist)  elDist.textContent  = rt.distKm + ' km';
         if (elAlgo)  elAlgo.textContent  = rt.isFallback ? 'Straight-line' : routeLabel;
 
-        // Traffic-adjusted ETA
-        let etaMin = rt.timeMins;
-        if (traffic && traffic.avgJam > 3) etaMin = Math.round(rt.timeMins * (1.15 + traffic.avgJam / 20));
-        if (elEta)   elEta.textContent   = '~' + etaMin + ' min' + (rt.isFallback ? ' (est.)' : '');
+        // Vehicle-aware ETA for selected vehicle
+        const vt = VEHICLE_TYPES[_selectedVehicle];
+        const etaMin = getVehicleETA(rt.timeMins, traffic, _selectedVehicle);
+        if (elEta) elEta.textContent = '~' + etaMin + ' min' + (rt.isFallback ? ' (est.)' : '');
 
         if (traffic) {
             const tj = _jamLabel(traffic.avgJam);
-            if (elEtaLbl) elEtaLbl.textContent = 'ETA';
-            if (elSpeed)  elSpeed.textContent  = traffic.avgSpeed + ' km/h';
+            const col = tj.cls==='free'?'#2ecc71':tj.cls==='moderate'?'#f1c40f':tj.cls==='heavy'?'#ff6b35':'#ff4757';
+            if (elEtaLbl) elEtaLbl.innerHTML = `ETA · ${vt.label} <span style="color:${col};font-size:8px;margin-left:2px;">${tj.text}</span>`;
+            if (elSpeed)  elSpeed.textContent  = Math.round(traffic.avgSpeed * vt.speedMult) + ' km/h';
             if (elTraf)  { elTraf.textContent = tj.text; elTraf.className = `inc-traffic-badge ${tj.cls}`; }
         } else {
+            if (elEtaLbl) elEtaLbl.textContent = `ETA · ${vt.label}`;
             if (elSpeed) elSpeed.textContent = 'No data';
             if (elTraf)  { elTraf.textContent = '— No data'; elTraf.className = 'inc-traffic-badge free'; }
         }
