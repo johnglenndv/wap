@@ -1197,7 +1197,7 @@ function _applyMainRouteTraffic(traffic, rt) {
     _routeGradientLayers = _drawGradientRoute(_activeRouteState.coords, traffic, map, 6);
     _updateRouteTrafficUI(traffic);
     let etaMin = rt.timeMins;
-    if (traffic && traffic.avgJam > 3) etaMin = Math.round(rt.timeMins * (1 + traffic.avgJam / 20));
+    if (traffic && traffic.avgJam > 3) etaMin = Math.round(rt.timeMins * 1.15 * (1 + traffic.avgJam / 20));
     document.getElementById('route-time').innerHTML =
         `<img src="icons/minutes.png"> ~${etaMin} min`
         + (rt.isFallback ? ' <span style="font-size:9px;color:#f1c40f;">(est.)</span>' : '')
@@ -1213,9 +1213,11 @@ function _applyDetailRouteTraffic(traffic, rt) {
     const elEtaLbl = document.getElementById('imd-eta-label');
     const elSpeed  = document.getElementById('imd-speed');
     const elTraf   = document.getElementById('imd-traffic-badge');
+    const { label: dLabel } = getFiretruckSpeed();
     let etaMin = rt.timeMins;
-    if (traffic && traffic.avgJam > 3) etaMin = Math.round(rt.timeMins * (1 + traffic.avgJam / 20));
+    if (traffic && traffic.avgJam > 3) etaMin = Math.round(rt.timeMins * 1.15 * (1 + traffic.avgJam / 20));
     if (elEta) elEta.textContent = `~${etaMin} min` + (rt.isFallback ? ' (est.)' : '');
+    if (elAlgo) elAlgo.textContent = rt.isFallback ? 'Straight-line' : `CH · ${dLabel}`;
     if (traffic) {
         const tj = _jamLabel(traffic.avgJam);
         const col = tj.cls==='free'?'#2ecc71':tj.cls==='moderate'?'#f1c40f':tj.cls==='heavy'?'#ff6b35':'#ff4757';
@@ -2531,8 +2533,9 @@ async function calculateDetailRoute(start, end) {
         const elAlgo    = document.getElementById('imd-algo');
         const elTraf    = document.getElementById('imd-traffic-badge');
 
+        const { label: routeLabel } = getFiretruckSpeed();
         if (elDist)  elDist.textContent  = rt.distKm + ' km';
-        if (elAlgo)  elAlgo.textContent  = rt.isFallback ? 'Straight-line' : 'CH · OSRM';
+        if (elAlgo)  elAlgo.textContent  = rt.isFallback ? 'Straight-line' : `CH · ${routeLabel}`;
 
         // Traffic-adjusted ETA
         let etaMin = rt.timeMins;
