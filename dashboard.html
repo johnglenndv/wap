@@ -2488,8 +2488,8 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
         _incDetailMarkers = [];
         if (_incDetailRouteLayer) { try{ _incDetailRouteLayer.remove(); } catch{} _incDetailRouteLayer = null; }
         const incLat = parseFloat(inc.latitude), incLng = parseFloat(inc.longitude);
-        _incDetailMap = L.map('incident-detail-map',{zoomControl:true,attributionControl:true}).setView([incLat,incLng],15);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(_incDetailMap);
+        _incDetailMap = L.map('incident-detail-map',{zoomControl:true,attributionControl:false}).setView([incLat,incLng],15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:''}).addTo(_incDetailMap);
         const fireMarker = L.marker([incLat, incLng], { icon: makeFireNodeIcon(false) }).addTo(_incDetailMap);
         fireMarker.bindPopup(`<div style="font-weight:700;color:#ff9055;">Incident Location</div><div style="font-size:11px;color:#9a6a5a;">${inc.location_name || `Node ${inc.node_id}`}</div>`).openPopup();
         _incDetailMarkers.push(fireMarker);
