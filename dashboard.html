@@ -1676,9 +1676,13 @@ function selectVehicle(type) {
         const b = document.getElementById(`inc-vbtn-${v}`);
         if (b) b.classList.toggle('active', v === type);
     });
-    // Re-apply ETA with new vehicle
+    // Re-apply ETA with new vehicle on main + detail route
     if (_activeRouteState) _applyMainRouteTraffic(_activeRouteState.lastTraffic, _activeRouteState.rt);
     if (_activeDetailRouteState && _incDetailMap) _applyDetailRouteTraffic(_activeDetailRouteState.lastTraffic, _activeDetailRouteState.rt);
+    // Instant patch incident cards
+    _patchIncidentCards();
+    // Instant patch details modal if open
+    _patchDetailsModal();
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------------------------
@@ -2597,13 +2601,27 @@ async function loadLiveIncidents(silent=false){
                 const rescueInfo=_incidentRescueMap[inc.incident_id];
                 const isRescued=rescueInfo&&rescueInfo.status==='rescued';
                 const isEnRoute=rescueInfo&&rescueInfo.status==='en_route';
+                const gw0 = getPrimaryGateway();
+                const distKm0 = calcDistance(gw0.lat, gw0.lng, parseFloat(inc.latitude||0), parseFloat(inc.longitude||0));
+                const { speed: spd0, factor: fac0 } = getFiretruckSpeed();
+                const baseTime0 = Math.round((distKm0 * fac0) / spd0 * 60);
+                const traffic0 = _activeRouteState?.lastTraffic || null;
+                const dispatchedVehicle = rescueInfo?.vehicleType || _selectedVehicle;
+                const vt0 = VEHICLE_TYPES[dispatchedVehicle];
+                const cardEta = getVehicleETA(baseTime0, traffic0, dispatchedVehicle);
+                const cardSpeed = traffic0 ? Math.round(traffic0.avgSpeed * vt0.speedMult) : Math.round(spd0 * vt0.speedMult);
                 listEl.innerHTML+=`
-                <div class="incident-card" id="incident-card-${inc.incident_id}">
+                <div class="incident-card" id="incident-card-${inc.incident_id}" data-lat="${inc.latitude||0}" data-lng="${inc.longitude||0}">
                     <div class="incident-title">${inc.location_name||`Node ${inc.node_id}`}</div>
                     <div class="incident-meta">Status: <span class="${inc.status_class}">${inc.status}</span>${isEnRoute?` · <span style="color:#f1c40f;font-weight:600;">🚒 En Route</span>`:isRescued?` · <span style="color:#2ecc71;font-weight:600;">✓ Rescued</span>`:''}</div>
                     <div class="incident-meta">AI: <strong>${predLabel}</strong> <span style="color:${confColor};font-weight:600;">(${inc.confidence_pct}%)</span></div>
                     <div class="incident-meta">Started: <span style="color:var(--text);">${formatTimestamp(inc.started_at)}</span></div>
                     ${rescueInfo?`<div class="incident-meta" style="color:#6db8ff;font-size:10px;">🏢 ${rescueInfo.orgName}${rescueInfo.vehicleLabel?' · '+rescueInfo.vehicleLabel:''}${rescueInfo.dispatchTime?' · Dispatched: '+rescueInfo.dispatchTime:''}</div>`:''}
+                    ${rescueInfo?`<div class="incident-meta" style="display:flex;gap:10px;margin-top:2px;align-items:center;">
+                        <span style="color:#aaa;font-size:10px;" data-field="card-vehicle">${vt0.label}</span>
+                        <span style="color:var(--yellow);font-size:10px;">⏱ ETA: <strong data-field="card-eta">~${cardEta} min</strong></span>
+                        <span style="color:#4da8ff;font-size:10px;">🚗 <strong data-field="card-speed">${cardSpeed} km/h</strong></span>
+                    </div>`:''}
                     <div class="incident-btn-row1">
                         <button class="btn-show-map" onclick="openIncidentMapModal(${JSON.stringify(inc).replace(/"/g,'&quot;')})">🗺 Show Map &amp; Route</button>
                         <button class="btn-details" onclick="openIncidentDetailsModal(${inc.incident_id})">📋 Details</button>
@@ -2621,6 +2639,69 @@ async function loadLiveIncidents(silent=false){
         if(!silent)document.getElementById('incident-list').innerHTML='<div class="node-placeholder">Error loading incidents</div>';
     }
 }
+// ── Realtime DOM patch helpers ────────────────────────────────────────────────
+function _patchIncidentCards() {
+    const cards = document.querySelectorAll('.incident-card[data-lat]');
+    if (!cards.length) return;
+    const gw = getPrimaryGateway();
+    const { speed, factor } = getFiretruckSpeed();
+    const traffic = _activeRouteState?.lastTraffic || _activeDetailRouteState?.lastTraffic || null;
+    cards.forEach(card => {
+        // Only patch cards that have dispatched rescue (ETA row is present)
+        const elEta = card.querySelector('[data-field="card-eta"]');
+        if (!elEta) return;
+        const lat = parseFloat(card.dataset.lat || 0);
+        const lng = parseFloat(card.dataset.lng || 0);
+        if (!lat && !lng) return;
+        // Use dispatched vehicle type, not selected vehicle
+        const incId = card.id.replace('incident-card-', '');
+        const rescueInfo = _incidentRescueMap[incId];
+        const vehicleType = rescueInfo?.vehicleType || _selectedVehicle;
+        const vt = VEHICLE_TYPES[vehicleType];
+        const distKm = calcDistance(gw.lat, gw.lng, lat, lng);
+        const baseTime = Math.round((distKm * factor) / speed * 60);
+        const etaMin = getVehicleETA(baseTime, traffic, vehicleType);
+        const liveSpeed = traffic ? Math.round(traffic.avgSpeed * vt.speedMult) : Math.round(speed * vt.speedMult);
+        const elSpeed   = card.querySelector('[data-field="card-speed"]');
+        const elVehicle = card.querySelector('[data-field="card-vehicle"]');
+        elEta.textContent = `~${etaMin} min`;
+        if (elSpeed)   elSpeed.textContent   = `${liveSpeed} km/h`;
+        if (elVehicle) elVehicle.textContent = vt.label;
+    });
+}
+
+function _patchDetailsModal() {
+    if (!_detailsModalIncidentId) return;
+    if (!document.getElementById('incident-details-modal').classList.contains('open')) return;
+    const inc = _liveIncidentsCache.find(i => i.incident_id == _detailsModalIncidentId);
+    if (!inc) return;
+    const gw = getPrimaryGateway();
+    const distKm = calcDistance(gw.lat, gw.lng, parseFloat(inc.latitude||0), parseFloat(inc.longitude||0));
+    const { speed, factor, label: peakLabel } = getFiretruckSpeed();
+    const baseTime = Math.round((distKm * factor) / speed * 60);
+    const traffic = _activeRouteState?.lastTraffic || _activeDetailRouteState?.lastTraffic || null;
+    // Use dispatched vehicle type, not selected vehicle
+    const rescueInfo = _incidentRescueMap[_detailsModalIncidentId];
+    const vehicleType = rescueInfo?.vehicleType || _selectedVehicle;
+    const vt = VEHICLE_TYPES[vehicleType];
+    const etaMin = getVehicleETA(baseTime, traffic, vehicleType);
+    const liveSpeed = traffic ? Math.round(traffic.avgSpeed * vt.speedMult) : Math.round(speed * vt.speedMult);
+    const elEta     = document.querySelector('#inc-details-body [data-field="details-eta"]');
+    const elSpeed   = document.querySelector('#inc-details-body [data-field="details-speed"]');
+    const elPeak    = document.querySelector('#inc-details-body [data-field="details-peak"]');
+    const elVehicle = document.querySelector('#inc-details-body [data-field="details-vehicle"]');
+    if (elEta)     elEta.textContent     = `~${etaMin} min`;
+    if (elSpeed)   elSpeed.textContent   = `${liveSpeed} km/h`;
+    if (elPeak)    elPeak.textContent    = peakLabel;
+    if (elVehicle) elVehicle.textContent = vt.label;
+}
+
+// 30s realtime patch — incident cards + details modal (same cadence as route info box)
+setInterval(() => {
+    _patchIncidentCards();
+    _patchDetailsModal();
+}, 30_000);
+
 loadLiveIncidents();
 setInterval(()=>loadLiveIncidents(true),20000);
 
@@ -3023,6 +3104,16 @@ async function openIncidentDetailsModal(incidentId) {
     const isRescued = rescueInfo && rescueInfo.status === 'rescued';
     const isEnRoute = rescueInfo && rescueInfo.status === 'en_route';
     const isAlreadyResolved = data.status === 'resolved';
+    const _gw = getPrimaryGateway();
+    const _distKm = calcDistance(_gw.lat, _gw.lng, parseFloat(data.latitude||0), parseFloat(data.longitude||0));
+    const { speed: _spd, factor: _fac, label: _peakLabel } = getFiretruckSpeed();
+    const _baseTime = Math.round((_distKm * _fac) / _spd * 60);
+    const _traffic = _activeRouteState?.lastTraffic || _activeDetailRouteState?.lastTraffic || null;
+    // Use dispatched vehicle if available, otherwise selected vehicle
+    const _vehicleType = rescueInfo?.vehicleType || _selectedVehicle;
+    const _vt = VEHICLE_TYPES[_vehicleType];
+    const _etaMin = getVehicleETA(_baseTime, _traffic, _vehicleType);
+    const _liveSpeed = _traffic ? Math.round(_traffic.avgSpeed * _vt.speedMult) : Math.round(_spd * _vt.speedMult);
     body.innerHTML = `
         <div class="inc-details-section">
             <div class="inc-details-section-title">Incident Overview</div>
@@ -3034,6 +3125,14 @@ async function openIncidentDetailsModal(incidentId) {
             <div class="inc-details-row"><span class="inc-details-row-label">Started</span><span class="inc-details-row-val" style="font-size:10px;">${formatTimestamp(data.started_at)||'—'}</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Last Updated</span><span class="inc-details-row-val" style="font-size:10px;">${formatTimestamp(data.timestamp)||'—'}</span></div>
         </div>
+        ${rescueInfo ? `
+        <div class="inc-details-section">
+            <div class="inc-details-section-title">Routing · <span data-field="details-vehicle">${_vt.label}</span></div>
+            <div class="inc-details-row"><span class="inc-details-row-label">Distance</span><span class="inc-details-row-val" style="color:var(--green);">${_distKm.toFixed(1)} km (est.)</span></div>
+            <div class="inc-details-row"><span class="inc-details-row-label">ETA</span><span class="inc-details-row-val" data-field="details-eta" style="color:var(--yellow);">~${_etaMin} min</span></div>
+            <div class="inc-details-row"><span class="inc-details-row-label">Live Speed</span><span class="inc-details-row-val" data-field="details-speed" style="color:#4da8ff;">${_liveSpeed} km/h</span></div>
+            <div class="inc-details-row"><span class="inc-details-row-label">Peak Period</span><span class="inc-details-row-val" data-field="details-peak">${_peakLabel}</span></div>
+        </div>` : ''}
         <div class="inc-details-section">
             <div class="inc-details-section-title">Response Timeline</div>
             <div class="inc-response-timeline">
