@@ -1410,9 +1410,9 @@ const CH_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 //  No setInterval. No manual refresh. Zero user action needed.
 // ═══════════════════════════════════════════════════════════════
 const TOMTOM_KEY           = 'iy3ljq06nVjJYIdgJdqJZAHiDaYPattE';
-const TOMTOM_FLOW_BASE     = 'https://api.tomtom.com/traffic/services/4/flowSegmentData/relative0/10/json';
-const TOMTOM_TILE_URL      = `https://api.tomtom.com/traffic/map/4/tile/flow/relative0/{z}/{x}/{y}.png?key=${TOMTOM_KEY}&tileSize=256&style=2`;
-const TRAFFIC_LIVE_INTERVAL = 30_000; // refresh every 30 seconds
+const TOMTOM_FLOW_BASE     = 'https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json';
+const TOMTOM_TILE_URL      = `https://api.tomtom.com/traffic/map/4/tile/flow/absolute/{z}/{x}/{y}.png?key=${TOMTOM_KEY}&tileSize=256&style=2`;
+const TRAFFIC_LIVE_INTERVAL = 30_000; // TomTom flow data refreshes every ~ 30 minutes
 
 let _trafficTileLayer  = null;
 let _trafficLayerOn    = false;
@@ -1679,47 +1679,6 @@ function selectVehicle(type) {
     // Re-apply ETA with new vehicle
     if (_activeRouteState) _applyMainRouteTraffic(_activeRouteState.lastTraffic, _activeRouteState.rt);
     if (_activeDetailRouteState && _incDetailMap) _applyDetailRouteTraffic(_activeDetailRouteState.lastTraffic, _activeDetailRouteState.rt);
-    // Instant update incident details modal if open
-    if (_detailsModalIncidentId && document.getElementById('incident-details-modal').classList.contains('open')) {
-        const inc = _liveIncidentsCache.find(i => i.incident_id == _detailsModalIncidentId);
-        if (inc) {
-            const gw = getPrimaryGateway();
-            const distKm = calcDistance(gw.lat, gw.lng, parseFloat(inc.latitude||0), parseFloat(inc.longitude||0));
-            const { speed, factor } = getFiretruckSpeed();
-            const baseTimeMins = Math.round((distKm * factor) / speed * 60);
-            const traffic = _activeRouteState?.lastTraffic || _activeDetailRouteState?.lastTraffic || null;
-            const vt = VEHICLE_TYPES[type];
-            const etaMin = getVehicleETA(baseTimeMins, traffic, type);
-            const liveSpeed = traffic ? Math.round(traffic.avgSpeed * vt.speedMult) : Math.round(speed * vt.speedMult);
-            const elEta   = document.querySelector('#inc-details-body [data-field="eta"]');
-            const elSpeed = document.querySelector('#inc-details-body [data-field="livespeed"]');
-            const elTitle = document.getElementById('idd-routing-title');
-            if (elEta)   elEta.textContent   = `~${etaMin} min`;
-            if (elSpeed) elSpeed.textContent = `${liveSpeed} km/h`;
-            if (elTitle) elTitle.textContent = `Routing · ${vt.label}`;
-        }
-    }
-    // Instant update live incident cards
-    const cards = document.querySelectorAll('.incident-card[data-lat]');
-    if (cards.length) {
-        const gw = getPrimaryGateway();
-        const { speed, factor } = getFiretruckSpeed();
-        const traffic = _activeRouteState?.lastTraffic || null;
-        const vt = VEHICLE_TYPES[type];
-        cards.forEach(card => {
-            const lat = parseFloat(card.dataset.lat || 0);
-            const lng = parseFloat(card.dataset.lng || 0);
-            if (!lat && !lng) return;
-            const distKm = calcDistance(gw.lat, gw.lng, lat, lng);
-            const baseTimeMins = Math.round((distKm * factor) / speed * 60);
-            const etaMin = getVehicleETA(baseTimeMins, traffic, type);
-            const liveSpeed = traffic ? Math.round(traffic.avgSpeed * vt.speedMult) : Math.round(speed * vt.speedMult);
-            const elEta   = card.querySelector('[data-field="card-eta"]');
-            const elSpeed = card.querySelector('[data-field="card-speed"]');
-            if (elEta)   elEta.textContent   = `~${etaMin} min`;
-            if (elSpeed) elSpeed.textContent = `${liveSpeed} km/h`;
-        });
-    }
 }
 
 //-----------------------------------------------------------------------------------------------------------------------------------------------------
@@ -2210,17 +2169,6 @@ function connectWebSocket(){
                     if(msg.confidence  != null) _currentOpenIncidentData.confidence_pct = Math.round(msg.confidence * 100);
                     openIncidentMapModal(_currentOpenIncidentData, true);
                 }
-                // Patch incident details modal sensor readings live
-                if(document.getElementById('incident-details-modal').classList.contains('open') && _detailsModalIncidentId){
-                    const inc = _liveIncidentsCache.find(i => i.incident_id == _detailsModalIncidentId);
-                    if(inc && msg.node_id === inc.node_id){
-                        if(msg.temperature != null){ const el=document.querySelector('#inc-details-body [data-field="temperature"]'); if(el) el.textContent=msg.temperature+'°C'; }
-                        if(msg.humidity    != null){ const el=document.querySelector('#inc-details-body [data-field="humidity"]');    if(el) el.textContent=msg.humidity+'%'; }
-                        if(msg.smoke       != null){ const el=document.querySelector('#inc-details-body [data-field="smoke"]');       if(el) el.textContent=msg.smoke+' ppm'; }
-                        if(msg.flame       != null){ const el=document.querySelector('#inc-details-body [data-field="flame"]');       if(el) el.textContent=msg.flame; }
-                        if(msg.confidence  != null){ const el=document.querySelector('#inc-details-body [data-field="confidence"]'); if(el) el.textContent=(Math.round(msg.confidence*100))+'%'; }
-                    }
-                }
             }
             if(msg.type==='node_update'){
                 loadAndPlaceNodes(true);
@@ -2233,16 +2181,6 @@ function connectWebSocket(){
                     if(msg.smoke       != null) _currentOpenIncidentData.smoke       = msg.smoke;
                     if(msg.flame       != null) _currentOpenIncidentData.flame       = msg.flame;
                     openIncidentMapModal(_currentOpenIncidentData, true);
-                }
-                // Patch incident details modal sensor readings live
-                if(document.getElementById('incident-details-modal').classList.contains('open') && _detailsModalIncidentId){
-                    const inc = _liveIncidentsCache.find(i => i.incident_id == _detailsModalIncidentId);
-                    if(inc && msg.node_id === inc.node_id){
-                        if(msg.temperature != null){ const el=document.querySelector('#inc-details-body [data-field="temperature"]'); if(el) el.textContent=msg.temperature+'°C'; }
-                        if(msg.humidity    != null){ const el=document.querySelector('#inc-details-body [data-field="humidity"]');    if(el) el.textContent=msg.humidity+'%'; }
-                        if(msg.smoke       != null){ const el=document.querySelector('#inc-details-body [data-field="smoke"]');       if(el) el.textContent=msg.smoke+' ppm'; }
-                        if(msg.flame       != null){ const el=document.querySelector('#inc-details-body [data-field="flame"]');       if(el) el.textContent=msg.flame; }
-                    }
                 }
             }
             if(msg.type==='incident_update'){
@@ -2659,26 +2597,13 @@ async function loadLiveIncidents(silent=false){
                 const rescueInfo=_incidentRescueMap[inc.incident_id];
                 const isRescued=rescueInfo&&rescueInfo.status==='rescued';
                 const isEnRoute=rescueInfo&&rescueInfo.status==='en_route';
-                // Compute initial ETA + Live Speed for card
-                const gw = getPrimaryGateway();
-                const distKm = calcDistance(gw.lat, gw.lng, parseFloat(inc.latitude||0), parseFloat(inc.longitude||0));
-                const { speed, factor } = getFiretruckSpeed();
-                const baseTimeMins = Math.round((distKm * factor) / speed * 60);
-                const traffic = _activeRouteState?.lastTraffic || null;
-                const vt = VEHICLE_TYPES[_selectedVehicle];
-                const etaMin = getVehicleETA(baseTimeMins, traffic, _selectedVehicle);
-                const liveSpeed = traffic ? Math.round(traffic.avgSpeed * vt.speedMult) : Math.round(speed * vt.speedMult);
                 listEl.innerHTML+=`
-                <div class="incident-card" id="incident-card-${inc.incident_id}" data-lat="${inc.latitude||0}" data-lng="${inc.longitude||0}">
+                <div class="incident-card" id="incident-card-${inc.incident_id}">
                     <div class="incident-title">${inc.location_name||`Node ${inc.node_id}`}</div>
                     <div class="incident-meta">Status: <span class="${inc.status_class}">${inc.status}</span>${isEnRoute?` · <span style="color:#f1c40f;font-weight:600;">🚒 En Route</span>`:isRescued?` · <span style="color:#2ecc71;font-weight:600;">✓ Rescued</span>`:''}</div>
                     <div class="incident-meta">AI: <strong>${predLabel}</strong> <span style="color:${confColor};font-weight:600;">(${inc.confidence_pct}%)</span></div>
                     <div class="incident-meta">Started: <span style="color:var(--text);">${formatTimestamp(inc.started_at)}</span></div>
                     ${rescueInfo?`<div class="incident-meta" style="color:#6db8ff;font-size:10px;">🏢 ${rescueInfo.orgName}${rescueInfo.vehicleLabel?' · '+rescueInfo.vehicleLabel:''}${rescueInfo.dispatchTime?' · Dispatched: '+rescueInfo.dispatchTime:''}</div>`:''}
-                    <div class="incident-meta" style="display:flex;gap:10px;margin-top:2px;">
-                        <span style="color:var(--yellow);font-size:10px;">⏱ ETA: <strong data-field="card-eta">~${etaMin} min</strong></span>
-                        <span style="color:#4da8ff;font-size:10px;">🚗 <strong data-field="card-speed">${liveSpeed} km/h</strong></span>
-                    </div>
                     <div class="incident-btn-row1">
                         <button class="btn-show-map" onclick="openIncidentMapModal(${JSON.stringify(inc).replace(/"/g,'&quot;')})">🗺 Show Map &amp; Route</button>
                         <button class="btn-details" onclick="openIncidentDetailsModal(${inc.incident_id})">📋 Details</button>
@@ -2698,29 +2623,6 @@ async function loadLiveIncidents(silent=false){
 }
 loadLiveIncidents();
 setInterval(()=>loadLiveIncidents(true),20000);
-
-// Real-time ETA + Live Speed patch on incident cards every 30s (no re-render)
-setInterval(() => {
-    const cards = document.querySelectorAll('.incident-card[data-lat]');
-    if (!cards.length) return;
-    const gw = getPrimaryGateway();
-    const { speed, factor } = getFiretruckSpeed();
-    const traffic = _activeRouteState?.lastTraffic || null;
-    const vt = VEHICLE_TYPES[_selectedVehicle];
-    cards.forEach(card => {
-        const lat = parseFloat(card.dataset.lat || 0);
-        const lng = parseFloat(card.dataset.lng || 0);
-        if (!lat && !lng) return;
-        const distKm = calcDistance(gw.lat, gw.lng, lat, lng);
-        const baseTimeMins = Math.round((distKm * factor) / speed * 60);
-        const etaMin = getVehicleETA(baseTimeMins, traffic, _selectedVehicle);
-        const liveSpeed = traffic ? Math.round(traffic.avgSpeed * vt.speedMult) : Math.round(speed * vt.speedMult);
-        const elEta   = card.querySelector('[data-field="card-eta"]');
-        const elSpeed = card.querySelector('[data-field="card-speed"]');
-        if (elEta)   elEta.textContent   = `~${etaMin} min`;
-        if (elSpeed) elSpeed.textContent = `${liveSpeed} km/h`;
-    });
-}, 30_000);
 
 // ====================== RESOLVED INCIDENTS ======================
 async function loadResolvedIncidents() {
@@ -2896,28 +2798,6 @@ setInterval(() => {
     const { label } = getFiretruckSpeed();
     chBadge.textContent = label;
 }, 60_000);
-
-// Live update ETA + Live Speed + Peak Period in incident details modal every 30s
-setInterval(() => {
-    if (!_detailsModalIncidentId) return;
-    if (!document.getElementById('incident-details-modal').classList.contains('open')) return;
-    const inc = _liveIncidentsCache.find(i => i.incident_id == _detailsModalIncidentId);
-    if (!inc) return;
-    const gw = getPrimaryGateway();
-    const distKm = calcDistance(gw.lat, gw.lng, parseFloat(inc.latitude||0), parseFloat(inc.longitude||0));
-    const { speed, factor, label: peakLabel } = getFiretruckSpeed();
-    const baseTimeMins = Math.round((distKm * factor) / speed * 60);
-    const traffic = _activeRouteState?.lastTraffic || _activeDetailRouteState?.lastTraffic || null;
-    const vt = VEHICLE_TYPES[_selectedVehicle];
-    const etaMin = getVehicleETA(baseTimeMins, traffic, _selectedVehicle);
-    const liveSpeed = traffic ? Math.round(traffic.avgSpeed * vt.speedMult) : Math.round(speed * vt.speedMult);
-    const elEta   = document.querySelector('#inc-details-body [data-field="eta"]');
-    const elSpeed = document.querySelector('#inc-details-body [data-field="livespeed"]');
-    const elPeak  = document.querySelector('#inc-details-body [data-field="peakperiod"]');
-    if (elEta)   elEta.textContent   = `~${etaMin} min`;
-    if (elSpeed) elSpeed.textContent = `${liveSpeed} km/h`;
-    if (elPeak)  elPeak.textContent  = peakLabel;
-}, 30_000);
 ////////////////////////////////////////////////////////////////PEAK PERIOD END//////////////////////////////////////////////////////////////
 function openIncidentMapModal(inc, sidebarOnly=false) {
     _currentOpenIncidentData = inc;
@@ -3143,31 +3023,16 @@ async function openIncidentDetailsModal(incidentId) {
     const isRescued = rescueInfo && rescueInfo.status === 'rescued';
     const isEnRoute = rescueInfo && rescueInfo.status === 'en_route';
     const isAlreadyResolved = data.status === 'resolved';
-    const gw = getPrimaryGateway();
-    const distKm = calcDistance(gw.lat, gw.lng, parseFloat(data.latitude||0), parseFloat(data.longitude||0));
-    const { speed, factor, label: peakLabel } = getFiretruckSpeed();
-    const baseTimeMins = Math.round((distKm * factor) / speed * 60);
-    const traffic = _activeRouteState?.lastTraffic || _activeDetailRouteState?.lastTraffic || null;
-    const vt = VEHICLE_TYPES[_selectedVehicle];
-    const etaMin = getVehicleETA(baseTimeMins, traffic, _selectedVehicle);
-    const liveSpeed = traffic ? Math.round(traffic.avgSpeed * vt.speedMult) : Math.round(speed * vt.speedMult);
     body.innerHTML = `
         <div class="inc-details-section">
             <div class="inc-details-section-title">Incident Overview</div>
             <div class="inc-details-row"><span class="inc-details-row-label">Location</span><span class="inc-details-row-val">${data.location_name||`Node ${data.node_id}`}</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Node ID</span><span class="inc-details-row-val" style="font-family:monospace;">${data.node_id||'—'}</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">AI Detection</span><span class="inc-details-row-val" style="color:${isFire?'var(--red)':'var(--yellow)'};">${isFire?'🔥 FIRE DETECTED':'⚠ Possible Fire'}</span></div>
-            <div class="inc-details-row"><span class="inc-details-row-label">Confidence</span><span class="inc-details-row-val" data-field="confidence">${data.confidence_pct??'—'}%</span></div>
+            <div class="inc-details-row"><span class="inc-details-row-label">Confidence</span><span class="inc-details-row-val">${data.confidence_pct??'—'}%</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Status</span><span class="inc-details-row-val">${(isRescued||isAlreadyResolved)?'<span style="color:#2ecc71;">✓ Resolved</span>':isEnRoute?'<span style="color:#f1c40f;">🚒 En Route</span>':'<span style="color:#ff4757;">Active</span>'}</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Started</span><span class="inc-details-row-val" style="font-size:10px;">${formatTimestamp(data.started_at)||'—'}</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Last Updated</span><span class="inc-details-row-val" style="font-size:10px;">${formatTimestamp(data.timestamp)||'—'}</span></div>
-        </div>
-        <div class="inc-details-section">
-            <div class="inc-details-section-title" id="idd-routing-title">Routing · ${vt.label}</div>
-            <div class="inc-details-row"><span class="inc-details-row-label">Distance</span><span class="inc-details-row-val" style="color:var(--green);">${distKm.toFixed(1)} km</span></div>
-            <div class="inc-details-row"><span class="inc-details-row-label">ETA</span><span class="inc-details-row-val" data-field="eta" style="color:var(--yellow);">~${etaMin} min</span></div>
-            <div class="inc-details-row"><span class="inc-details-row-label">Live Speed</span><span class="inc-details-row-val" data-field="livespeed" style="color:#4da8ff;">${liveSpeed} km/h</span></div>
-            <div class="inc-details-row"><span class="inc-details-row-label">Peak Period</span><span class="inc-details-row-val" data-field="peakperiod">${peakLabel}</span></div>
         </div>
         <div class="inc-details-section">
             <div class="inc-details-section-title">Response Timeline</div>
@@ -3183,10 +3048,10 @@ async function openIncidentDetailsModal(incidentId) {
         ${(data.temperature!=null||data.humidity!=null||data.smoke!=null||data.flame!=null)?`
         <div class="inc-details-section">
             <div class="inc-details-section-title">Sensor Readings at Incident</div>
-            ${data.temperature!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Temperature</span><span class="inc-details-row-val" data-field="temperature" style="color:#ff904f;">${data.temperature}°C</span></div>`:''}
-            ${data.humidity!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Humidity</span><span class="inc-details-row-val" data-field="humidity" style="color:#6db8ff;">${data.humidity}%</span></div>`:''}
-            ${data.smoke!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Smoke</span><span class="inc-details-row-val" data-field="smoke">${data.smoke} ppm</span></div>`:''}
-            ${data.flame!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Flame Sensor</span><span class="inc-details-row-val" data-field="flame">${data.flame}</span></div>`:''}
+            ${data.temperature!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Temperature</span><span class="inc-details-row-val" style="color:#ff904f;">${data.temperature}°C</span></div>`:''}
+            ${data.humidity!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Humidity</span><span class="inc-details-row-val" style="color:#6db8ff;">${data.humidity}%</span></div>`:''}
+            ${data.smoke!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Smoke</span><span class="inc-details-row-val">${data.smoke} ppm</span></div>`:''}
+            ${data.flame!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Flame Sensor</span><span class="inc-details-row-val">${data.flame}</span></div>`:''}
         </div>`:''}
         ${(!isRescued&&!isAlreadyResolved)?`
         <div class="inc-details-action-row">
