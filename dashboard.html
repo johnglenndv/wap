@@ -81,9 +81,9 @@ body{background:var(--bg-deep);font-family:Arial,sans-serif;color:var(--text);tr
 .theme-switch{position:relative;display:inline-block;width:52px;height:26px;}
 .theme-switch input{opacity:0;width:0;height:0;}
 .slider{position:absolute;cursor:pointer;inset:0;background:#2a1a14;border-radius:26px;transition:.4s;}
-.slider:before{position:absolute;content:"☀️";font-size:13px;height:20px;width:20px;left:3px;top:3px;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:.4s;}
+.slider:before{position:absolute;content:"🌙";font-size:13px;height:20px;width:20px;left:3px;top:3px;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:.4s;}
 input:checked+.slider{background:#c8a08855;}
-input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
+input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .side-profile-card{background:linear-gradient(135deg,#3a0a0444,#2a1a0a33);border:1px solid #5a2a1a55;border-radius:12px;padding:16px;margin-bottom:14px;display:flex;flex-direction:column;gap:8px;}
 .side-profile-avatar{width:48px;height:48px;border-radius:50%;border:2px solid var(--accent);margin-bottom:4px;}
 .side-profile-username{font-size:16px;font-weight:700;color:var(--text);}
@@ -138,7 +138,8 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 .zoom-btn{background:transparent;border:none;color:var(--accent);font-size:14px;font-weight:bold;padding:7px 0;width:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s;}
 .zoom-btn:hover{background:#e14f0022;}
 .zoom-div{height:1px;background:#e14f0044;}
-.route-menu{position:absolute;top:130px;right:10px;z-index:1001;background:#2a0a06ee;border:2px solid var(--accent);border-radius:10px;padding:3px 8px;display:none;align-items:center;gap:3px;box-shadow:0 4px 15px #00000055;}
+/* TOMTOM traffic code — route menu shifted down to make room for traffic toggle btn */
+.route-menu{position:absolute;top:175px;right:10px;z-index:1001;background:#2a0a06ee;border:2px solid var(--accent);border-radius:10px;padding:3px 8px;display:none;align-items:center;gap:3px;box-shadow:0 4px 15px #00000055;}
 .route-menu.visible{display:flex;}
 .route-menu button{background:none;border:none;color:white;padding:7px 10px;cursor:pointer;font-family:Arial,sans-serif;font-size:13px;border-radius:5px;transition:background .2s;}
 #calc-route:hover{background:#e14f0055;}
@@ -153,6 +154,19 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 #route-dist img,#route-time img{width:18px;}
 #close-info-btn{background:none;border:none;color:white;cursor:pointer;font-size:18px;margin-left:4px;transition:color .2s;}
 #close-info-btn:hover{color:var(--red);}
+/* TOMTOM traffic code — traffic badge + speed info in route box */
+#route-traffic{display:none;align-items:center;gap:5px;}
+.traffic-badge{font-size:10px;font-weight:700;letter-spacing:.5px;border-radius:5px;padding:2px 7px;border:1px solid;}
+.traffic-badge.free{color:#2ecc71;background:#0a1a0a99;border-color:#2ecc7155;}
+.traffic-badge.moderate{color:#f1c40f;background:#1a1600aa;border-color:#f1c40f55;}
+.traffic-badge.heavy{color:#ff6b35;background:#1a0a0099;border-color:#ff6b3555;}
+.traffic-badge.severe{color:#ff4757;background:#1a000099;border-color:#ff475555;animation:traffic-severe-pulse 1.4s ease infinite;}
+@keyframes traffic-severe-pulse{0%,100%{box-shadow:0 0 0 0 #ff475544;}50%{box-shadow:0 0 0 4px #ff475522;}}
+#route-traffic-speed{font-size:11px;color:#c8a080;display:flex;align-items:center;gap:3px;}
+/* TOMTOM traffic code — traffic toggle button on map */
+#traffic-toggle-btn{top:130px;right:10px;}
+.traffic-btn-active{background:#1a0500cc!important;outline:3px solid var(--accent);}
+.traffic-btn-active img{filter:drop-shadow(0 0 4px #e14f00)!important;}
 
 /* ===================== FLOATING MAP SEARCH ===================== */
 .map-search-float{position:absolute;top:10px;left:10px;z-index:1000;width:min(260px, calc(100% - 56px));}
@@ -721,8 +735,18 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
                 <span id="route-dist"><img src="icons/distance.png"> 0.00 km</span>
                 <span style="color:#5a3a2a">|</span>
                 <span id="route-time"><img src="icons/minutes.png"> 0 min</span>
+                <!-- TOMTOM traffic code — live traffic badge shown after route calculated -->
+                <span style="color:#5a3a2a" id="route-traffic-divider" style="display:none;">|</span>
+                <span id="route-traffic">
+                    <span class="traffic-badge free" id="route-traffic-badge">🟢 FREE</span>
+                    <span id="route-traffic-speed">— km/h</span>
+                </span>
                 <button id="close-info-btn">×</button>
             </div>
+            <!-- TOMTOM traffic code — live traffic overlay toggle button -->
+            <button class="map-btn" id="traffic-toggle-btn" title="Toggle Live Traffic Overlay">
+                <img src="icons/RoutePlanner.png" alt="Traffic" style="filter:hue-rotate(200deg) saturate(1.5);">
+            </button>
             <div class="zoom-group">
                 <button class="zoom-btn" id="zoom-in">+</button>
                 <div class="zoom-div"></div>
@@ -996,6 +1020,152 @@ function formatTimestamp(raw) {
 const OSRM_BASE = 'https://router.project-osrm.org/route/v1/driving';
 const _chRouteCache = new Map();
 const CH_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+// TOMTOM traffic code ─────────────────────────────────────────────────────────
+// Replace 'YOUR_TOMTOM_API_KEY' with your free key from developer.tomtom.com
+const TOMTOM_KEY = 'sHWMY2kDTAmc4sbZjPiGVtGicISzvh40';
+const TOMTOM_FLOW_BASE = 'https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json';
+const TOMTOM_TILE_URL  = `https://api.tomtom.com/traffic/map/4/tile/flow/relative0/{z}/{x}/{y}.png?key=${TOMTOM_KEY}&tileSize=256&style=2`;
+
+// Live traffic tile layer (toggled by the traffic button on map)
+let _trafficTileLayer  = null;
+let _trafficLayerOn    = false;
+
+// Gradient segment polylines for the route (orange free → red congested)
+let _routeGradientLayers     = [];
+let _detailRouteGradientLayers = [];
+
+// Colour ramp: jam factor 0-10 mapped to orange → deep red
+function _trafficColor(jamFactor) {
+    // 0=free flow (orange), 10=standstill (deep red)
+    const t = Math.min(Math.max(jamFactor / 10, 0), 1);
+    const r = Math.round(255);
+    const g = Math.round(140 * (1 - t));   // 140→0
+    const b = Math.round(0);
+    return `rgb(${r},${g},${b})`;
+}
+
+// Classify jam factor into human label
+function _jamLabel(jf) {
+    if (jf <= 2)  return { cls: 'free',     text: '🟢 FREE FLOW' };
+    if (jf <= 4)  return { cls: 'moderate', text: '🟡 MODERATE' };
+    if (jf <= 7)  return { cls: 'heavy',    text: '🟠 HEAVY' };
+    return              { cls: 'severe',    text: '🔴 SEVERE' };
+}
+
+// Sample N evenly-spaced points along route coords for traffic queries
+function _samplePoints(coords, n = 5) {
+    if (coords.length <= n) return coords;
+    const step = (coords.length - 1) / (n - 1);
+    return Array.from({ length: n }, (_, i) => coords[Math.round(i * step)]);
+}
+
+// Query TomTom Flow Segment Data for one lat/lng point
+async function _fetchFlowPoint(lat, lng) {
+    const url = `${TOMTOM_FLOW_BASE}?point=${lat},${lng}&unit=KMPH&openLr=false&key=${TOMTOM_KEY}`;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`TomTom HTTP ${r.status}`);
+    const j = await r.json();
+    const fd = j.flowSegmentData;
+    return {
+        currentSpeed:  fd.currentSpeed,
+        freeFlowSpeed: fd.freeFlowSpeed,
+        jamFactor:     fd.currentTravelTime / fd.freeFlowTravelTime * 5, // derive 0-10 jam factor
+        confidence:    fd.confidence,
+    };
+}
+
+// Fetch traffic for N sampled points along the route and return avg metrics
+async function fetchTrafficOnRoute(coords) {
+    if (!TOMTOM_KEY || TOMTOM_KEY === 'YOUR_TOMTOM_API_KEY') return null; // skip if no key
+    try {
+        const pts = _samplePoints(coords, 5);
+        const results = await Promise.all(pts.map(p => _fetchFlowPoint(p[0], p[1]).catch(() => null)));
+        const valid = results.filter(Boolean);
+        if (!valid.length) return null;
+        const avgJam   = valid.reduce((s, v) => s + v.jamFactor, 0) / valid.length;
+        const avgSpeed = Math.round(valid.reduce((s, v) => s + v.currentSpeed, 0) / valid.length);
+        return { avgJam, avgSpeed, segments: valid };
+    } catch (err) {
+        console.warn('TomTom traffic fetch failed:', err.message);
+        return null;
+    }
+}
+
+// Draw a gradient polyline: splits coords into segments, colours each by index
+// blending from orange (#FF8C00) at start to deep red (#CC0000) at end,
+// with congested segments pulled further toward red based on jam factor
+function _drawGradientRoute(coords, traffic, mapTarget, weight = 6) {
+    const layers = [];
+    if (!coords.length) return layers;
+
+    // If no traffic data, fall back to solid orange-red
+    if (!traffic) {
+        layers.push(L.polyline(coords, { color: '#ff4400', weight, opacity: 0.92 }).addTo(mapTarget));
+        return layers;
+    }
+
+    // Split route into segments, colour by interpolated jam factor
+    const n = coords.length;
+    const segCount = Math.max(n - 1, 1);
+    const pts = _samplePoints(coords, Math.min(5, n));
+    const jams = traffic.segments.map(s => s.jamFactor);
+
+    for (let i = 0; i < n - 1; i++) {
+        // Interpolate jam factor for this segment position
+        const frac = i / segCount;
+        const jamIdx = frac * (jams.length - 1);
+        const lo = Math.floor(jamIdx), hi = Math.min(lo + 1, jams.length - 1);
+        const jf = jams[lo] + (jams[hi] - jams[lo]) * (jamIdx - lo);
+
+        const color = _trafficColor(jf);
+        const seg = L.polyline([coords[i], coords[i + 1]], {
+            color,
+            weight: weight + (jf > 6 ? 1 : 0), // slightly thicker on heavy traffic
+            opacity: 0.95,
+        }).addTo(mapTarget);
+        layers.push(seg);
+    }
+    return layers;
+}
+
+// Update the route info box with live traffic badge + speed
+function _updateRouteTrafficUI(traffic) {
+    const trafficEl   = document.getElementById('route-traffic');
+    const dividerEl   = document.getElementById('route-traffic-divider');
+    const badgeEl     = document.getElementById('route-traffic-badge');
+    const speedEl     = document.getElementById('route-traffic-speed');
+    if (!traffic) {
+        if (trafficEl)  trafficEl.style.display  = 'none';
+        if (dividerEl)  dividerEl.style.display  = 'none';
+        return;
+    }
+    const lbl = _jamLabel(traffic.avgJam);
+    if (badgeEl) { badgeEl.textContent = lbl.text; badgeEl.className = `traffic-badge ${lbl.cls}`; }
+    if (speedEl)  speedEl.textContent  = `${traffic.avgSpeed} km/h`;
+    if (trafficEl)  trafficEl.style.display  = 'flex';
+    if (dividerEl)  dividerEl.style.display  = 'inline';
+}
+
+// Toggle TomTom live traffic tile overlay on/off
+function toggleTrafficLayer() {
+    const btn = document.getElementById('traffic-toggle-btn');
+    if (_trafficLayerOn) {
+        if (_trafficTileLayer) { map.removeLayer(_trafficTileLayer); _trafficTileLayer = null; }
+        _trafficLayerOn = false;
+        if (btn) btn.classList.remove('traffic-btn-active');
+    } else {
+        if (!TOMTOM_KEY || TOMTOM_KEY === 'YOUR_TOMTOM_API_KEY') {
+            alert('Add your TomTom API key to enable live traffic overlay.\nGet a free key at: developer.tomtom.com');
+            return;
+        }
+        _trafficTileLayer = L.tileLayer(TOMTOM_TILE_URL, { maxZoom: 19, opacity: 0.75, zIndex: 500 }).addTo(map);
+        _trafficLayerOn = true;
+        if (btn) btn.classList.add('traffic-btn-active');
+    }
+}
+document.getElementById('traffic-toggle-btn').addEventListener('click', toggleTrafficLayer);
+// TOMTOM traffic code end ──────────────────────────────────────────────────────
 
 function _chCacheKey(a, b, c, d) {
     return `${(+a).toFixed(5)},${(+b).toFixed(5)}-${(+c).toFixed(5)},${(+d).toFixed(5)}`;
@@ -1777,30 +1947,52 @@ document.getElementById('calc-route').addEventListener('click',()=>{
 });
 document.getElementById('clear-route').addEventListener('click',()=>{
     if(routingControl){map.removeLayer(routingControl);routingControl=null;}
+    // TOMTOM traffic code — clear gradient route layers
+    _routeGradientLayers.forEach(l=>map.removeLayer(l)); _routeGradientLayers=[];
     routeMarkers.forEach(m=>map.removeLayer(m));routeMarkers=[];waypoints=[];
     document.getElementById('route-info-box').style.display='none';
+    _updateRouteTrafficUI(null);
     document.getElementById('route-menu').classList.remove('visible');
 });
 document.getElementById('close-info-btn').addEventListener('click',()=>{
     if(routingControl){map.removeLayer(routingControl);routingControl=null;}
+    // TOMTOM traffic code — clear gradient route layers
+    _routeGradientLayers.forEach(l=>map.removeLayer(l)); _routeGradientLayers=[];
     routeMarkers.forEach(m=>map.removeLayer(m));routeMarkers=[];waypoints=[];
     document.getElementById('route-info-box').style.display='none';
+    _updateRouteTrafficUI(null);
 });
 map.on('click',e=>{if(waypoints.length<2){waypoints.push(e.latlng);routeMarkers.push(L.marker(e.latlng,{icon:waypoints.length===1?greenIcon:redIcon}).addTo(map));}});
 
 // ── CH Route on main map ──────────────────────────────────────────────────
+// TOMTOM traffic code — calculateRoute now draws gradient orange→red polyline based on live traffic
 async function calculateRoute(start, end) {
     try {
         const rt = await chRoute(start.lat, start.lng, end.lat, end.lng);
-        if (routingControl) map.removeLayer(routingControl);
-        routingControl = L.polyline(rt.coords, {
-            color: '#ff4400', weight: 6, opacity: .92,
-            dashArray: rt.isFallback ? '10,8' : 'none'
-        }).addTo(map);
+        if (routingControl) { map.removeLayer(routingControl); routingControl = null; }
+        // Remove previous gradient segments if any
+        _routeGradientLayers.forEach(l => map.removeLayer(l));
+        _routeGradientLayers = [];
+
+        // Fetch live traffic data along the route (TomTom)
+        const traffic = await fetchTrafficOnRoute(rt.coords);
+
+        // Draw gradient route: orange (free flow) → red (heavy traffic)
+        _routeGradientLayers = _drawGradientRoute(rt.coords, traffic, map, 6);
+        // Keep routingControl as first layer for bounds fitting (invisible, weight 0)
+        routingControl = L.polyline(rt.coords, { opacity: 0, weight: 0,
+            dashArray: rt.isFallback ? '10,8' : 'none' }).addTo(map);
+
         document.getElementById('route-info-box').style.display = 'flex';
         document.getElementById('route-dist').innerHTML = `<img src="icons/distance.png"> ${rt.distKm} km`;
-        document.getElementById('route-time').innerHTML = `<img src="icons/minutes.png"> ~${rt.timeMins} min${rt.isFallback ? ' <span style="font-size:9px;color:#f1c40f;">(est.)</span>' : ''}`;
-        map.fitBounds(routingControl.getBounds(), { padding: [20, 20] });
+        // Adjust ETA if traffic available
+        let etaMin = rt.timeMins;
+        if (traffic && traffic.avgJam > 3) {
+            etaMin = Math.round(rt.timeMins * (1 + (traffic.avgJam / 20)));
+        }
+        document.getElementById('route-time').innerHTML = `<img src="icons/minutes.png"> ~${etaMin} min${rt.isFallback ? ' <span style="font-size:9px;color:#f1c40f;">(est.)</span>' : ''}${traffic && traffic.avgJam > 3 ? ' <span style="font-size:9px;color:#ff6b35;">(traffic)</span>' : ''}`;
+        _updateRouteTrafficUI(traffic);
+        map.fitBounds(L.polyline(rt.coords).getBounds(), { padding: [20, 20] });
     } catch (e) { alert('Routing failed: ' + e.message); }
 }
 
@@ -2059,24 +2251,48 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
 }
 
 // ── CH Route on incident detail map ──────────────────────────────────────
+// TOMTOM traffic code — incident map modal route also uses gradient orange→red + live traffic
 async function calculateDetailRoute(start, end) {
     try {
         const rt = await chRoute(start.lat, start.lng, end.lat, end.lng);
         if (_incDetailRouteLayer) _incDetailRouteLayer.remove();
-        _incDetailRouteLayer = L.polyline(rt.coords, {
-            color: '#ff4400', weight: 5, opacity: .92,
-            dashArray: rt.isFallback ? '10,8' : 'none'
-        }).addTo(_incDetailMap);
-        _incDetailMap.fitBounds(_incDetailRouteLayer.getBounds(), {padding:[20,20]});
+        // Remove previous gradient segments
+        _detailRouteGradientLayers.forEach(l => { try { l.remove(); } catch {} });
+        _detailRouteGradientLayers = [];
+
+        // Fetch live traffic (TomTom)
+        const traffic = await fetchTrafficOnRoute(rt.coords);
+
+        // Draw gradient route on incident modal map
+        _detailRouteGradientLayers = _drawGradientRoute(rt.coords, traffic, _incDetailMap, 5);
+        // Invisible bounds helper
+        _incDetailRouteLayer = L.polyline(rt.coords, { opacity: 0, weight: 0,
+            dashArray: rt.isFallback ? '10,8' : 'none' }).addTo(_incDetailMap);
+
+        _incDetailMap.fitBounds(L.polyline(rt.coords).getBounds(), {padding:[20,20]});
         const statEls = document.querySelectorAll('.inc-route-stat-val');
         if (statEls[0]) statEls[0].textContent = rt.distKm + ' km';
-        if (statEls[1]) statEls[1].textContent = '~' + rt.timeMins + ' min' + (rt.isFallback ? ' (est.)' : '');
+        // Traffic-adjusted ETA
+        let etaMin = rt.timeMins;
+        if (traffic && traffic.avgJam > 3) etaMin = Math.round(rt.timeMins * (1 + traffic.avgJam / 20));
+        if (statEls[1]) {
+            statEls[1].textContent = '~' + etaMin + ' min' + (rt.isFallback ? ' (est.)' : '');
+            // TOMTOM traffic code — show traffic speed in incident modal ETA label
+            const lbl3 = statEls[1].closest('.inc-route-stat')?.querySelector('.inc-route-stat-label');
+            if (lbl3 && traffic) {
+                const tj = _jamLabel(traffic.avgJam);
+                lbl3.innerHTML = `ETA (CH) <span style="color:${tj.cls==='free'?'#2ecc71':tj.cls==='moderate'?'#f1c40f':tj.cls==='heavy'?'#ff6b35':'#ff4757'};font-size:8px;margin-left:2px;">${tj.text}</span>`;
+            }
+        }
     } catch(e) { console.warn('CH detail route failed:', e.message); }
 }
 
 function closeIncidentMapModal() {
     document.getElementById('incident-map-modal').classList.remove('open');
     if (_incDetailMap) { _incDetailMap.remove(); _incDetailMap = null; }
+    // TOMTOM traffic code — clear detail gradient layers on modal close
+    _detailRouteGradientLayers.forEach(l => { try { l.remove(); } catch {} });
+    _detailRouteGradientLayers = [];
     _incDetailMarkers = []; _incDetailRouteLayer = null;
 }
 document.getElementById('incident-map-modal').addEventListener('click', e => { if (e.target===document.getElementById('incident-map-modal')) closeIncidentMapModal(); });
