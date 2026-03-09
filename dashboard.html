@@ -1409,10 +1409,10 @@ const CH_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 //  RAF-based ticker: updates every 30s (TomTom's native cycle).
 //  No setInterval. No manual refresh. Zero user action needed.
 // ═══════════════════════════════════════════════════════════════
-const TOMTOM_KEY           = 'iy3ljq06nVjJYIdgJdqJZAHiDaYPattE';
+const TOMTOM_KEY           = 'jR6HpPSkoXiLd1IrkSg6Hx5S6hExxGmH';
 const TOMTOM_FLOW_BASE     = 'https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json';
 const TOMTOM_TILE_URL      = `https://api.tomtom.com/traffic/map/4/tile/flow/absolute/{z}/{x}/{y}.png?key=${TOMTOM_KEY}&tileSize=256&style=2`;
-const TRAFFIC_LIVE_INTERVAL = 30_000; // TomTom flow data refreshes every ~ 30 minutes
+const TRAFFIC_LIVE_INTERVAL = 30_000; // TomTom flow data refreshes every 30 seconds
 
 let _trafficTileLayer  = null;
 let _trafficLayerOn    = false;
@@ -1422,6 +1422,8 @@ let _detailRouteGradientLayers = [];
 // Active route state — null when no route is drawn
 let _activeRouteState       = null; // { coords, rt, lastFetch, lastTraffic }
 let _activeDetailRouteState = null; // { coords, rt, lastFetch, lastTraffic }
+let _activeDetailsModalTrafficState = null; // { coords, lastFetch, lastTraffic } — Full Details modal (no map)
+let _activeIncidentCardTrafficState = null; // { coords, lastFetch, lastTraffic } — Incident sidebar cards
 let _trafficTickerRunning   = false;
 
 // Inject live-pulse CSS once
@@ -1440,7 +1442,7 @@ function _startTrafficTicker() {
     if (_trafficTickerRunning) return;
     _trafficTickerRunning = true;
     async function tick() {
-        if (!_activeRouteState && !_activeDetailRouteState) {
+        if (!_activeRouteState && !_activeDetailRouteState && !_activeDetailsModalTrafficState && !_activeIncidentCardTrafficState) {
             _trafficTickerRunning = false;
             return;
         }
@@ -1467,6 +1469,28 @@ function _startTrafficTicker() {
                 } catch(e) {}
             }
         }
+        if (_activeDetailsModalTrafficState) {
+            const age = now - (_activeDetailsModalTrafficState.lastFetch || 0);
+            if (age >= TRAFFIC_LIVE_INTERVAL) {
+                _activeDetailsModalTrafficState.lastFetch = now;
+                try {
+                    const t = await fetchTrafficOnRoute(_activeDetailsModalTrafficState.coords);
+                    _activeDetailsModalTrafficState.lastTraffic = t;
+                    _patchDetailsModal();
+                } catch(e) {}
+            }
+        }
+        if (_activeIncidentCardTrafficState) {
+            const age = now - (_activeIncidentCardTrafficState.lastFetch || 0);
+            if (age >= TRAFFIC_LIVE_INTERVAL) {
+                _activeIncidentCardTrafficState.lastFetch = now;
+                try {
+                    const t = await fetchTrafficOnRoute(_activeIncidentCardTrafficState.coords);
+                    _activeIncidentCardTrafficState.lastTraffic = t;
+                    _patchIncidentCards();
+                } catch(e) {}
+            }
+        }
         requestAnimationFrame(tick);
     }
     requestAnimationFrame(tick);
@@ -1482,6 +1506,16 @@ function _activateDetailRoute(coords, rt) {
     _startTrafficTicker();
 }
 function _deactivateDetailRoute() { _activeDetailRouteState = null; }
+function _activateDetailsModalTraffic(coords) {
+    _activeDetailsModalTrafficState = { coords, lastFetch: 0, lastTraffic: null };
+    _startTrafficTicker();
+}
+function _deactivateDetailsModalTraffic() { _activeDetailsModalTrafficState = null; }
+function _activateIncidentCardTraffic(coords) {
+    _activeIncidentCardTrafficState = { coords, lastFetch: 0, lastTraffic: null };
+    _startTrafficTicker();
+}
+function _deactivateIncidentCardTraffic() { _activeIncidentCardTrafficState = null; }
 
 // Apply traffic to main map route
 function _applyMainRouteTraffic(traffic, rt) {
@@ -1497,10 +1531,17 @@ function _applyMainRouteTraffic(traffic, rt) {
         `<img src="icons/minutes.png"> ~${etaMin} min`
         + (rt.isFallback ? ' <span style="font-size:9px;color:#f1c40f;">(est.)</span>' : '')
         + (traffic && traffic.avgJam > 3 ? ' <span style="font-size:9px;color:#ff6b35;">(traffic)</span>' : '');
-    // Vehicle-adjusted live speed
+    // Vehicle-adjusted live speed — always update (show fallback if no TomTom data)
     const vt = VEHICLE_TYPES[_selectedVehicle];
     const speedEl = document.getElementById('route-traffic-speed');
-    if (traffic && speedEl) speedEl.textContent = `${Math.round(traffic.avgSpeed * vt.speedMult)} km/h`;
+    if (speedEl) {
+        if (traffic) {
+            speedEl.textContent = `${Math.round(traffic.avgSpeed * vt.speedMult)} km/h`;
+        } else {
+            const { speed: fbSpd } = getFiretruckSpeed();
+            speedEl.textContent = `~${Math.round(fbSpd * vt.speedMult)} km/h`;
+        }
+    }
     // Traffic badge
     _updateRouteTrafficUI(traffic);
 }
@@ -1516,9 +1557,12 @@ function _applyDetailRouteTraffic(traffic, rt) {
     const elTraf   = document.getElementById('imd-traffic-badge');
     const elAlgo   = document.getElementById('imd-algo');
     const { label: dLabel } = getFiretruckSpeed();
-    const vt = VEHICLE_TYPES[_selectedVehicle];
+    // Use dispatched vehicle type — same as card + full details
+    const _detailRescueInfo = _incidentRescueMap[_currentOpenIncidentData?.incident_id];
+    const _detailVehicleType = _detailRescueInfo?.vehicleType || _selectedVehicle;
+    const vt = VEHICLE_TYPES[_detailVehicleType];
     // Vehicle-aware ETA
-    const etaMin = getVehicleETA(rt.timeMins, traffic, _selectedVehicle);
+    const etaMin = getVehicleETA(rt.timeMins, traffic, _detailVehicleType);
     if (elEta) elEta.textContent = `~${etaMin} min` + (rt.isFallback ? ' (est.)' : '');
     if (elAlgo) elAlgo.textContent = rt.isFallback ? 'Straight-line' : dLabel;
     if (traffic) {
@@ -2592,7 +2636,20 @@ async function loadLiveIncidents(silent=false){
         listEl.innerHTML='';
         if(!incidents.length){
             listEl.innerHTML='<div class="node-placeholder">No active incidents right now</div>';
+            _deactivateIncidentCardTraffic();
         } else {
+            // Activate own TomTom traffic fetch for incident cards using first incident coords
+            const gw0ref = getPrimaryGateway();
+            const firstInc = incidents[0];
+            if (firstInc.latitude && firstInc.longitude && !_activeIncidentCardTrafficState) {
+                const midLat = (gw0ref.lat + parseFloat(firstInc.latitude)) / 2;
+                const midLng = (gw0ref.lng + parseFloat(firstInc.longitude)) / 2;
+                _activateIncidentCardTraffic([
+                    [gw0ref.lat, gw0ref.lng],
+                    [midLat, midLng],
+                    [parseFloat(firstInc.latitude), parseFloat(firstInc.longitude)]
+                ]);
+            }
             incidents.forEach(inc=>{
                 const pred=(inc.ai_prediction||'').toLowerCase();
                 const isFire=pred==='fire';
@@ -2605,7 +2662,7 @@ async function loadLiveIncidents(silent=false){
                 const distKm0 = calcDistance(gw0.lat, gw0.lng, parseFloat(inc.latitude||0), parseFloat(inc.longitude||0));
                 const { speed: spd0, factor: fac0 } = getFiretruckSpeed();
                 const baseTime0 = Math.round((distKm0 * fac0) / spd0 * 60);
-                const traffic0 = _activeRouteState?.lastTraffic || null;
+                const traffic0 = _activeIncidentCardTrafficState?.lastTraffic || _activeDetailRouteState?.lastTraffic || _activeRouteState?.lastTraffic || null;
                 const dispatchedVehicle = rescueInfo?.vehicleType || _selectedVehicle;
                 const vt0 = VEHICLE_TYPES[dispatchedVehicle];
                 const cardEta = getVehicleETA(baseTime0, traffic0, dispatchedVehicle);
@@ -2645,7 +2702,7 @@ function _patchIncidentCards() {
     if (!cards.length) return;
     const gw = getPrimaryGateway();
     const { speed, factor } = getFiretruckSpeed();
-    const traffic = _activeRouteState?.lastTraffic || _activeDetailRouteState?.lastTraffic || null;
+    const traffic = _activeIncidentCardTrafficState?.lastTraffic || _activeDetailRouteState?.lastTraffic || _activeRouteState?.lastTraffic || null;
     cards.forEach(card => {
         // Only patch cards that have dispatched rescue (ETA row is present)
         const elEta = card.querySelector('[data-field="card-eta"]');
@@ -2679,7 +2736,7 @@ function _patchDetailsModal() {
     const distKm = calcDistance(gw.lat, gw.lng, parseFloat(inc.latitude||0), parseFloat(inc.longitude||0));
     const { speed, factor, label: peakLabel } = getFiretruckSpeed();
     const baseTime = Math.round((distKm * factor) / speed * 60);
-    const traffic = _activeRouteState?.lastTraffic || _activeDetailRouteState?.lastTraffic || null;
+    const traffic = _activeDetailsModalTrafficState?.lastTraffic || _activeDetailRouteState?.lastTraffic || _activeRouteState?.lastTraffic || null;
     // Use dispatched vehicle type, not selected vehicle
     const rescueInfo = _incidentRescueMap[_detailsModalIncidentId];
     const vehicleType = rescueInfo?.vehicleType || _selectedVehicle;
@@ -2889,7 +2946,7 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
     const distKm = calcDistance(gw.lat, gw.lng, parseFloat(inc.latitude), parseFloat(inc.longitude));
     const { speed, factor } = getFiretruckSpeed();
     const baseTimeMins = Math.round((distKm * factor) / speed * 60);
-    const etaMin = getVehicleETA(baseTimeMins, null, _selectedVehicle);  // vehicle-aware initial ETA
+    const etaMin = getVehicleETA(baseTimeMins, null, rescueInfo?.vehicleType || _selectedVehicle);  // vehicle-aware initial ETA
     const pred = (inc.ai_prediction||'').toLowerCase();
     const isFire = pred === 'fire';
     document.getElementById('inc-map-sidebar').innerHTML = `
@@ -3052,9 +3109,11 @@ async function calculateDetailRoute(start, end) {
         if (elDist)  elDist.textContent  = rt.distKm + ' km';
         if (elAlgo)  elAlgo.textContent  = rt.isFallback ? 'Straight-line' : routeLabel;
 
-        // Vehicle-aware ETA for selected vehicle
-        const vt = VEHICLE_TYPES[_selectedVehicle];
-        const etaMin = getVehicleETA(rt.timeMins, traffic, _selectedVehicle);
+        // Use dispatched vehicle type (same as card + full details), fallback to selected
+        const _incRescueInfo = _incidentRescueMap[_currentOpenIncidentData?.incident_id];
+        const _incVehicleType = _incRescueInfo?.vehicleType || _selectedVehicle;
+        const vt = VEHICLE_TYPES[_incVehicleType];
+        const etaMin = getVehicleETA(rt.timeMins, traffic, _incVehicleType);
         if (elEta) elEta.textContent = '~' + etaMin + ' min' + (rt.isFallback ? ' (est.)' : '');
 
         if (traffic) {
@@ -3108,12 +3167,22 @@ async function openIncidentDetailsModal(incidentId) {
     const _distKm = calcDistance(_gw.lat, _gw.lng, parseFloat(data.latitude||0), parseFloat(data.longitude||0));
     const { speed: _spd, factor: _fac, label: _peakLabel } = getFiretruckSpeed();
     const _baseTime = Math.round((_distKm * _fac) / _spd * 60);
-    const _traffic = _activeRouteState?.lastTraffic || _activeDetailRouteState?.lastTraffic || null;
+    const _traffic = _activeDetailsModalTrafficState?.lastTraffic || _activeDetailRouteState?.lastTraffic || _activeRouteState?.lastTraffic || null;
     // Use dispatched vehicle if available, otherwise selected vehicle
     const _vehicleType = rescueInfo?.vehicleType || _selectedVehicle;
     const _vt = VEHICLE_TYPES[_vehicleType];
     const _etaMin = getVehicleETA(_baseTime, _traffic, _vehicleType);
     const _liveSpeed = _traffic ? Math.round(_traffic.avgSpeed * _vt.speedMult) : Math.round(_spd * _vt.speedMult);
+    // Start own traffic ticker for this modal using straight-line sample points around the incident
+    if (data.latitude && data.longitude) {
+        const _gw2 = getPrimaryGateway();
+        const _sampleCoords = [
+            [_gw2.lat, _gw2.lng],
+            [(_gw2.lat + parseFloat(data.latitude)) / 2, (_gw2.lng + parseFloat(data.longitude)) / 2],
+            [parseFloat(data.latitude), parseFloat(data.longitude)]
+        ];
+        _activateDetailsModalTraffic(_sampleCoords);
+    }
     body.innerHTML = `
         <div class="inc-details-section">
             <div class="inc-details-section-title">Incident Overview</div>
@@ -3160,7 +3229,7 @@ async function openIncidentDetailsModal(incidentId) {
         <div style="margin-top:16px;padding:10px;background:#0a1a0a55;border:1px solid #2ecc7144;border-radius:9px;text-align:center;color:#2ecc71;font-size:12px;font-weight:600;">✓ This incident has been resolved</div>`}`;
 }
 
-function closeIncidentDetailsModal() { document.getElementById('incident-details-modal').classList.remove('open'); _detailsModalIncidentId = null; }
+function closeIncidentDetailsModal() { document.getElementById('incident-details-modal').classList.remove('open'); _detailsModalIncidentId = null; _deactivateDetailsModalTraffic(); }
 document.getElementById('incident-details-modal').addEventListener('click', e => { if(e.target===document.getElementById('incident-details-modal')) closeIncidentDetailsModal(); });
 
 // ====================== HELPER: Distance calc ======================
