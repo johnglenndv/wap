@@ -217,7 +217,7 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 [data-theme="light"] .traffic-badge.heavy{color:#b84000;background:#fff0e8cc;border-color:#d4500066;}
 [data-theme="light"] .traffic-badge.severe{color:#c02030;background:#ffe8eacc;border-color:#d0203066;}
 @keyframes traffic-severe-pulse{0%,100%{box-shadow:0 0 0 0 #ff475544;}50%{box-shadow:0 0 0 4px #ff475522;}}
-#route-traffic-speed{font-size:14px;color:#0070d8;display:flex;align-items:center;gap:3px; font-weight: 700;}
+#route-traffic-speed{font-size:12px;color:#0070d8;display:flex;align-items:center;gap:3px; font-weight: 700;}
 [data-theme="light"] #route-traffic-speed{color:#004aaa;}
 /* TOMTOM traffic code — traffic toggle button on map */
 #traffic-toggle-btn{top:130px;right:10px;}
@@ -1043,9 +1043,12 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
                 <button id="clear-route">Clear</button>
             </div>
             <div id="route-info-box">
-                <!-- top row: badge + close -->
+                <!-- top row: time period + traffic badge + close -->
                 <div class="rib-top">
-                    <span class="ch-badge">CH ROUTE</span>
+                    <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0;">
+                        <span class="ch-badge">CH ROUTE</span>
+                        <span class="traffic-badge free" id="route-traffic-badge" style="display:none;">🟢 FREE</span>
+                    </div>
                     <button id="close-info-btn">×</button>
                 </div>
                 <!-- grid: distance | ETA | speed -->
@@ -1062,11 +1065,6 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
                         <span id="route-traffic-speed" class="rib-cell-val" style="color:#4da8ff;font-weight:700;">— km/h</span>
                         <span class="rib-cell-label">Live Speed</span>
                     </div>
-                </div>
-                <!-- traffic badge row — shown when traffic data available -->
-                <div class="rib-traffic" id="route-traffic">
-                    <span id="route-traffic-divider"></span>
-                    <span class="traffic-badge free" id="route-traffic-badge">🟢 FREE</span>
                 </div>
             </div>
             <!-- TOMTOM traffic code — live traffic overlay toggle button -->
@@ -1535,18 +1533,20 @@ function _drawGradientRoute(coords, traffic, mapTarget, weight = 6) {
     return layers;
 }
 function _updateRouteTrafficUI(traffic) {
-    const trafficEl = document.getElementById('route-traffic');
     const badgeEl   = document.getElementById('route-traffic-badge');
     const speedEl   = document.getElementById('route-traffic-speed');
     if (!traffic) {
-        if (trafficEl) trafficEl.classList.remove('visible');
+        if (badgeEl)   badgeEl.style.display = 'none';
         if (speedEl)   speedEl.textContent = '— km/h';
         return;
     }
     const lbl = _jamLabel(traffic.avgJam);
-    if (badgeEl) { badgeEl.textContent=lbl.text; badgeEl.className=`traffic-badge ${lbl.cls} live`; }
-    if (speedEl)  speedEl.textContent=`${traffic.avgSpeed} km/h`;
-    if (trafficEl) trafficEl.classList.add('visible');
+    if (badgeEl) {
+        badgeEl.textContent = lbl.text;
+        badgeEl.className = `traffic-badge ${lbl.cls} live`;
+        badgeEl.style.display = 'inline-block';
+    }
+    if (speedEl) speedEl.textContent = `${traffic.avgSpeed} km/h`;
 }
 function toggleTrafficLayer() {
     const btn = document.getElementById('traffic-toggle-btn');
@@ -2403,7 +2403,7 @@ async function calculateRoute(start, end) {
         document.getElementById('route-info-box').style.display = 'flex';
         const { label: timeLabel } = getFiretruckSpeed();
         document.getElementById('route-dist').innerHTML = `<img src="icons/distance.png" style="width:14px;"> ${rt.distKm} km`;
-        document.querySelector('.ch-badge').textContent = `${timeLabel}`;
+        document.querySelector('.ch-badge').textContent = timeLabel;
 
         // Adjust ETA if traffic available
         let etaMin = rt.timeMins;
