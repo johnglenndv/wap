@@ -454,8 +454,6 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 .inc-map-header h2{font-family:'Cinzel',serif;font-size:13px;color:#e8c4a0;letter-spacing:3px;display:flex;align-items:center;gap:8px;}
 [data-theme="light"] .inc-map-header h2{color:#5a1800;}
 .inc-map-header-badges{display:flex;align-items:center;gap:8px;}
-.inc-map-algo-badge{font-size:9px;font-weight:700;color:#f1c40f;letter-spacing:1px;background:#1a1500aa;border:1px solid #f1c40f55;border-radius:5px;padding:3px 8px;}
-[data-theme="light"] .inc-map-algo-badge{color:#7a5000;background:#fff3cccc;border-color:#c89400;}
 .inc-map-close{font-size:22px;color:#9a6a5a;cursor:pointer;line-height:1;transition:color .2s;margin-left:10px;}
 [data-theme="light"] .inc-map-close{color:#7a4030;}
 .inc-map-close:hover{color:var(--accent);}
@@ -488,7 +486,7 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 .inc-status-text{flex:1;min-width:0;}
 .inc-status-label{font-size:9px;letter-spacing:2px;color:#7a4a3a;text-transform:uppercase;margin-bottom:2px;}
 [data-theme="light"] .inc-status-label{color:#7a4030;}
-.inc-status-val{font-size:13px;font-weight:700;}
+.inc-status-val{font-size:12px;font-weight:700;}
 .inc-status-val.fire{color:#ff4757;}
 [data-theme="light"] .inc-status-val.fire{color:#b82030;}
 .inc-status-val.resolved{color:#2ecc71;}
@@ -1177,9 +1175,9 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 <div id="incident-map-modal">
     <div class="inc-map-box">
         <div class="inc-map-header">
-            <h2>Incident Full Details</h2>
+            <h2><img src="icons/logo.png" alt="logo" style="width:55px;height:50px;object-fit:contain;filter:drop-shadow(0 0 6px #e14f0099);flex-shrink:0;">Incident Full Details</h2>
             <div class="inc-map-header-badges">
-                <span class="inc-map-algo-badge">🚒 CH ROUTE</span>
+                
                 <span class="inc-map-close" onclick="closeIncidentMapModal()">✕</span>
             </div>
         </div>
@@ -2228,7 +2226,7 @@ function renderGatewayStatusPanel() {
                     ? '<span style="font-size:8px;color:#5a5a5a;background:#2a2a2a;border:1px solid #3a3a3a;border-radius:3px;padding:1px 4px;margin-left:3px;">⚫ OFFLINE</span>'
                     : '';
                 const flyBtn = hasCoords
-                    ? `<div class="gw-node-flyto"><button class="gw-node-flyto-btn" onclick="flyToNode('${node.node_id}',${lat},${lng})" title="Go to node on map">📍 Go</button></div>`
+                    ? `<div class="gw-node-flyto"><button class="gw-node-flyto-btn" onclick="flyToNode('${node.node_id}',${lat},${lng})" title="Go to node on map">Go</button></div>`
                     : '';
                 return `<div class="gw-node-row" onclick="flyToNode('${node.node_id}',${hasCoords?lat:'null'},${hasCoords?lng:'null'})">
                     <div class="node-status-dot ${nStatus}"></div>
@@ -2300,7 +2298,7 @@ function renderPinned(){
     Object.values(pinnedMarkers).forEach(m=>map.removeLayer(m));pinnedMarkers={};
     pinnedLocations.forEach(pin=>{
         const item=document.createElement('div');item.className='pinned-item';
-        item.innerHTML=`<div><div class="pinned-item-name">${pin.name||'Pinned Location'}</div><div class="pinned-item-coords">${pin.latitude.toFixed(5)}, ${pin.longitude.toFixed(5)}</div></div><div class="pinned-item-actions"><button class="btn-icon-sm" onclick="flyToPin(${pin.latitude},${pin.longitude})">📍</button><button class="btn-icon-sm" onclick="removePin(${pin.id})" style="color:var(--red)">✕</button></div>`;
+        item.innerHTML=`<div><div class="pinned-item-name">${pin.name||'Pinned Location'}</div><div class="pinned-item-coords">${pin.latitude.toFixed(5)}, ${pin.longitude.toFixed(5)}</div></div><div class="pinned-item-actions"><button class="btn-icon-sm" style="font-size:10px;" onclick="flyToPin(${pin.latitude},${pin.longitude})">Go</button><button class="btn-icon-sm" onclick="removePin(${pin.id})" style="color:var(--red)">✕</button></div>`;
         list.appendChild(item);
         const pinnedIcon = L.icon({iconUrl:'icons/Pinpoint.png',iconSize:[55,55],iconAnchor:[20,40],popupAnchor:[0,-40]});
         pinnedMarkers[pin.id]=L.marker([pin.latitude,pin.longitude],{icon:pinnedIcon}).addTo(map).bindPopup(`<b>${pin.name||'Pinned'}</b><br>${pin.latitude.toFixed(5)}, ${pin.longitude.toFixed(5)}`);
@@ -2329,7 +2327,7 @@ map.on('contextmenu',e=>{
     e.originalEvent.preventDefault();
     if(pendingPopup){map.closePopup(pendingPopup);pendingPopup=null;}
     const lat=e.latlng.lat.toFixed(6),lng=e.latlng.lng.toFixed(6);
-    const p=L.popup({maxWidth:260}).setLatLng(e.latlng).setContent(`<div class="popup-title">📍 Pin this location?</div><div class="popup-coords">${lat}, ${lng}</div><input class="popup-input" id="pin-name" placeholder="Location name..."><div class="popup-actions"><button class="popup-save" onclick="savePin(${lat},${lng})">Save</button><button class="popup-cancel" onclick="map.closePopup()">Cancel</button></div>`).addTo(map);
+    const p=L.popup({maxWidth:260}).setLatLng(e.latlng).setContent(`<div class="popup-title">📍Pin this location?</div><div class="popup-coords">${lat}, ${lng}</div><input class="popup-input" id="pin-name" placeholder="Location name..."><div class="popup-actions"><button class="popup-save" onclick="savePin(${lat},${lng})">Save</button><button class="popup-cancel" onclick="map.closePopup()">Cancel</button></div>`).addTo(map);
     pendingPopup=p;p.on('remove',()=>{pendingPopup=null;});
 });
 
@@ -2637,10 +2635,10 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
     document.getElementById('inc-map-sidebar').innerHTML = `
         <!-- Status Banner -->
         <div class="inc-status-banner ${isRescued?'resolved':'active'}">
-            <div class="inc-status-icon">${isRescued?'✅':isFire?'🔥':'⚠️'}</div>
+            <div class="inc-status-icon">${isRescued?'✅':'⚠️'}</div>
             <div class="inc-status-text">
                 <div class="inc-status-label">Incident Status</div>
-                <div class="inc-status-val ${isRescued?'resolved':'fire'}">${isRescued?'RESOLVED':isFire?'FIRE ACTIVE':'POSSIBLE FIRE'}</div>
+                <div class="inc-status-val ${isRescued?'resolved':'fire'}">${isRescued?'RESOLVED':isFire?'ACTIVE FIRE':'POSSIBLE FIRE'}</div>
             </div>
         </div>
 
