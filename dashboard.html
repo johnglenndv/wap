@@ -1033,9 +1033,18 @@ const TOMTOM_TILE_URL  = `https://api.tomtom.com/traffic/map/4/tile/flow/relativ
 let _trafficTileLayer  = null;
 let _trafficLayerOn    = false;
 
-// Gradient segment polylines for the route (orange free → red congested)
-let _routeGradientLayers     = [];
+// Gradient segment polylines for the route (green free → red congested)
+let _routeGradientLayers       = [];
 let _detailRouteGradientLayers = [];
+
+// TOMTOM traffic code — auto-refresh every 2 min while a route is active
+let _activeRouteState  = null;   // { coords, rt } — set when a main-map route is drawn
+let _routeRefreshTimer = null;   // setInterval handle
+const TRAFFIC_REFRESH_MS = 2 * 60 * 1000;
+
+// TOMTOM traffic code — same auto-refresh for incident map modal
+let _activeDetailRouteState  = null;  // { coords, rt } — set when incident modal route is drawn
+let _detailRouteRefreshTimer = null;  // setInterval handle
 
 // Colour ramp: jam factor 0-10 mapped to orange → deep red
 // TOMTOM traffic code — smooth green→yellow→red colour ramp (HSL hue 120→0)
@@ -1161,6 +1170,80 @@ function _updateRouteTrafficUI(traffic) {
     if (trafficEl)  trafficEl.style.display  = 'flex';
     if (dividerEl)  dividerEl.style.display  = 'inline';
 }
+
+// TOMTOM traffic code — auto-refresh helpers ─────────────────────────────────
+function _stopRouteRefresh() {
+    if (_routeRefreshTimer) { clearInterval(_routeRefreshTimer); _routeRefreshTimer = null; }
+    _activeRouteState = null;
+}
+
+// Silently re-fetches traffic and redraws gradient + updates badge/ETA in place
+async function _refreshRouteTraffic() {
+    if (!_activeRouteState) return;
+    const { coords, rt } = _activeRouteState;
+    try {
+        const traffic = await fetchTrafficOnRoute(coords);
+        // Redraw gradient (remove old layers first)
+        _routeGradientLayers.forEach(l => map.removeLayer(l));
+        _routeGradientLayers = _drawGradientRoute(coords, traffic, map, 6);
+        // Update badge + ETA
+        _updateRouteTrafficUI(traffic);
+        let etaMin = rt.timeMins;
+        if (traffic && traffic.avgJam > 3) etaMin = Math.round(rt.timeMins * (1 + traffic.avgJam / 20));
+        document.getElementById('route-time').innerHTML =
+            `<img src="icons/minutes.png"> ~${etaMin} min`
+            + (rt.isFallback ? ' <span style="font-size:9px;color:#f1c40f;">(est.)</span>' : '')
+            + (traffic && traffic.avgJam > 3 ? ' <span style="font-size:9px;color:#ff6b35;">(traffic)</span>' : '');
+        // Small flash on the badge to signal a refresh happened
+        const badge = document.getElementById('route-traffic-badge');
+        if (badge) { badge.style.transition = 'opacity .3s'; badge.style.opacity = '0.3'; setTimeout(() => badge.style.opacity = '1', 350); }
+    } catch (err) { console.warn('Traffic auto-refresh failed:', err.message); }
+}
+
+function _startRouteRefresh(coords, rt) {
+    _stopRouteRefresh(); // clear any previous timer
+    _activeRouteState = { coords, rt };
+    _routeRefreshTimer = setInterval(_refreshRouteTraffic, TRAFFIC_REFRESH_MS);
+}
+
+// TOMTOM traffic code — incident modal traffic auto-refresh ──────────────────
+function _stopDetailRefresh() {
+    if (_detailRouteRefreshTimer) { clearInterval(_detailRouteRefreshTimer); _detailRouteRefreshTimer = null; }
+    _activeDetailRouteState = null;
+}
+
+async function _refreshDetailRouteTraffic() {
+    if (!_activeDetailRouteState || !_incDetailMap) return;
+    const { coords, rt } = _activeDetailRouteState;
+    try {
+        const traffic = await fetchTrafficOnRoute(coords);
+        // Redraw gradient on incident modal map
+        _detailRouteGradientLayers.forEach(l => { try { l.remove(); } catch {} });
+        _detailRouteGradientLayers = _drawGradientRoute(coords, traffic, _incDetailMap, 5);
+        // Update ETA stat
+        let etaMin = rt.timeMins;
+        if (traffic && traffic.avgJam > 3) etaMin = Math.round(rt.timeMins * (1 + traffic.avgJam / 20));
+        const statEls = document.querySelectorAll('.inc-route-stat-val');
+        if (statEls[1]) {
+            statEls[1].textContent = '~' + etaMin + ' min' + (rt.isFallback ? ' (est.)' : '');
+            const lbl = statEls[1].closest('.inc-route-stat')?.querySelector('.inc-route-stat-label');
+            if (lbl && traffic) {
+                const tj = _jamLabel(traffic.avgJam);
+                lbl.innerHTML = `ETA (CH) <span style="color:${tj.cls==='free'?'#2ecc71':tj.cls==='moderate'?'#f1c40f':tj.cls==='heavy'?'#ff6b35':'#ff4757'};font-size:8px;margin-left:2px;">${tj.text}</span>`;
+                // Flash the ETA value to signal refresh
+                statEls[1].style.transition = 'opacity .3s'; statEls[1].style.opacity = '0.3';
+                setTimeout(() => statEls[1].style.opacity = '1', 350);
+            }
+        }
+    } catch (err) { console.warn('Detail traffic auto-refresh failed:', err.message); }
+}
+
+function _startDetailRefresh(coords, rt) {
+    _stopDetailRefresh();
+    _activeDetailRouteState = { coords, rt };
+    _detailRouteRefreshTimer = setInterval(_refreshDetailRouteTraffic, TRAFFIC_REFRESH_MS);
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 // Toggle TomTom live traffic tile overlay on/off
 function toggleTrafficLayer() {
@@ -1968,8 +2051,9 @@ document.getElementById('calc-route').addEventListener('click',()=>{
 });
 document.getElementById('clear-route').addEventListener('click',()=>{
     if(routingControl){map.removeLayer(routingControl);routingControl=null;}
-    // TOMTOM traffic code — clear gradient route layers
+    // TOMTOM traffic code — clear gradient route layers + stop auto-refresh
     _routeGradientLayers.forEach(l=>map.removeLayer(l)); _routeGradientLayers=[];
+    _stopRouteRefresh();
     routeMarkers.forEach(m=>map.removeLayer(m));routeMarkers=[];waypoints=[];
     document.getElementById('route-info-box').style.display='none';
     _updateRouteTrafficUI(null);
@@ -1977,8 +2061,9 @@ document.getElementById('clear-route').addEventListener('click',()=>{
 });
 document.getElementById('close-info-btn').addEventListener('click',()=>{
     if(routingControl){map.removeLayer(routingControl);routingControl=null;}
-    // TOMTOM traffic code — clear gradient route layers
+    // TOMTOM traffic code — clear gradient route layers + stop auto-refresh
     _routeGradientLayers.forEach(l=>map.removeLayer(l)); _routeGradientLayers=[];
+    _stopRouteRefresh();
     routeMarkers.forEach(m=>map.removeLayer(m));routeMarkers=[];waypoints=[];
     document.getElementById('route-info-box').style.display='none';
     _updateRouteTrafficUI(null);
@@ -1986,7 +2071,7 @@ document.getElementById('close-info-btn').addEventListener('click',()=>{
 map.on('click',e=>{if(waypoints.length<2){waypoints.push(e.latlng);routeMarkers.push(L.marker(e.latlng,{icon:waypoints.length===1?greenIcon:redIcon}).addTo(map));}});
 
 // ── CH Route on main map ──────────────────────────────────────────────────
-// TOMTOM traffic code — calculateRoute now draws gradient orange→red polyline based on live traffic
+// TOMTOM traffic code — calculateRoute now draws gradient green→red polyline based on live traffic
 async function calculateRoute(start, end) {
     try {
         const rt = await chRoute(start.lat, start.lng, end.lat, end.lng);
@@ -1998,7 +2083,7 @@ async function calculateRoute(start, end) {
         // Fetch live traffic data along the route (TomTom)
         const traffic = await fetchTrafficOnRoute(rt.coords);
 
-        // Draw gradient route: orange (free flow) → red (heavy traffic)
+        // Draw gradient route: green (free flow) → yellow → red (heavy traffic)
         _routeGradientLayers = _drawGradientRoute(rt.coords, traffic, map, 6);
         // Keep routingControl as first layer for bounds fitting (invisible, weight 0)
         routingControl = L.polyline(rt.coords, { opacity: 0, weight: 0,
@@ -2014,6 +2099,8 @@ async function calculateRoute(start, end) {
         document.getElementById('route-time').innerHTML = `<img src="icons/minutes.png"> ~${etaMin} min${rt.isFallback ? ' <span style="font-size:9px;color:#f1c40f;">(est.)</span>' : ''}${traffic && traffic.avgJam > 3 ? ' <span style="font-size:9px;color:#ff6b35;">(traffic)</span>' : ''}`;
         _updateRouteTrafficUI(traffic);
         map.fitBounds(L.polyline(rt.coords).getBounds(), { padding: [20, 20] });
+        // TOMTOM traffic code — start 2-min auto-refresh while this route is displayed
+        _startRouteRefresh(rt.coords, rt);
     } catch (e) { alert('Routing failed: ' + e.message); }
 }
 
@@ -2305,15 +2392,18 @@ async function calculateDetailRoute(start, end) {
                 lbl3.innerHTML = `ETA (CH) <span style="color:${tj.cls==='free'?'#2ecc71':tj.cls==='moderate'?'#f1c40f':tj.cls==='heavy'?'#ff6b35':'#ff4757'};font-size:8px;margin-left:2px;">${tj.text}</span>`;
             }
         }
+        // TOMTOM traffic code — start 2-min auto-refresh for incident modal
+        _startDetailRefresh(rt.coords, rt);
     } catch(e) { console.warn('CH detail route failed:', e.message); }
 }
 
 function closeIncidentMapModal() {
     document.getElementById('incident-map-modal').classList.remove('open');
     if (_incDetailMap) { _incDetailMap.remove(); _incDetailMap = null; }
-    // TOMTOM traffic code — clear detail gradient layers on modal close
+    // TOMTOM traffic code — clear detail gradient layers + stop auto-refresh
     _detailRouteGradientLayers.forEach(l => { try { l.remove(); } catch {} });
     _detailRouteGradientLayers = [];
+    _stopDetailRefresh();
     _incDetailMarkers = []; _incDetailRouteLayer = null;
 }
 document.getElementById('incident-map-modal').addEventListener('click', e => { if (e.target===document.getElementById('incident-map-modal')) closeIncidentMapModal(); });
