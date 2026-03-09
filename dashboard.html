@@ -1315,6 +1315,25 @@ function toggleTrafficLayer() {
 document.getElementById('traffic-toggle-btn').addEventListener('click', toggleTrafficLayer);
 // TOMTOM traffic code end ──────────────────────────────────────────────────────
 
+// ── Time-aware firetruck speed for Dagupan/PH ─────────────────
+function getFiretruckSpeed() {
+    const now = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
+    const ph  = new Date(now);
+    const hour = ph.getHours();
+    const min  = ph.getMinutes();
+    const time = hour + min / 60;
+    if (time >= 6   && time < 8)   return { speed: 18, factor: 1.7, label: '🌅 Morning Rush' };
+    if (time >= 8   && time < 11)  return { speed: 26, factor: 1.5, label: '☀️ Normal Day' };
+    if (time >= 11  && time < 13)  return { speed: 19, factor: 1.7, label: '🌤 Lunch Rush' };
+    if (time >= 13  && time < 17)  return { speed: 24, factor: 1.5, label: '☀️ Afternoon' };
+    if (time >= 17  && time < 20)  return { speed: 16, factor: 1.8, label: '🌆 Evening Rush' };
+    if (time >= 20  && time < 22)  return { speed: 28, factor: 1.4, label: '🌙 Winding Down' };
+    if (time >= 22  || time < 5)   return { speed: 35, factor: 1.3, label: '🌙 Late Night' };
+    if (time >= 5   && time < 6)   return { speed: 33, factor: 1.3, label: '🌄 Early Morning' };
+    return { speed: 25, factor: 1.5, label: '☀️ Normal' };
+}
+
+//-----------------------------------------------------------------------------------------------------------------------------------------------------
 function _chCacheKey(a, b, c, d) {
     return `${(+a).toFixed(5)},${(+b).toFixed(5)}-${(+c).toFixed(5)},${(+d).toFixed(5)}`;
 }
@@ -1327,7 +1346,8 @@ function _straightLineFallback(sLat, sLng, eLat, eLng) {
     const a = Math.sin(dLt/2)**2 + Math.cos(sLat*Math.PI/180)*Math.cos(eLat*Math.PI/180)*Math.sin(dLn/2)**2;
     const d = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     // Firetruck avg speed ~40 km/h urban, 1.35x road detour factor
-    const timeMins = Math.round((d * 1.5) / 30 * 60);
+    const { speed, factor } = getFiretruckSpeed();
+    const timeMins = Math.round((d * factor) / speed * 60);
     const steps = 24;
     const coords = Array.from({length: steps + 1}, (_, i) => {
         const f = i / steps;
@@ -2134,7 +2154,10 @@ async function calculateRoute(start, end) {
             dashArray: rt.isFallback ? '10,8' : 'none' }).addTo(map);
 
         document.getElementById('route-info-box').style.display = 'flex';
+        const { label: timeLabel } = getFiretruckSpeed();
         document.getElementById('route-dist').innerHTML = `<img src="icons/distance.png"> ${rt.distKm} km`;
+        document.querySelector('.ch-badge').textContent = `🚒 CH · ${timeLabel}`;
+
         // Adjust ETA if traffic available
         let etaMin = rt.timeMins;
         if (traffic && traffic.avgJam > 3) {
@@ -2360,7 +2383,8 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
     const isRescued = rescueInfo && rescueInfo.status === 'rescued';
     const gw = getPrimaryGateway();
     const distKm = calcDistance(gw.lat, gw.lng, parseFloat(inc.latitude), parseFloat(inc.longitude));
-    const etaMin = Math.round((distKm * 1.5) / 30 * 60); // CH-style firetruck ETA //BALANCE LANG FOR FIRE TRUCKS
+    const { speed, factor } = getFiretruckSpeed();
+    const etaMin = Math.round((distKm * factor) / speed * 60);  //BALANCE LANG FOR FIRE TRUCKS
     const pred = (inc.ai_prediction||'').toLowerCase();
     const isFire = pred === 'fire';
     document.getElementById('inc-map-sidebar').innerHTML = `
