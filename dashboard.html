@@ -337,37 +337,118 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 .rescue-cancel-btn:hover{border-color:#8b3a1a;color:var(--text);}
 
 /* ===================== INCIDENT MAP MODAL ===================== */
-#incident-map-modal{display:none;position:fixed;inset:0;z-index:24000;background:rgba(0,0,0,.8);backdrop-filter:blur(5px);align-items:center;justify-content:center;}
+#incident-map-modal{display:none;position:fixed;inset:0;z-index:24000;background:rgba(0,0,0,.85);backdrop-filter:blur(6px);align-items:center;justify-content:center;}
 #incident-map-modal.open{display:flex;}
-.inc-map-box{background:linear-gradient(135deg,#1e0a08,#2d1209);border:1px solid var(--accent);border-radius:16px;width:min(860px,96vw);max-height:92vh;display:flex;flex-direction:column;box-shadow:0 0 60px #3a0a00aa;overflow:hidden;}
-.inc-map-header{display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid #4a1a0a55;flex-shrink:0;}
+.inc-map-box{
+    background:linear-gradient(160deg,#1a0805,#2a1008,#1e0906);
+    border:1px solid #6a2a1a66;
+    border-top:1px solid #8b3a1a88;
+    border-radius:20px;
+    width:min(980px,96vw);
+    max-height:92vh;
+    display:flex;flex-direction:column;
+    box-shadow:0 0 80px #3a0a00aa, 0 0 0 1px #1a000033;
+    overflow:hidden;
+}
+.inc-map-header{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:16px 22px;
+    border-bottom:1px solid #3a1a0a44;
+    flex-shrink:0;
+    background:linear-gradient(to right,#1a0805cc,#2a1008cc);
+}
 .inc-map-header h2{font-family:'Cinzel',serif;font-size:13px;color:#e8c4a0;letter-spacing:3px;display:flex;align-items:center;gap:8px;}
-.inc-map-close{font-size:22px;color:#9a6a5a;cursor:pointer;line-height:1;transition:color .2s;}
+.inc-map-header-badges{display:flex;align-items:center;gap:8px;}
+.inc-map-algo-badge{font-size:9px;font-weight:700;color:#f1c40f;letter-spacing:1px;background:#1a1500aa;border:1px solid #f1c40f55;border-radius:5px;padding:3px 8px;}
+.inc-map-close{font-size:22px;color:#9a6a5a;cursor:pointer;line-height:1;transition:color .2s;margin-left:10px;}
 .inc-map-close:hover{color:var(--accent);}
 .inc-map-body{display:flex;flex:1;min-height:0;overflow:hidden;}
-.inc-map-sidebar{width:240px;flex-shrink:0;padding:16px;border-right:1px solid #3a1a0a44;overflow-y:auto;display:flex;flex-direction:column;gap:10px;}
-.inc-map-info-group{background:#2a0a0444;border:1px solid #3a1a0a55;border-radius:9px;padding:12px;}
-.inc-map-info-label{font-size:8px;letter-spacing:2px;color:#7a4a3a;text-transform:uppercase;margin-bottom:6px;}
-.inc-map-info-val{font-size:13px;font-weight:700;color:var(--text);}
-.inc-map-status-active{color:var(--red);}
-.inc-map-status-resolved{color:var(--green);}
-.inc-route-stats{display:flex;gap:6px;}
-.inc-route-stat{flex:1;background:#0a160a55;border:1px solid #2ecc7144;border-radius:7px;padding:8px;text-align:center;}
-.inc-route-stat-val{font-size:16px;font-weight:700;color:var(--green);font-family:Arial,sans-serif;}
-.inc-route-stat-label{font-size:8px;color:#5a3a2a;letter-spacing:1px;text-transform:uppercase;margin-top:2px;}
-.inc-rescue-status{background:linear-gradient(135deg,#1a3a6622,#2a5a9922);border:1px solid #3d9cff44;border-radius:9px;padding:10px;}
-.inc-rescue-status-label{font-size:8px;letter-spacing:2px;color:#3d9cff;text-transform:uppercase;margin-bottom:5px;}
+
+/* ── Sidebar ── */
+.inc-map-sidebar{
+    width:270px;flex-shrink:0;
+    padding:16px 14px;
+    border-right:1px solid #2a1a0a55;
+    overflow-y:auto;
+    display:flex;flex-direction:column;gap:8px;
+    background:#12040288;
+}
+.inc-map-sidebar::-webkit-scrollbar{width:3px;}
+.inc-map-sidebar::-webkit-scrollbar-thumb{background:#3a1a0a55;border-radius:3px;}
+
+/* Status banner at top of sidebar */
+.inc-status-banner{
+    border-radius:10px;padding:10px 12px;
+    display:flex;align-items:center;gap:10px;
+    flex-shrink:0;
+}
+.inc-status-banner.active{background:linear-gradient(135deg,#3a0500aa,#5a0a00aa);border:1px solid #ff475555;}
+.inc-status-banner.resolved{background:linear-gradient(135deg,#0a1a0aaa,#0a2a0aaa);border:1px solid #2ecc7155;}
+.inc-status-icon{font-size:22px;flex-shrink:0;}
+.inc-status-text{flex:1;min-width:0;}
+.inc-status-label{font-size:9px;letter-spacing:2px;color:#7a4a3a;text-transform:uppercase;margin-bottom:2px;}
+.inc-status-val{font-size:13px;font-weight:700;}
+.inc-status-val.fire{color:#ff4757;}
+.inc-status-val.resolved{color:#2ecc71;}
+
+/* Section headers in sidebar */
+.inc-sidebar-section{display:flex;flex-direction:column;gap:6px;}
+.inc-sidebar-section-title{font-size:8px;letter-spacing:2px;color:#5a3a2a;text-transform:uppercase;display:flex;align-items:center;gap:5px;padding-bottom:4px;border-bottom:1px solid #2a1a0a55;}
+.inc-sidebar-section-title::before{content:'';width:3px;height:10px;background:var(--accent);border-radius:2px;flex-shrink:0;}
+
+/* Info rows */
+.inc-info-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;}
+.inc-info-label{font-size:10px;color:#7a4a3a;}
+.inc-info-val{font-size:11px;font-weight:600;color:var(--text);text-align:right;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* Route stats grid — 2×2 */
+.inc-route-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.inc-route-stat{background:#0d0d0d55;border:1px solid #2a2a2a66;border-radius:8px;padding:8px 10px;text-align:center;}
+.inc-route-stat.green{border-color:#2ecc7133;background:#0a160a55;}
+.inc-route-stat.yellow{border-color:#f1c40f33;background:#1a160055;}
+.inc-route-stat.blue{border-color:#3d9cff33;background:#0a101a55;}
+.inc-route-stat.orange{border-color:#ff6b3533;background:#1a0a0055;}
+.inc-route-stat-val{font-size:15px;font-weight:700;font-family:Arial,sans-serif;line-height:1.2;}
+.inc-route-stat-val.green{color:#2ecc71;}
+.inc-route-stat-val.yellow{color:#f1c40f;}
+.inc-route-stat-val.blue{color:#6db8ff;}
+.inc-route-stat-val.orange{color:#ff9055;}
+.inc-route-stat-label{font-size:8px;color:#5a3a2a;letter-spacing:1px;text-transform:uppercase;margin-top:3px;}
+
+/* Traffic status row */
+.inc-traffic-row{display:flex;align-items:center;justify-content:space-between;background:#1a0a0444;border:1px solid #3a1a0a44;border-radius:8px;padding:8px 10px;}
+.inc-traffic-label{font-size:9px;letter-spacing:1px;color:#5a3a2a;text-transform:uppercase;}
+.inc-traffic-badge{font-size:10px;font-weight:700;letter-spacing:.5px;border-radius:5px;padding:3px 8px;border:1px solid;}
+.inc-traffic-badge.free{color:#2ecc71;background:#0a1a0a99;border-color:#2ecc7155;}
+.inc-traffic-badge.moderate{color:#f1c40f;background:#1a160099;border-color:#f1c40f55;}
+.inc-traffic-badge.heavy{color:#ff6b35;background:#1a0a0099;border-color:#ff6b3555;}
+.inc-traffic-badge.severe{color:#ff4757;background:#1a000099;border-color:#ff475555;animation:traffic-severe-pulse 1.4s ease infinite;}
+
+/* Sensor readings compact grid */
+.inc-sensor-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+.inc-sensor-tile{background:#1a0a0444;border:1px solid #2a1a0a44;border-radius:7px;padding:6px 8px;text-align:center;}
+.inc-sensor-tile-val{font-size:13px;font-weight:700;color:#ff904f;font-family:Arial,sans-serif;}
+.inc-sensor-tile-label{font-size:8px;color:#5a3a2a;letter-spacing:1px;text-transform:uppercase;margin-top:2px;}
+
+/* Rescue status card */
+.inc-rescue-card{background:linear-gradient(135deg,#0d1e3388,#0d2a4488);border:1px solid #3d9cff33;border-radius:10px;padding:10px 12px;}
+.inc-rescue-status-label{font-size:8px;letter-spacing:2px;color:#3d9cff;text-transform:uppercase;margin-bottom:6px;}
 .inc-rescue-org-name{font-size:13px;font-weight:700;color:#f0d0b8;margin-bottom:2px;}
-.inc-rescue-time{font-size:10px;color:#7a9abb;}
-.inc-rescue-status-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;margin-top:5px;}
+.inc-rescue-time{font-size:10px;color:#7a9abb;margin-bottom:5px;}
+.inc-rescue-status-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;}
 .inc-rescue-status-badge.en-route{background:#f1c40f22;border:1px solid #f1c40f55;color:#f1c40f;}
 .inc-rescue-status-badge.rescued{background:#2ecc7122;border:1px solid #2ecc7155;color:#2ecc71;}
-.inc-map-rescue-btn{width:100%;padding:10px;background:linear-gradient(135deg,#1a3a66,#2a5a99);border:1px solid #3d9cff66;border-radius:9px;color:white;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;cursor:pointer;transition:.3s;margin-top:4px;}
+
+/* Action buttons */
+.inc-map-rescue-btn{width:100%;padding:10px;background:linear-gradient(135deg,#1a3a66,#2a5a99);border:1px solid #3d9cff55;border-radius:9px;color:white;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;cursor:pointer;transition:.3s;}
 .inc-map-rescue-btn:hover{box-shadow:0 0 16px #3d9cff44;}
-.inc-map-resolve-btn{width:100%;padding:9px;background:#0a1a0a55;border:1px solid #2ecc7166;border-radius:9px;color:#2ecc71;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;cursor:pointer;transition:.3s;margin-top:4px;}
+.inc-map-resolve-btn{width:100%;padding:9px;background:#0a1a0a55;border:1px solid #2ecc7166;border-radius:9px;color:#2ecc71;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;cursor:pointer;transition:.3s;}
 .inc-map-resolve-btn:hover{background:#2ecc7122;box-shadow:0 0 16px #2ecc7144;}
 .inc-map-resolve-btn:disabled{opacity:.4;cursor:not-allowed;}
-.inc-map-map-wrap{flex:1;min-height:0;position:relative;}
+
+/* ── Map area — padded so it doesn't touch edges ── */
+.inc-map-map-wrap{flex:1;min-height:0;padding:14px;background:#0d0402;}
+.inc-map-map-inner{width:100%;height:100%;border-radius:14px;overflow:hidden;border:1px solid #3a1a0a55;box-shadow:0 4px 20px #00000066;}
 #incident-detail-map{width:100%;height:100%;min-height:300px;}
 
 /* ===================== INCIDENT DETAILS MODAL ===================== */
@@ -570,8 +651,9 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
     .adm-grid-4{grid-template-columns:1fr 1fr;}
     .adm-grid-4>*:last-child{grid-column:1/-1;}
     .inc-map-body{flex-direction:column;}
-    .inc-map-sidebar{width:100%;border-right:none;border-bottom:1px solid #3a1a0a44;max-height:220px;overflow-y:auto;}
-    .inc-map-map-wrap{min-height:280px;}
+    .inc-map-sidebar{width:100%;border-right:none;border-bottom:1px solid #3a1a0a44;max-height:260px;overflow-y:auto;}
+    .inc-map-map-wrap{min-height:280px;padding:8px;}
+    .inc-route-stats-grid{grid-template-columns:1fr 1fr;}
     .right-history-view.visible{position:fixed;inset:0;z-index:5000;background:var(--bg-deep);display:flex;flex-direction:column;}
     .right-history-view.visible .history-panel{border-radius:0;border:none;height:100%;padding-bottom:env(safe-area-inset-bottom,0px);}
     .right-history-view.visible .hp-back-row{padding-top:max(14px, env(safe-area-inset-top));min-height:52px;position:sticky;top:0;z-index:10;background:var(--bg-deep);border-bottom:1px solid #3a1a0a44;}
@@ -856,12 +938,17 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
     <div class="inc-map-box">
         <div class="inc-map-header">
             <h2>🔥 Incident Full Details</h2>
-            <span class="inc-map-close" onclick="closeIncidentMapModal()">✕</span>
+            <div class="inc-map-header-badges">
+                <span class="inc-map-algo-badge">🚒 CH ROUTE</span>
+                <span class="inc-map-close" onclick="closeIncidentMapModal()">✕</span>
+            </div>
         </div>
         <div class="inc-map-body">
             <div class="inc-map-sidebar" id="inc-map-sidebar"></div>
             <div class="inc-map-map-wrap">
-                <div id="incident-detail-map"></div>
+                <div class="inc-map-map-inner">
+                    <div id="incident-detail-map"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -1220,20 +1307,24 @@ async function _refreshDetailRouteTraffic() {
         // Redraw gradient on incident modal map
         _detailRouteGradientLayers.forEach(l => { try { l.remove(); } catch {} });
         _detailRouteGradientLayers = _drawGradientRoute(coords, traffic, _incDetailMap, 5);
-        // Update ETA stat
+        // Update named stat elements
+        const elEta    = document.getElementById('imd-eta');
+        const elEtaLbl = document.getElementById('imd-eta-label');
+        const elSpeed  = document.getElementById('imd-speed');
+        const elTraf   = document.getElementById('imd-traffic-badge');
         let etaMin = rt.timeMins;
         if (traffic && traffic.avgJam > 3) etaMin = Math.round(rt.timeMins * (1 + traffic.avgJam / 20));
-        const statEls = document.querySelectorAll('.inc-route-stat-val');
-        if (statEls[1]) {
-            statEls[1].textContent = '~' + etaMin + ' min' + (rt.isFallback ? ' (est.)' : '');
-            const lbl = statEls[1].closest('.inc-route-stat')?.querySelector('.inc-route-stat-label');
-            if (lbl && traffic) {
-                const tj = _jamLabel(traffic.avgJam);
-                lbl.innerHTML = `ETA (CH) <span style="color:${tj.cls==='free'?'#2ecc71':tj.cls==='moderate'?'#f1c40f':tj.cls==='heavy'?'#ff6b35':'#ff4757'};font-size:8px;margin-left:2px;">${tj.text}</span>`;
-                // Flash the ETA value to signal refresh
-                statEls[1].style.transition = 'opacity .3s'; statEls[1].style.opacity = '0.3';
-                setTimeout(() => statEls[1].style.opacity = '1', 350);
-            }
+        if (elEta) {
+            elEta.textContent = '~' + etaMin + ' min' + (rt.isFallback ? ' (est.)' : '');
+            // Flash to signal refresh
+            elEta.style.transition = 'opacity .3s'; elEta.style.opacity = '0.3';
+            setTimeout(() => elEta.style.opacity = '1', 350);
+        }
+        if (traffic) {
+            const tj = _jamLabel(traffic.avgJam);
+            if (elEtaLbl) elEtaLbl.innerHTML = `ETA (CH) <span style="color:${tj.cls==='free'?'#2ecc71':tj.cls==='moderate'?'#f1c40f':tj.cls==='heavy'?'#ff6b35':'#ff4757'};font-size:8px;margin-left:2px;">${tj.text}</span>`;
+            if (elSpeed)  elSpeed.textContent  = traffic.avgSpeed + ' km/h';
+            if (elTraf)  { elTraf.textContent = tj.text; elTraf.className = `inc-traffic-badge ${tj.cls}`; }
         }
     } catch (err) { console.warn('Detail traffic auto-refresh failed:', err.message); }
 }
@@ -2320,20 +2411,96 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
     const pred = (inc.ai_prediction||'').toLowerCase();
     const isFire = pred === 'fire';
     document.getElementById('inc-map-sidebar').innerHTML = `
-        <div class="inc-map-info-group"><div class="inc-map-info-label">Node Status</div>
-            <div class="inc-map-info-val inc-map-status-${isRescued?'resolved':'active'}">${isRescued?'✓ RESOLVED':isFire?'🔥 FIRE ACTIVE':'⚠ ACTIVE'}</div></div>
-        <div class="inc-map-info-group"><div class="inc-map-info-label">Location</div>
-            <div class="inc-map-info-val" style="font-size:12px;">${inc.location_name||`Node ${inc.node_id}`}</div></div>
-        <div class="inc-route-stats">
-            <div class="inc-route-stat"><div class="inc-route-stat-val">${distKm.toFixed(1)} km</div><div class="inc-route-stat-label">Road Dist.</div></div>
-            <div class="inc-route-stat"><div class="inc-route-stat-val">~${etaMin} min</div><div class="inc-route-stat-label">ETA (CH)</div></div>
+        <!-- Status Banner -->
+        <div class="inc-status-banner ${isRescued?'resolved':'active'}">
+            <div class="inc-status-icon">${isRescued?'✅':isFire?'🔥':'⚠️'}</div>
+            <div class="inc-status-text">
+                <div class="inc-status-label">Incident Status</div>
+                <div class="inc-status-val ${isRescued?'resolved':'fire'}">${isRescued?'RESOLVED':isFire?'FIRE ACTIVE':'POSSIBLE FIRE'}</div>
+            </div>
         </div>
-        ${rescueInfo?`<div class="inc-rescue-status"><div class="inc-rescue-status-label">Rescue Status</div>
-            <div class="inc-rescue-org-name">🏢 ${rescueInfo.orgName}</div>
-            <div class="inc-rescue-time">Dispatched: ${rescueInfo.dispatchTime||'—'}</div>
-            <div class="inc-rescue-status-badge ${rescueInfo.status==='rescued'?'rescued':'en-route'}">${rescueInfo.status==='rescued'?'✓ RESOLVED':'🚒 EN ROUTE'}</div></div>`:''}
-        <button class="inc-map-rescue-btn" onclick="closeIncidentMapModal();openRescueModal(${inc.incident_id},'${inc.node_id}','${(inc.location_name||'Node '+inc.node_id).replace(/'/g,"\\'")}')">🚒 DISPATCH RESCUE</button>
-        <button class="inc-map-resolve-btn" id="inc-map-resolve-${inc.incident_id}" onclick="resolveIncident(${inc.incident_id},'${inc.node_id}')" ${isRescued?'disabled':''}>✓ MARK RESOLVED</button>`;
+
+        <!-- Location Info -->
+        <div class="inc-sidebar-section">
+            <div class="inc-sidebar-section-title">Location</div>
+            <div class="inc-info-row">
+                <span class="inc-info-label">Node</span>
+                <span class="inc-info-val" style="font-family:monospace;color:#ff9055;">${inc.node_id||'—'}</span>
+            </div>
+            <div class="inc-info-row">
+                <span class="inc-info-label">Name</span>
+                <span class="inc-info-val">${inc.location_name||`Node ${inc.node_id}`}</span>
+            </div>
+            <div class="inc-info-row">
+                <span class="inc-info-label">Coordinates</span>
+                <span class="inc-info-val" style="font-family:monospace;font-size:9px;color:#7a9abb;">${parseFloat(inc.latitude).toFixed(5)}, ${parseFloat(inc.longitude).toFixed(5)}</span>
+            </div>
+            <div class="inc-info-row">
+                <span class="inc-info-label">Started</span>
+                <span class="inc-info-val" style="font-size:10px;color:#c8a080;">${formatTimestamp(inc.started_at)||'—'}</span>
+            </div>
+        </div>
+
+        <!-- Route Stats 2×2 grid — updated by calculateDetailRoute -->
+        <div class="inc-sidebar-section">
+            <div class="inc-sidebar-section-title">CH Routing · OSRM</div>
+            <div class="inc-route-stats-grid">
+                <div class="inc-route-stat green">
+                    <div class="inc-route-stat-val green" id="imd-dist">${distKm.toFixed(1)} km</div>
+                    <div class="inc-route-stat-label">Distance</div>
+                </div>
+                <div class="inc-route-stat yellow">
+                    <div class="inc-route-stat-val yellow" id="imd-eta">~${etaMin} min</div>
+                    <div class="inc-route-stat-label" id="imd-eta-label">ETA (CH)</div>
+                </div>
+                <div class="inc-route-stat blue">
+                    <div class="inc-route-stat-val blue" id="imd-speed">— km/h</div>
+                    <div class="inc-route-stat-label">Live Speed</div>
+                </div>
+                <div class="inc-route-stat orange">
+                    <div class="inc-route-stat-val orange" id="imd-algo">CH · OSRM</div>
+                    <div class="inc-route-stat-label">Algorithm</div>
+                </div>
+            </div>
+            <div class="inc-traffic-row" style="margin-top:4px;">
+                <span class="inc-traffic-label">Traffic</span>
+                <span class="inc-traffic-badge free" id="imd-traffic-badge">⏳ Loading…</span>
+            </div>
+        </div>
+
+        <!-- Sensor Readings -->
+        ${(inc.temperature!=null||inc.smoke!=null)?`
+        <div class="inc-sidebar-section">
+            <div class="inc-sidebar-section-title">Sensor Readings</div>
+            <div class="inc-sensor-grid">
+                ${inc.temperature!=null?`<div class="inc-sensor-tile"><div class="inc-sensor-tile-val">${inc.temperature}°C</div><div class="inc-sensor-tile-label">Temp</div></div>`:''}
+                ${inc.humidity!=null?`<div class="inc-sensor-tile"><div class="inc-sensor-tile-val" style="color:#6db8ff;">${inc.humidity}%</div><div class="inc-sensor-tile-label">Humidity</div></div>`:''}
+                ${inc.smoke!=null?`<div class="inc-sensor-tile"><div class="inc-sensor-tile-val" style="color:#c8c8c8;">${inc.smoke}</div><div class="inc-sensor-tile-label">Smoke ppm</div></div>`:''}
+                ${inc.flame!=null?`<div class="inc-sensor-tile"><div class="inc-sensor-tile-val" style="color:#ff4757;">${inc.flame}</div><div class="inc-sensor-tile-label">Flame</div></div>`:''}
+            </div>
+            <div class="inc-info-row" style="margin-top:4px;">
+                <span class="inc-info-label">AI Detection</span>
+                <span class="inc-info-val" style="color:${isFire?'#ff4757':'#f1c40f'};">${isFire?'🔥 FIRE':'⚠ POSSIBLE'} · ${inc.confidence_pct??'—'}%</span>
+            </div>
+        </div>`:''}
+
+        <!-- Rescue Status -->
+        ${rescueInfo?`
+        <div class="inc-sidebar-section">
+            <div class="inc-sidebar-section-title">Rescue</div>
+            <div class="inc-rescue-card">
+                <div class="inc-rescue-status-label">Responding Unit</div>
+                <div class="inc-rescue-org-name">🏢 ${rescueInfo.orgName}</div>
+                <div class="inc-rescue-time">Dispatched: ${rescueInfo.dispatchTime||'—'}</div>
+                <div class="inc-rescue-status-badge ${rescueInfo.status==='rescued'?'rescued':'en-route'}">${rescueInfo.status==='rescued'?'✓ RESOLVED':'🚒 EN ROUTE'}</div>
+            </div>
+        </div>`:''}
+
+        <!-- Action Buttons -->
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:auto;padding-top:4px;">
+            <button class="inc-map-rescue-btn" onclick="closeIncidentMapModal();openRescueModal(${inc.incident_id},'${inc.node_id}','${(inc.location_name||'Node '+inc.node_id).replace(/'/g,"\\'")}')">🚒 DISPATCH RESCUE</button>
+            <button class="inc-map-resolve-btn" id="inc-map-resolve-${inc.incident_id}" onclick="resolveIncident(${inc.incident_id},'${inc.node_id}')" ${isRescued?'disabled':''}>✓ MARK RESOLVED</button>
+        </div>`;
 
     if (sidebarOnly) return;
     setTimeout(() => {
@@ -2378,20 +2545,33 @@ async function calculateDetailRoute(start, end) {
             dashArray: rt.isFallback ? '10,8' : 'none' }).addTo(_incDetailMap);
 
         _incDetailMap.fitBounds(L.polyline(rt.coords).getBounds(), {padding:[20,20]});
-        const statEls = document.querySelectorAll('.inc-route-stat-val');
-        if (statEls[0]) statEls[0].textContent = rt.distKm + ' km';
+
+        // Update named stat elements in the redesigned sidebar
+        const elDist    = document.getElementById('imd-dist');
+        const elEta     = document.getElementById('imd-eta');
+        const elEtaLbl  = document.getElementById('imd-eta-label');
+        const elSpeed   = document.getElementById('imd-speed');
+        const elAlgo    = document.getElementById('imd-algo');
+        const elTraf    = document.getElementById('imd-traffic-badge');
+
+        if (elDist)  elDist.textContent  = rt.distKm + ' km';
+        if (elAlgo)  elAlgo.textContent  = rt.isFallback ? 'Straight-line' : 'CH · OSRM';
+
         // Traffic-adjusted ETA
         let etaMin = rt.timeMins;
         if (traffic && traffic.avgJam > 3) etaMin = Math.round(rt.timeMins * (1 + traffic.avgJam / 20));
-        if (statEls[1]) {
-            statEls[1].textContent = '~' + etaMin + ' min' + (rt.isFallback ? ' (est.)' : '');
-            // TOMTOM traffic code — show traffic speed in incident modal ETA label
-            const lbl3 = statEls[1].closest('.inc-route-stat')?.querySelector('.inc-route-stat-label');
-            if (lbl3 && traffic) {
-                const tj = _jamLabel(traffic.avgJam);
-                lbl3.innerHTML = `ETA (CH) <span style="color:${tj.cls==='free'?'#2ecc71':tj.cls==='moderate'?'#f1c40f':tj.cls==='heavy'?'#ff6b35':'#ff4757'};font-size:8px;margin-left:2px;">${tj.text}</span>`;
-            }
+        if (elEta)   elEta.textContent   = '~' + etaMin + ' min' + (rt.isFallback ? ' (est.)' : '');
+
+        if (traffic) {
+            const tj = _jamLabel(traffic.avgJam);
+            if (elEtaLbl) elEtaLbl.innerHTML = `ETA (CH) <span style="color:${tj.cls==='free'?'#2ecc71':tj.cls==='moderate'?'#f1c40f':tj.cls==='heavy'?'#ff6b35':'#ff4757'};font-size:8px;margin-left:2px;">${tj.text}</span>`;
+            if (elSpeed)  elSpeed.textContent  = traffic.avgSpeed + ' km/h';
+            if (elTraf)  { elTraf.textContent = tj.text; elTraf.className = `inc-traffic-badge ${tj.cls}`; }
+        } else {
+            if (elSpeed) elSpeed.textContent = 'No data';
+            if (elTraf)  { elTraf.textContent = '— No data'; elTraf.className = 'inc-traffic-badge free'; }
         }
+
         // TOMTOM traffic code — start 2-min auto-refresh for incident modal
         _startDetailRefresh(rt.coords, rt);
     } catch(e) { console.warn('CH detail route failed:', e.message); }
