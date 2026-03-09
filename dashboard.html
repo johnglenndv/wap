@@ -167,6 +167,8 @@ input:checked+.slider:before{content:"☀️";transform:translateX(26px);}
 #traffic-toggle-btn{top:130px;right:10px;}
 .traffic-btn-active{background:#1a0500cc!important;outline:3px solid var(--accent);}
 .traffic-btn-active img{filter:drop-shadow(0 0 4px #e14f00)!important;}
+/* TOMTOM traffic code — tile overlay outline: drop-shadow gives black border around traffic lines */
+.tomtom-traffic-tiles{filter:drop-shadow(0 0 1.5px #000) drop-shadow(0 0 1px #000);}
 
 /* ===================== FLOATING MAP SEARCH ===================== */
 .map-search-float{position:absolute;top:10px;left:10px;z-index:1000;width:min(260px, calc(100% - 56px));}
@@ -1036,13 +1038,14 @@ let _routeGradientLayers     = [];
 let _detailRouteGradientLayers = [];
 
 // Colour ramp: jam factor 0-10 mapped to orange → deep red
+// TOMTOM traffic code — smooth green→yellow→red colour ramp (HSL hue 120→0)
 function _trafficColor(jamFactor) {
-    // 0=free flow (orange), 10=standstill (deep red)
-    const t = Math.min(Math.max(jamFactor / 10, 0), 1);
-    const r = Math.round(255);
-    const g = Math.round(140 * (1 - t));   // 140→0
-    const b = Math.round(0);
-    return `rgb(${r},${g},${b})`;
+    // jam 0 = free flow = green (hue 120), jam 10 = standstill = red (hue 0)
+    // HSL interpolation gives: green → lime → yellow → orange → red
+    const t   = Math.min(Math.max(jamFactor / 10, 0), 1);
+    const hue = Math.round(120 * (1 - t));   // 120(green)→60(yellow)→0(red)
+    const lit = Math.round(38 + (t < 0.5 ? t * 8 : (1 - t) * 8)); // peak brightness at yellow
+    return `hsl(${hue},100%,${lit}%)`;
 }
 
 // Classify jam factor into human label
@@ -1092,37 +1095,49 @@ async function fetchTrafficOnRoute(coords) {
     }
 }
 
-// Draw a gradient polyline: splits coords into segments, colours each by index
-// blending from orange (#FF8C00) at start to deep red (#CC0000) at end,
-// with congested segments pulled further toward red based on jam factor
+// TOMTOM traffic code — draws gradient route with black outline for visibility
+// Each segment: black shadow (outline) drawn first, then coloured line on top
 function _drawGradientRoute(coords, traffic, mapTarget, weight = 6) {
     const layers = [];
     if (!coords.length) return layers;
 
-    // If no traffic data, fall back to solid orange-red
+    // No traffic data — solid fallback with black outline
     if (!traffic) {
-        layers.push(L.polyline(coords, { color: '#ff4400', weight, opacity: 0.92 }).addTo(mapTarget));
+        // Black outline layer (drawn first, slightly wider)
+        layers.push(L.polyline(coords, { color: '#000000', weight: weight + 3, opacity: 0.55 }).addTo(mapTarget));
+        // Coloured line on top
+        layers.push(L.polyline(coords, { color: '#ff4400', weight, opacity: 0.95 }).addTo(mapTarget));
         return layers;
     }
 
-    // Split route into segments, colour by interpolated jam factor
+    // Split route into per-segment polylines, colour by interpolated jam factor
     const n = coords.length;
     const segCount = Math.max(n - 1, 1);
-    const pts = _samplePoints(coords, Math.min(5, n));
     const jams = traffic.segments.map(s => s.jamFactor);
 
+    // First pass: draw ALL black outline segments (so they sit below colour)
     for (let i = 0; i < n - 1; i++) {
-        // Interpolate jam factor for this segment position
-        const frac = i / segCount;
-        const jamIdx = frac * (jams.length - 1);
-        const lo = Math.floor(jamIdx), hi = Math.min(lo + 1, jams.length - 1);
-        const jf = jams[lo] + (jams[hi] - jams[lo]) * (jamIdx - lo);
+        const outline = L.polyline([coords[i], coords[i + 1]], {
+            color:   '#000000',
+            weight:  weight + 3,   // wider than colour line = visible black border
+            opacity: 0.50,
+        }).addTo(mapTarget);
+        layers.push(outline);
+    }
 
+    // Second pass: draw coloured segments on top of outlines
+    for (let i = 0; i < n - 1; i++) {
+        const frac   = i / segCount;
+        const jamIdx = frac * (jams.length - 1);
+        const lo     = Math.floor(jamIdx);
+        const hi     = Math.min(lo + 1, jams.length - 1);
+        // Smooth interpolation between sampled jam values
+        const jf    = jams[lo] + (jams[hi] - jams[lo]) * (jamIdx - lo);
         const color = _trafficColor(jf);
-        const seg = L.polyline([coords[i], coords[i + 1]], {
+        const seg   = L.polyline([coords[i], coords[i + 1]], {
             color,
-            weight: weight + (jf > 6 ? 1 : 0), // slightly thicker on heavy traffic
-            opacity: 0.95,
+            weight:  weight,
+            opacity: 0.97,
         }).addTo(mapTarget);
         layers.push(seg);
     }
@@ -1159,7 +1174,13 @@ function toggleTrafficLayer() {
             alert('Add your TomTom API key to enable live traffic overlay.\nGet a free key at: developer.tomtom.com');
             return;
         }
-        _trafficTileLayer = L.tileLayer(TOMTOM_TILE_URL, { maxZoom: 19, opacity: 0.75, zIndex: 500 }).addTo(map);
+        // TOMTOM traffic code — higher opacity + black tile border pane for visibility
+        _trafficTileLayer = L.tileLayer(TOMTOM_TILE_URL, {
+            maxZoom: 19,
+            opacity: 0.92,   // was 0.75 — more visible now
+            zIndex:  500,
+            className: 'tomtom-traffic-tiles',
+        }).addTo(map);
         _trafficLayerOn = true;
         if (btn) btn.classList.add('traffic-btn-active');
     }
