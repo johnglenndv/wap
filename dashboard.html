@@ -1362,8 +1362,8 @@ const CH_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 // ═══════════════════════════════════════════════════════════════
 const TOMTOM_KEY           = 'iy3ljq06nVjJYIdgJdqJZAHiDaYPattE';
 const TOMTOM_FLOW_BASE     = 'https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json';
-const TOMTOM_TILE_URL      = `https://api.tomtom.com/traffic/map/4/tile/flow/relative0/{z}/{x}/{y}.png?key=${TOMTOM_KEY}&tileSize=256&style=2`;
-const TRAFFIC_LIVE_INTERVAL = 1_800_000; // TomTom flow data refreshes every ~ 30 minutes
+const TOMTOM_TILE_URL      = `https://api.tomtom.com/traffic/map/4/tile/flow/absolute/{z}/{x}/{y}.png?key=${TOMTOM_KEY}&tileSize=256&style=2`;
+const TRAFFIC_LIVE_INTERVAL = 30_000; // TomTom flow data refreshes every ~ 30 minutes
 
 let _trafficTileLayer  = null;
 let _trafficLayerOn    = false;
@@ -1440,6 +1440,9 @@ function _applyMainRouteTraffic(traffic, rt) {
     _routeGradientLayers.forEach(l => { try { map.removeLayer(l); } catch {} });
     _routeGradientLayers = _drawGradientRoute(_activeRouteState.coords, traffic, map, 6);
     _updateRouteTrafficUI(traffic);
+    const { label: peakLabel } = getFiretruckSpeed();
+    const chBadge = document.querySelector('.ch-badge');
+    if (chBadge) chBadge.textContent = rt.isFallback ? 'Straight-line' : peakLabel;
     let etaMin = rt.timeMins;
     if (traffic && traffic.avgJam > 3) etaMin = Math.round(rt.timeMins * 1.15 * (1 + traffic.avgJam / 20));
     document.getElementById('route-time').innerHTML =
@@ -1568,14 +1571,14 @@ function getFiretruckSpeed() {
     const hour = ph.getHours();
     const min  = ph.getMinutes();
     const time = hour + min / 60;
-    if (time >= 6   && time < 8)   return { speed: 18, factor: 1.7, label: '🌅Morning Rush' }; // 6am to 8am
-    if (time >= 8   && time < 11)  return { speed: 26, factor: 1.5, label: '☀️Normal Day' }; //8am to 11am
-    if (time >= 11  && time < 13)  return { speed: 19, factor: 1.7, label: '🌤Lunch Rush' }; //11am to 1pm
-    if (time >= 13  && time < 17)  return { speed: 24, factor: 1.5, label: '☀️Afternoon' }; //1pm to 5pm
-    if (time >= 17  && time < 20)  return { speed: 16, factor: 1.8, label: '🌆Evening Rush' }; //5pm to 8pm
-    if (time >= 20  && time < 22)  return { speed: 28, factor: 1.4, label: '🌙Winding Down' }; //8pm to 10pm
-    if (time >= 22  || time < 5)   return { speed: 35, factor: 1.3, label: '🌙Late Night' }; //10pm to 5am
-    if (time >= 5   && time < 6)   return { speed: 33, factor: 1.3, label: '🌄Early Morning' }; //5am to 6am
+    if (time >= 6   && time < 8)   return { speed: 18, factor: 1.7, label: 'Morning Rush 🌅' }; // 6am to 8am
+    if (time >= 8   && time < 11)  return { speed: 26, factor: 1.5, label: 'Normal Day ☀️' }; //8am to 11am
+    if (time >= 11  && time < 13)  return { speed: 19, factor: 1.7, label: 'Lunch Rush 🌤' }; //11am to 1pm
+    if (time >= 13  && time < 17)  return { speed: 24, factor: 1.5, label: 'Afternoon ☀️' }; //1pm to 5pm
+    if (time >= 17  && time < 20)  return { speed: 16, factor: 1.8, label: 'Evening Rush 🌆' }; //5pm to 8pm
+    if (time >= 20  && time < 22)  return { speed: 28, factor: 1.4, label: 'Winding Down 🌙' }; //8pm to 10pm
+    if (time >= 22  || time < 5)   return { speed: 35, factor: 1.3, label: 'Late Night 🌙' }; //10pm to 5am
+    if (time >= 5   && time < 6)   return { speed: 33, factor: 1.3, label: 'Early Morning 🌄' }; //5am to 6am
     return { speed: 25, factor: 1.5, label: '☀️Normal' };
 }
 
@@ -2056,10 +2059,30 @@ function connectWebSocket(){
             if(msg.type==='sensor_data'||msg.type==='new_reading'){
                 loadAndPlaceNodes(true);
                 if(_hm_node&&(!msg.node_id||msg.node_id===_hm_node))fetchHistory();
+                // Auto-refresh incident map modal sensor readings if node matches
+                if(_currentOpenIncidentData && msg.node_id === _currentOpenIncidentData.node_id
+                   && document.getElementById('incident-map-modal').classList.contains('open')){
+                    if(msg.temperature != null) _currentOpenIncidentData.temperature = msg.temperature;
+                    if(msg.humidity    != null) _currentOpenIncidentData.humidity    = msg.humidity;
+                    if(msg.smoke       != null) _currentOpenIncidentData.smoke       = msg.smoke;
+                    if(msg.flame       != null) _currentOpenIncidentData.flame       = msg.flame;
+                    if(msg.ai_prediction)       _currentOpenIncidentData.ai_prediction = msg.ai_prediction;
+                    if(msg.confidence  != null) _currentOpenIncidentData.confidence_pct = Math.round(msg.confidence * 100);
+                    openIncidentMapModal(_currentOpenIncidentData, true);
+                }
             }
             if(msg.type==='node_update'){
                 loadAndPlaceNodes(true);
                 if(_hm_node&&(!msg.node_id||msg.node_id===_hm_node))fetchHistory();
+                // Same — refresh modal sidebar if same node
+                if(_currentOpenIncidentData && msg.node_id === _currentOpenIncidentData.node_id
+                   && document.getElementById('incident-map-modal').classList.contains('open')){
+                    if(msg.temperature != null) _currentOpenIncidentData.temperature = msg.temperature;
+                    if(msg.humidity    != null) _currentOpenIncidentData.humidity    = msg.humidity;
+                    if(msg.smoke       != null) _currentOpenIncidentData.smoke       = msg.smoke;
+                    if(msg.flame       != null) _currentOpenIncidentData.flame       = msg.flame;
+                    openIncidentMapModal(_currentOpenIncidentData, true);
+                }
             }
             if(msg.type==='incident_update'){
                 if(msg.action==='resolved' && msg.node_id){
@@ -2084,8 +2107,27 @@ function connectWebSocket(){
                 }
                 loadLiveIncidents(true);
                 if(_currentIncidentTab==='resolved') loadResolvedIncidents();
+                // Auto-refresh incident details modal if open
                 if(document.getElementById('incident-details-modal').classList.contains('open') && _detailsModalIncidentId){
                     openIncidentDetailsModal(_detailsModalIncidentId);
+                }
+                // Auto-refresh incident map modal sidebar if open and same incident
+                if(_currentOpenIncidentData && document.getElementById('incident-map-modal').classList.contains('open')){
+                    // Merge latest sensor data into the cached incident object
+                    const freshInc = _liveIncidentsCache.find(i => i.incident_id == _currentOpenIncidentData.incident_id);
+                    if(freshInc){
+                        _currentOpenIncidentData = freshInc;
+                        openIncidentMapModal(freshInc, true); // sidebar only, no map re-init
+                    } else if(msg.node_id && msg.node_id === _currentOpenIncidentData.node_id){
+                        // Patch sensor fields directly from WS message
+                        if(msg.temperature != null) _currentOpenIncidentData.temperature = msg.temperature;
+                        if(msg.humidity    != null) _currentOpenIncidentData.humidity    = msg.humidity;
+                        if(msg.smoke       != null) _currentOpenIncidentData.smoke       = msg.smoke;
+                        if(msg.flame       != null) _currentOpenIncidentData.flame       = msg.flame;
+                        if(msg.ai_prediction)       _currentOpenIncidentData.ai_prediction = msg.ai_prediction;
+                        if(msg.confidence  != null) _currentOpenIncidentData.confidence_pct = Math.round(msg.confidence * 100);
+                        openIncidentMapModal(_currentOpenIncidentData, true);
+                    }
                 }
             }
             if(msg.type==='gateway_update'){
@@ -2622,8 +2664,32 @@ async function resolveIncident(incidentId, nodeId) {
 
 // ====================== INCIDENT MAP MODAL ======================
 let _incDetailMap = null, _incDetailRouteLayer = null, _incDetailMarkers = [];
+let _currentOpenIncidentData = null; // tracks the currently open incident for live updates
 
+// Peak Period auto-update every 60s habang bukas ung routing just incase matatapos na ang time period update////////////////////////////////
+setInterval(() => {
+    if (!_currentOpenIncidentData) return;
+    const elAlgo = document.getElementById('imd-algo');
+    if (!elAlgo) return;
+    const { label } = getFiretruckSpeed();
+    if (elAlgo.textContent && elAlgo.textContent !== 'Straight-line') {
+        elAlgo.textContent = label;
+    }
+}, 60_000);
+
+// Peak Period auto-update for main map route info box every 60s
+setInterval(() => {
+    if (!_activeRouteState) return;
+    const infoBox = document.getElementById('route-info-box');
+    if (!infoBox || infoBox.style.display === 'none') return;
+    const chBadge = document.querySelector('.ch-badge');
+    if (!chBadge || chBadge.textContent === 'Straight-line') return;
+    const { label } = getFiretruckSpeed();
+    chBadge.textContent = label;
+}, 60_000);
+////////////////////////////////////////////////////////////////PEAK PERIOD END//////////////////////////////////////////////////////////////
 function openIncidentMapModal(inc, sidebarOnly=false) {
+    _currentOpenIncidentData = inc;
     document.getElementById('incident-map-modal').classList.add('open');
     const rescueInfo = _incidentRescueMap[inc.incident_id];
     const isRescued = rescueInfo && rescueInfo.status === 'rescued';
@@ -2806,6 +2872,7 @@ async function calculateDetailRoute(start, end) {
 }
 
 function closeIncidentMapModal() {
+    _currentOpenIncidentData = null;
     document.getElementById('incident-map-modal').classList.remove('open');
     if (_incDetailMap) { _incDetailMap.remove(); _incDetailMap = null; }
     // TOMTOM traffic code — clear detail gradient layers + stop auto-refresh
