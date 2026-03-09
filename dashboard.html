@@ -1653,10 +1653,7 @@ function _updateRouteTrafficUI(traffic) {
         badgeEl.className = `traffic-badge ${lbl.cls} live`;
         badgeEl.style.display = 'inline-block';
     }
-    // Speed is set by _applyMainRouteTraffic with vehicle adjustment — only set here as fallback
-    if (speedEl && speedEl.textContent === '— km/h') {
-        speedEl.textContent = `${Math.round(traffic.avgSpeed * (VEHICLE_TYPES[_selectedVehicle]?.speedMult || 1))} km/h`;
-    }
+    // Speed is handled exclusively by _applyMainRouteTraffic (vehicle-adjusted)
 }
 function toggleTrafficLayer() {
     const btn = document.getElementById('traffic-toggle-btn');
@@ -2932,7 +2929,7 @@ async function resolveIncident(incidentId, nodeId) {
 let _incDetailMap = null, _incDetailRouteLayer = null, _incDetailMarkers = [];
 let _currentOpenIncidentData = null; // tracks the currently open incident for live updates
 
-// Peak Period auto-update every 60s — updates label AND recalculates ETA with new period speed
+// Peak Period auto-update every 60s — updates label AND recalculates ETA with new peak period speed////////////////////////////////////////////////////////
 setInterval(() => {
     if (!_currentOpenIncidentData) return;
     const elAlgo  = document.getElementById('imd-algo');
