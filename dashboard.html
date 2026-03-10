@@ -39,16 +39,17 @@ body{background:var(--bg-deep);font-family:Arial,sans-serif;color:var(--text);tr
 
 /* ===================== HEADER ===================== */
 #main-header{
-    height:calc(var(--hdr) + env(safe-area-inset-top, 0px));
-    padding-top:env(safe-area-inset-top, 0px);
-    background:linear-gradient(to right,#180401f5,#3a1005f5);
+    height:var(--hdr);
+    padding-top:0;
+    background:linear-gradient(to right,#180401,#3a1005);
     border-bottom:none;
     display:flex;align-items:center;justify-content:space-between;
-    padding-left:max(18px, env(safe-area-inset-left));
-    padding-right:max(18px, env(safe-area-inset-right));
+    padding-left:max(14px, env(safe-area-inset-left));
+    padding-right:max(14px, env(safe-area-inset-right));
     position:fixed;top:0;left:0;right:0;z-index:10000;
     box-shadow:none;
     width:100%;box-sizing:border-box;
+    margin:0;
 }
 [data-theme="light"] #main-header{background:linear-gradient(to right,#f5e6dcf8,#ecddd5f8);}
 .header-logo{display:flex;align-items:center;gap:10px;}
@@ -118,7 +119,7 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 /* ===================== DASHBOARD GRID ===================== */
 .dashboard-grid{
     position:fixed;
-    top:calc(var(--hdr) + env(safe-area-inset-top, 0px));
+    top:var(--hdr);
     left:0;right:0;bottom:0;
     padding:12px;display:grid;
     grid-template-columns:60% 1fr;grid-template-rows:auto 1fr;
@@ -256,7 +257,7 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 [data-theme="light"] .map-search-float .suggestions-box{background:#fff8f5f8;border-color:var(--accent);box-shadow:0 8px 24px #00000033;}
 [data-theme="light"] .map-search-float .suggestion-item{color:#1e0e06;border-bottom-color:#c0907833;}
 [data-theme="light"] .map-search-float .suggestion-item:hover{background:#f5e0d466;}
-@media (max-width:600px){.map-search-float{top:8px;left:8px;width:calc(100% - 54px);}}
+/* search float mobile handled in main @media (max-width:600px) block below */
 
 /* ===================== RIGHT COLUMN ===================== */
 .right-col-wrapper{grid-column:2;grid-row:1/3;display:flex;flex-direction:column;gap:10px;min-height:0;overflow:hidden;}
@@ -954,7 +955,14 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 /* ── Mobile (600px and below) ── */
 @media (max-width:600px){
     :root{--hdr:52px;}
-    #main-header{padding:0 10px;padding-left:max(10px,env(safe-area-inset-left));padding-right:max(10px,env(safe-area-inset-right));}
+    #main-header{
+        padding-left:max(10px,env(safe-area-inset-left));
+        padding-right:max(10px,env(safe-area-inset-right));
+    }
+    /* Search bar smaller on mobile — doesn't eat up whole map width */
+    .map-search-float{top:8px;left:8px;width:min(180px, calc(100% - 58px));}
+    .map-search-float .search-wrap input{font-size:11px;padding:7px 30px 7px 10px;}
+    .map-search-float .search-icon{width:13px;right:8px;}
     html,body{height:auto;overflow-y:auto;overflow-x:hidden;}
 
     /* Header */
