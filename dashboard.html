@@ -1521,7 +1521,7 @@ function _deactivateIncidentCardTraffic() { _activeIncidentCardTrafficState = nu
 function _applyMainRouteTraffic(traffic, rt) {
     if (!_activeRouteState) return;
     _routeGradientLayers.forEach(l => { try { map.removeLayer(l); } catch {} });
-    _routeGradientLayers = _drawGradientRoute(_activeRouteState.coords, traffic, map, 6);
+    _routeGradientLayers = _drawGradientRoute(_activeRouteState.coords, traffic, map, 6, _selectedVehicle);
     const { label: peakLabel } = getFiretruckSpeed();
     const chBadge = document.querySelector('.ch-badge');
     if (chBadge) chBadge.textContent = rt.isFallback ? 'Straight-line' : peakLabel;
@@ -1550,7 +1550,7 @@ function _applyMainRouteTraffic(traffic, rt) {
 function _applyDetailRouteTraffic(traffic, rt) {
     if (!_incDetailMap || !_activeDetailRouteState) return;
     _detailRouteGradientLayers.forEach(l => { try { l.remove(); } catch {} });
-    _detailRouteGradientLayers = _drawGradientRoute(_activeDetailRouteState.coords, traffic, _incDetailMap, 5);
+    _detailRouteGradientLayers = _drawGradientRoute(_activeDetailRouteState.coords, traffic, _incDetailMap, 5, _detailVehicleType);
     const elEta    = document.getElementById('imd-eta');
     const elEtaLbl = document.getElementById('imd-eta-label');
     const elSpeed  = document.getElementById('imd-speed');
@@ -1566,7 +1566,8 @@ function _applyDetailRouteTraffic(traffic, rt) {
     if (elEta) elEta.textContent = `~${etaMin} min` + (rt.isFallback ? ' (est.)' : '');
     if (elAlgo) elAlgo.textContent = rt.isFallback ? 'Straight-line' : dLabel;
     if (traffic) {
-        const tj = _jamLabel(traffic.avgJam);
+        const adjustedJam = traffic.avgJam * vt.trafficMult;
+        const tj = _jamLabel(adjustedJam);
         const col = tj.cls==='free'?'#2ecc71':tj.cls==='moderate'?'#f1c40f':tj.cls==='heavy'?'#ff6b35':'#ff4757';
         if (elEtaLbl) elEtaLbl.innerHTML = `ETA · ${vt.label} <span style="color:${col};font-size:8px;margin-left:2px;">${tj.text}</span>`;
         if (elSpeed)  elSpeed.textContent = Math.round(traffic.avgSpeed * vt.speedMult) + ' km/h';
@@ -1630,7 +1631,7 @@ async function fetchTrafficOnRoute(coords) {
         return { avgJam, avgSpeed, segments: valid };
     } catch(err) { console.warn('TomTom traffic:', err.message); return null; }
 }
-function _drawGradientRoute(coords, traffic, mapTarget, weight = 6) {
+function _drawGradientRoute(coords, traffic, mapTarget, weight = 6, vehicleType = null) {
     const layers = [];
     if (!coords.length) return layers;
     if (!traffic) {
@@ -1638,8 +1639,10 @@ function _drawGradientRoute(coords, traffic, mapTarget, weight = 6) {
         layers.push(L.polyline(coords, { color:'#ff4400', weight, opacity:0.95 }).addTo(mapTarget));
         return layers;
     }
+    const vType = vehicleType || _selectedVehicle;
+    const trafficMult = VEHICLE_TYPES[vType]?.trafficMult || 1.0;
     const n = coords.length, segCount = Math.max(n-1,1);
-    const jams = traffic.segments.map(s => s.jamFactor);
+    const jams = traffic.segments.map(s => s.jamFactor * trafficMult);
     for (let i=0;i<n-1;i++) layers.push(L.polyline([coords[i],coords[i+1]],{color:'#000000',weight:weight+3,opacity:0.50}).addTo(mapTarget));
     for (let i=0;i<n-1;i++) {
         const frac=i/segCount, ji=frac*(jams.length-1), lo=Math.floor(ji), hi=Math.min(lo+1,jams.length-1);
@@ -1656,7 +1659,10 @@ function _updateRouteTrafficUI(traffic) {
         if (speedEl) speedEl.textContent = '— km/h';
         return;
     }
-    const lbl = _jamLabel(traffic.avgJam);
+    // Vehicle-aware jam label — motor less affected, big truck more affected
+    const vt = VEHICLE_TYPES[_selectedVehicle];
+    const adjustedJam = traffic.avgJam * vt.trafficMult;
+    const lbl = _jamLabel(adjustedJam);
     if (badgeEl) {
         badgeEl.textContent = lbl.text;
         badgeEl.className = `traffic-badge ${lbl.cls} live`;
