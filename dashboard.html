@@ -5,7 +5,7 @@
     <link rel="icon" type="image/png" href="icons/heading-logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta charset="UTF-8">
     <style>
 /* ===================== CSS VARIABLES ===================== */
@@ -889,88 +889,149 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 
 /* ===================== RESPONSIVE ===================== */
 /* ── Laptop (1024-1280px) ── */
+/* ── Large tablet / small desktop (1280px and below) ── */
 @media (max-width:1280px) and (min-width:901px){
     .dashboard-grid{grid-template-columns:55% 1fr;}
 }
-/* ── Tablet (901px and below) ── */
+
+/* ── Tablet (900px and below) ── */
 @media (max-width:900px){
-    html,body{height:auto;overflow:auto;overflow-x:hidden;}
-    .dashboard-grid{position:static;padding:calc(var(--hdr) + 10px) 10px 20px;display:flex;flex-direction:column;height:auto;overflow:visible;gap:8px;}
+    html,body{height:auto;overflow-y:auto;overflow-x:hidden;}
+    html::-webkit-scrollbar,body::-webkit-scrollbar{display:none;}
+    .dashboard-grid{
+        position:static;
+        padding:calc(var(--hdr) + 10px) 10px 24px;
+        display:flex;flex-direction:column;
+        height:auto;overflow:visible;gap:10px;
+    }
     .sensor-bar-cell{width:100%;}
-    .map-col{height:55vw;min-height:260px;max-height:420px;isolation:isolate;overflow:hidden;width:100%;}
-    .flames-map-wrap{isolation:isolate;}
+    .sensor-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+    .map-col{
+        height:60vw;min-height:300px;max-height:480px;
+        isolation:isolate;overflow:hidden;width:100%;
+    }
+    .flames-map-wrap{isolation:isolate;height:100%;}
+    #flames-map{height:100%;}
     .map-btn,.zoom-group,#route-info-box,.route-menu{z-index:500!important;}
     .map-search-float{z-index:500!important;}
     .right-col-wrapper{min-height:auto;width:100%;}
-    .right-mid-row{grid-template-columns:1fr 1fr;}
+    .right-mid-row{grid-template-columns:1fr 1fr;gap:10px;}
     .adm-grid-4{grid-template-columns:1fr 1fr;}
     .adm-grid-4>*:last-child{grid-column:1/-1;}
+    /* Incident map modal — stack vertically on tablet */
     .inc-map-body{flex-direction:column;}
-    .inc-map-sidebar{width:100%;border-right:none;border-bottom:1px solid #3a1a0a44;max-height:260px;overflow-y:auto;}
+    .inc-map-sidebar{width:100%;border-right:none;border-bottom:1px solid #3a1a0a44;max-height:280px;overflow-y:auto;}
     [data-theme="light"] .inc-map-sidebar{border-bottom-color:#c0907855;}
-    .inc-map-map-wrap{min-height:280px;padding:8px;}
+    .inc-map-map-wrap{min-height:300px;padding:8px;}
     .inc-route-stats-grid{grid-template-columns:1fr 1fr;}
+    /* History panel fullscreen on tablet */
     .right-history-view.visible{position:fixed;inset:0;z-index:5000;background:var(--bg-deep);display:flex;flex-direction:column;}
     .right-history-view.visible .history-panel{border-radius:0;border:none;height:100%;padding-bottom:env(safe-area-inset-bottom,0px);}
-    .right-history-view.visible .hp-back-row{padding-top:max(14px, env(safe-area-inset-top));min-height:52px;position:sticky;top:0;z-index:10;background:var(--bg-deep);border-bottom:1px solid #3a1a0a44;}
-    .hp-back-btn{padding:8px 14px;font-size:13px;min-height:40px;min-width:72px;touch-action:manipulation;}
-    .hp-limit-btn{padding:7px 14px;font-size:11px;min-height:36px;touch-action:manipulation;}
-    .hp-chart-tab{padding:5px 10px;font-size:10px;min-height:32px;touch-action:manipulation;}
+    .right-history-view.visible .hp-back-row{padding-top:max(14px,env(safe-area-inset-top));min-height:52px;position:sticky;top:0;z-index:10;background:var(--bg-deep);border-bottom:1px solid #3a1a0a44;}
+    .hp-back-btn{padding:8px 14px;font-size:13px;min-height:44px;min-width:80px;touch-action:manipulation;}
+    .hp-limit-btn{padding:7px 14px;font-size:11px;min-height:38px;touch-action:manipulation;}
+    .hp-chart-tab{padding:5px 10px;font-size:10px;min-height:34px;touch-action:manipulation;}
+    /* Touch-friendly buttons */
+    .btn-show-map,.btn-details{padding:9px 6px;font-size:12px;min-height:38px;}
+    .incident-btn-row1{gap:8px;}
 }
+
 /* ── Mobile (600px and below) ── */
 @media (max-width:600px){
     :root{--hdr:52px;}
+    html,body{height:auto;overflow-y:auto;overflow-x:hidden;}
+
+    /* Header */
     .header-logo h1{font-size:13px;letter-spacing:1px;}
     .header-logo img{width:30px;}
-    #admin-btn{font-size:9px;padding:4px 8px;letter-spacing:1px;}
+    #admin-btn{font-size:9px;padding:5px 10px;letter-spacing:1px;}
+
+    /* Layout */
+    .dashboard-grid{padding:calc(var(--hdr) + 8px) 8px 24px;gap:8px;}
+
+    /* Sensor bar — 2 columns */
     .sensor-bar{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
     .sensor-tile{padding:10px 8px;gap:6px;}
     .sensor-tile img{width:16px;}
     .sensor-tile-label{font-size:8px;}
     .sensor-tile-val{font-size:14px;}
     .sensor-node-info{display:none;}
-    .map-col{height:72vw;min-height:220px;max-height:340px;}
-    .right-mid-row{grid-template-columns:1fr;}
-    .incidents-panel{max-height:320px;}
+
+    /* Map — taller on mobile, scrollable page handles overflow */
+    .map-col{
+        height:80vw;
+        min-height:280px;
+        max-height:none;
+        width:100%;
+    }
+    .flames-map-wrap{height:100%;}
+    #flames-map{height:100%;}
+
+    /* Right column panels — single column */
+    .right-mid-row{grid-template-columns:1fr;gap:8px;}
+    .incidents-panel{max-height:none;}
+
+    /* Admin */
     .adm-grid-2,.adm-grid-3,.adm-grid-4{grid-template-columns:1fr;}
     .adm-grid-4>*:last-child{grid-column:1;}
     .admin-box{border-radius:10px;}
     .admin-content{padding:12px 12px 16px;}
     #admin-tabs-row{padding:8px 12px 0;gap:3px;}
-    #admin-tabs-row button{padding:6px 10px;font-size:9px;letter-spacing:1px;}
+    #admin-tabs-row button{padding:7px 10px;font-size:9px;letter-spacing:1px;min-height:36px;}
     .adm-section{padding:12px;}
+
+    /* History panel */
     .hp-back-row{padding:10px 12px 8px;gap:6px;flex-wrap:nowrap;align-items:center;}
-    .hp-back-btn{padding:9px 14px;font-size:13px;font-weight:700;min-height:42px;min-width:80px;border-radius:9px;flex-shrink:0;background:linear-gradient(135deg,#3a0a04,#5a1a08);border-color:#8b3a1a88;color:var(--text);}
+    .hp-back-btn{padding:9px 14px;font-size:13px;font-weight:700;min-height:44px;min-width:80px;border-radius:9px;flex-shrink:0;background:linear-gradient(135deg,#3a0a04,#5a1a08);border-color:#8b3a1a88;color:var(--text);touch-action:manipulation;}
     [data-theme="light"] .hp-back-btn{background:linear-gradient(135deg,#f5e0d0,#ecddd5);border-color:#c0907888;}
-    .hp-node-badge{font-size:8px;padding:2px 8px;max-width:100px;}
+    .hp-node-badge{font-size:8px;padding:2px 8px;max-width:110px;}
     .hp-controls{padding:8px 10px 5px;gap:5px;flex-wrap:wrap;}
     .hp-limit-label{font-size:8px;}
-    .hp-limit-btn{padding:7px 12px;font-size:10px;min-height:36px;border-radius:7px;flex:1;}
+    .hp-limit-btn{padding:8px 12px;font-size:10px;min-height:38px;border-radius:7px;flex:1;touch-action:manipulation;}
     .hp-stats{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:5px 10px 0;}
     .hp-stat{font-size:9px;padding:4px 8px;}
     .hp-stat-label{font-size:7px;}
     .hp-chart-wrap{padding:5px 10px 0;}
     .hp-chart-tabs{gap:3px;flex-wrap:wrap;}
-    .hp-chart-tab{padding:5px 8px;font-size:9px;min-height:30px;border-radius:6px;flex:1;text-align:center;}
-    .hp-chart{height:54px;}
+    .hp-chart-tab{padding:6px 8px;font-size:9px;min-height:34px;border-radius:6px;flex:1;text-align:center;touch-action:manipulation;}
+    .hp-chart{height:60px;}
     .hp-record-count{padding:3px 10px 0;font-size:9px;}
     .hp-table-wrap{padding:6px 10px 10px;}
     .hp-table{font-size:9px;}
-    .hp-table thead th{font-size:7px;padding:5px 5px;letter-spacing:0;}
-    .hp-table tbody td{padding:5px 5px;}
-    .inc-map-box{width:100vw;max-height:100dvh;border-radius:0;}
-    .inc-details-box{width:100vw;max-height:100dvh;border-radius:0;}
-    .rescue-box{width:100vw;border-radius:16px 16px 0 0;position:fixed;bottom:0;left:0;}
+    .hp-table thead th{font-size:7px;padding:5px 4px;letter-spacing:0;}
+    .hp-table tbody td{padding:5px 4px;}
+
+    /* Modals — full screen on mobile */
+    .inc-map-box{width:100vw;height:100dvh;max-height:100dvh;border-radius:0;display:flex;flex-direction:column;}
+    .inc-map-body{flex-direction:column;flex:1;min-height:0;}
+    .inc-map-sidebar{width:100%;border-right:none;border-bottom:1px solid #3a1a0a44;max-height:45dvh;overflow-y:auto;flex-shrink:0;}
+    [data-theme="light"] .inc-map-sidebar{border-bottom-color:#c0907855;}
+    .inc-map-map-wrap{flex:1;min-height:0;padding:6px;}
+    #incident-detail-map{height:100% !important;}
+    .inc-details-box{width:100vw;height:100dvh;max-height:100dvh;border-radius:0;}
+    .rescue-box{width:100vw;border-radius:16px 16px 0 0;position:fixed;bottom:0;left:0;max-height:90dvh;overflow-y:auto;}
     #rescue-modal.open{align-items:flex-end;}
-    .respond-box{width:min(340px,94vw);}
-    .inc-details-action-row{flex-direction:column;gap:8px;}
-    .inc-details-rescue-btn,.inc-details-resolve-btn{width:100%;padding:13px;}
+    .respond-box{width:min(360px,96vw);}
+
+    /* Touch-friendly buttons */
+    .btn-show-map,.btn-details{padding:10px 6px;font-size:12px;min-height:40px;touch-action:manipulation;}
+    .incident-btn-row1{gap:8px;}
+    .inc-map-rescue-btn,.inc-map-resolve-btn{min-height:44px;touch-action:manipulation;}
+
+    /* Route info box — narrower on mobile */
+    #route-info-box{min-width:180px;max-width:calc(100vw - 60px);padding:8px 10px;}
+    #route-info-box .rib-grid{grid-template-columns:1fr 1fr 1fr;gap:3px;}
+    .rib-cell-val{font-size:11px;}
 }
+
+/* ── Small mobile (380px and below) ── */
 @media (max-width:380px){
     .hp-chart-tab{font-size:8px;padding:4px 5px;}
     .hp-limit-btn{font-size:9px;padding:6px 8px;}
     .sensor-tile-val{font-size:12px;}
     .header-logo h1{font-size:11px;}
+    .map-col{height:85vw;min-height:260px;}
+    .btn-show-map,.btn-details{font-size:11px;}
 }
     </style>
 </head>
