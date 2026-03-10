@@ -6,6 +6,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#180401">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta charset="UTF-8">
     <style>
 /* ===================== CSS VARIABLES ===================== */
@@ -29,24 +32,25 @@
     --green:#1a9e52; --yellow:#c89400; --red:#d93040; --orange:#d4750a;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
+html{border:none;outline:none;background:#0d0302;}
 html,body{height:100%;overflow:hidden;scrollbar-width:none;}
 html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:none;}
-body{background:var(--bg-deep);font-family:Arial,sans-serif;color:var(--text);transition:background .3s,color .3s;}
+body{background:var(--bg-deep);font-family:Arial,sans-serif;color:var(--text);transition:background .3s,color .3s;border:none;outline:none;}
 
 /* ===================== HEADER ===================== */
 #main-header{
-    height:var(--hdr);
+    height:calc(var(--hdr) + env(safe-area-inset-top, 0px));
+    padding-top:env(safe-area-inset-top, 0px);
     background:linear-gradient(to right,#180401f5,#3a1005f5);
-    border-bottom:1px solid #5a1a0a55;
+    border-bottom:none;
     display:flex;align-items:center;justify-content:space-between;
-    padding:0 18px;
     padding-left:max(18px, env(safe-area-inset-left));
     padding-right:max(18px, env(safe-area-inset-right));
     position:fixed;top:0;left:0;right:0;z-index:10000;
-    box-shadow:0 4px 20px #00000066;
+    box-shadow:none;
     width:100%;box-sizing:border-box;
 }
-[data-theme="light"] #main-header{background:linear-gradient(to right,#f5e6dcf8,#ecddd5f8);border-bottom:1px solid #c0907888;box-shadow:0 4px 20px #00000022;}
+[data-theme="light"] #main-header{background:linear-gradient(to right,#f5e6dcf8,#ecddd5f8);}
 .header-logo{display:flex;align-items:center;gap:10px;}
 .header-logo img{width:40px;filter:drop-shadow(0 0 8px #e14f0077);}
 .header-logo h1{
@@ -113,7 +117,9 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 
 /* ===================== DASHBOARD GRID ===================== */
 .dashboard-grid{
-    position:fixed;top:var(--hdr);left:0;right:0;bottom:0;
+    position:fixed;
+    top:calc(var(--hdr) + env(safe-area-inset-top, 0px));
+    left:0;right:0;bottom:0;
     padding:12px;display:grid;
     grid-template-columns:60% 1fr;grid-template-rows:auto 1fr;
     gap:10px;overflow:hidden;
@@ -146,7 +152,7 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 .map-col{grid-column:1;grid-row:2;position:relative;min-height:0;}
 .flames-map-wrap{border-radius:var(--radius);overflow:hidden;height:100%;border:1px solid #09000099;box-shadow:0 8px 30px #00000066;position:relative;}
 #flames-map{width:100%;height:100%;min-height:200px;}
-.map-btn{position:absolute;z-index:1000;background:white;border:2px solid var(--accent);border-radius:50%;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px #00000055;transition:.2s;}
+.map-btn{position:absolute;z-index:500;background:white;border:2px solid var(--accent);border-radius:50%;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px #00000055;transition:.2s;}
 .map-btn:hover{background:#1a0500cc;outline:3px solid var(--accent);}
 [data-theme="light"] .map-btn{background:#fff8f5;box-shadow:0 2px 8px #00000033;}
 [data-theme="light"] .map-btn:hover{background:#ffe0d0;}
@@ -155,7 +161,7 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 #locate-btn{top:50px;right:10px;}
 #route-btn{top:90px;right:10px;}
 #traffic-toggle-btn{top:130px;right:10px;}
-.zoom-group{position:absolute;bottom:16px;right:10px;z-index:1000;display:flex;flex-direction:column;background:white;border:2px solid var(--accent);border-radius:10px;overflow:hidden;box-shadow:0 2px 8px #00000055;}
+.zoom-group{position:absolute;bottom:14px;right:10px;z-index:500;display:flex;flex-direction:column;background:white;border:2px solid var(--accent);border-radius:10px;overflow:hidden;box-shadow:0 2px 8px #00000055;}
 .zoom-group:hover{outline:3px solid var(--accent);}
 [data-theme="light"] .zoom-group{background:#fff8f5;box-shadow:0 2px 8px #00000033;}
 .zoom-btn{background:transparent;border:none;color:var(--accent);font-size:14px;font-weight:bold;padding:7px 0;width:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s;}
@@ -919,12 +925,12 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
     .sensor-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
     .map-col{
         height:60vw;min-height:300px;max-height:480px;
-        isolation:isolate;overflow:hidden;width:100%;
+        width:100%;position:relative;
     }
     .flames-map-wrap{isolation:isolate;height:100%;}
     #flames-map{height:100%;}
     .map-btn,.zoom-group,.route-menu{z-index:500!important;}
-    #route-info-box{z-index:9999;}
+    #route-info-box{z-index:9999!important;}
     .map-search-float{z-index:500!important;}
     .right-col-wrapper{min-height:auto;width:100%;}
     .right-mid-row{grid-template-columns:1fr 1fr;gap:10px;}
@@ -1153,33 +1159,6 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
                     </div>
                 </div>
             </div>
-            <div id="route-info-box">
-                <!-- top row: time period + traffic badge + close -->
-                <div class="rib-top">
-                    <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0;">
-                        <span class="ch-badge">CH ROUTE</span>
-                        <span class="traffic-badge free" id="route-traffic-badge" style="display:none;">🟢 FREE</span>
-                    </div>
-                    <button id="close-info-btn">×</button>
-                </div>
-                <!-- vehicle selector -->
-                <!-- (selector is in the route-menu popup above) -->
-                <!-- grid: distance | ETA | speed -->
-                <div class="rib-grid">
-                    <div class="rib-cell">
-                        <span id="route-dist" class="rib-cell-val" style="color:var(--green);display:flex;align-items:center;gap:3px;"><img src="icons/distance.png" style="width:14px;"> 0.00 km</span>
-                        <span class="rib-cell-label">Distance</span>
-                    </div>
-                    <div class="rib-cell">
-                        <span id="route-time" class="rib-cell-val" style="color:var(--yellow);display:flex;align-items:center;gap:3px;"><img src="icons/minutes.png" style="width:14px;"> 0 min</span>
-                        <span class="rib-cell-label">ETA</span>
-                    </div>
-                    <div class="rib-cell">
-                        <span id="route-traffic-speed" class="rib-cell-val" style="color:#4da8ff;font-weight:700;">— km/h</span>
-                        <span class="rib-cell-label">Live Speed</span>
-                    </div>
-                </div>
-            </div>
             <!-- TOMTOM traffic code — live traffic overlay toggle button -->
             <button class="map-btn" id="traffic-toggle-btn" title="Toggle Live Traffic Overlay">
                 <img src="icons/TrafficChecker.png" alt="Traffic" style="filter:hue-rotate(200deg) saturate(1.5);">
@@ -1188,6 +1167,30 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
                 <button class="zoom-btn" id="zoom-in">+</button>
                 <div class="zoom-div"></div>
                 <button class="zoom-btn" id="zoom-out">−</button>
+            </div>
+        </div>
+        <!-- route-info-box moved OUTSIDE flames-map-wrap so overflow:hidden doesn't clip it -->
+        <div id="route-info-box">
+            <div class="rib-top">
+                <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0;">
+                    <span class="ch-badge">CH ROUTE</span>
+                    <span class="traffic-badge free" id="route-traffic-badge" style="display:none;">🟢 FREE</span>
+                </div>
+                <button id="close-info-btn">×</button>
+            </div>
+            <div class="rib-grid">
+                <div class="rib-cell">
+                    <span id="route-dist" class="rib-cell-val" style="color:var(--green);display:flex;align-items:center;gap:3px;"><img src="icons/distance.png" style="width:14px;"> 0.00 km</span>
+                    <span class="rib-cell-label">Distance</span>
+                </div>
+                <div class="rib-cell">
+                    <span id="route-time" class="rib-cell-val" style="color:var(--yellow);display:flex;align-items:center;gap:3px;"><img src="icons/minutes.png" style="width:14px;"> 0 min</span>
+                    <span class="rib-cell-label">ETA</span>
+                </div>
+                <div class="rib-cell">
+                    <span id="route-traffic-speed" class="rib-cell-val" style="color:#4da8ff;font-weight:700;">— km/h</span>
+                    <span class="rib-cell-label">Live Speed</span>
+                </div>
             </div>
         </div>
     </div>
