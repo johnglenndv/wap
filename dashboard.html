@@ -2647,6 +2647,34 @@ async function loadLiveIncidents(silent=false){
         const incidents=await res.json();
         _liveIncidentsCache = incidents;
         const listEl=document.getElementById('incident-list');
+
+        // Check if same incidents as before — if so, patch only (no blink)
+        const existingIds = [...listEl.querySelectorAll('.incident-card')].map(c => c.id.replace('incident-card-',''));
+        const newIds = incidents.map(i => String(i.incident_id));
+        const sameSet = existingIds.length === newIds.length && newIds.every(id => existingIds.includes(id));
+
+        if(silent && sameSet && incidents.length){
+            // Silent patch — update only changed fields, no re-render, no blink
+            incidents.forEach(inc => {
+                const card = document.getElementById(`incident-card-${inc.incident_id}`);
+                if (!card) return;
+                const rescueInfo = _incidentRescueMap[inc.incident_id];
+                const isEnRoute = rescueInfo?.status === 'en_route';
+                const isRescued = rescueInfo?.status === 'rescued';
+                const pred = (inc.ai_prediction||'').toLowerCase();
+                const isFire = pred === 'fire';
+                const confColor = inc.confidence_pct>=70?'var(--green)':inc.confidence_pct>=40?'var(--yellow)':'var(--orange)';
+                // Patch status line
+                const metaEls = card.querySelectorAll('.incident-meta');
+                if (metaEls[0]) metaEls[0].innerHTML = `Status: <span class="${inc.status_class}">${inc.status}</span>${isEnRoute?` · <span style="color:#f1c40f;font-weight:600;">🚒 En Route</span>`:isRescued?` · <span style="color:#2ecc71;font-weight:600;">✓ Rescued</span>`:''}`;
+                if (metaEls[1]) metaEls[1].innerHTML = `AI: <strong>${isFire?'🔥 FIRE':'⚠ POSSIBLE'}</strong> <span style="color:${confColor};font-weight:600;">(${inc.confidence_pct}%)</span>`;
+            });
+            _patchIncidentCards();
+            document.getElementById('incidents-last-update').textContent=`Updated: ${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:true})}`;
+            return;
+        }
+
+        // Full re-render — only when incident list changes
         listEl.innerHTML='';
         if(!incidents.length){
             listEl.innerHTML='<div class="node-placeholder">No active incidents right now</div>';
@@ -2654,8 +2682,7 @@ async function loadLiveIncidents(silent=false){
         } else {
             // Fetch OSRM routes per incident for accurate traffic data
             const gw0ref = getPrimaryGateway();
-            // Pre-fetch OSRM coords + traffic per incident (parallel)
-            const _incRouteMap = {}; // incidentId → { coords, traffic, distKm, timeMins }
+            const _incRouteMap = {};
             await Promise.allSettled(incidents.map(async inc => {
                 if (!inc.latitude || !inc.longitude) return;
                 try {
@@ -2664,7 +2691,6 @@ async function loadLiveIncidents(silent=false){
                     _incRouteMap[inc.incident_id] = { coords: rt.coords, traffic, distKm: rt.distKm, timeMins: rt.timeMins };
                 } catch(e) {}
             }));
-            // Use first incident coords for shared card traffic ticker
             const firstInc = incidents[0];
             if (firstInc && _incRouteMap[firstInc.incident_id]) {
                 const _sharedCoords = _incRouteMap[firstInc.incident_id].coords;
