@@ -3213,24 +3213,36 @@ async function openIncidentDetailsModal(incidentId) {
     const _vt = VEHICLE_TYPES[_vehicleType];
     const _etaMin = getVehicleETA(_baseTime, _traffic, _vehicleType);
     const _liveSpeed = _traffic ? Math.round(_traffic.avgSpeed * _vt.speedMult) : Math.round(_spd * _vt.speedMult);
-    // Start own traffic ticker for this modal using straight-line sample points around the incident
+    // Start own traffic ticker using actual OSRM route coords (not straight-line)
     if (data.latitude && data.longitude) {
         const _gw2 = getPrimaryGateway();
         const _iLat = parseFloat(data.latitude), _iLng = parseFloat(data.longitude);
-        // Generate 8 evenly spaced points from gateway to incident
-        const _sampleCoords = Array.from({length: 8}, (_, i) => {
-            const t = i / 7;
-            return [_gw2.lat + (_iLat - _gw2.lat) * t, _gw2.lng + (_iLng - _gw2.lng) * t];
-        });
-        _activateDetailsModalTraffic(_sampleCoords);
-        // Immediate first fetch — don't wait 30s
-        fetchTrafficOnRoute(_sampleCoords).then(t => {
+        // Fetch actual OSRM route coords then activate traffic ticker
+        chRoute(_gw2.lat, _gw2.lng, _iLat, _iLng).then(rt => {
+            _activateDetailsModalTraffic(rt.coords);
+            // Immediate first fetch with real road coords
+            return fetchTrafficOnRoute(rt.coords);
+        }).then(t => {
             if (t && _activeDetailsModalTrafficState) {
                 _activeDetailsModalTrafficState.lastTraffic = t;
                 _activeDetailsModalTrafficState.lastFetch = Date.now();
                 _patchDetailsModal();
             }
-        }).catch(() => {});
+        }).catch(() => {
+            // Fallback to straight-line if OSRM fails
+            const _sampleCoords = Array.from({length: 8}, (_, i) => {
+                const t = i / 7;
+                return [_gw2.lat + (_iLat - _gw2.lat) * t, _gw2.lng + (_iLng - _gw2.lng) * t];
+            });
+            _activateDetailsModalTraffic(_sampleCoords);
+            fetchTrafficOnRoute(_sampleCoords).then(t => {
+                if (t && _activeDetailsModalTrafficState) {
+                    _activeDetailsModalTrafficState.lastTraffic = t;
+                    _activeDetailsModalTrafficState.lastFetch = Date.now();
+                    _patchDetailsModal();
+                }
+            }).catch(() => {});
+        });
     }
     body.innerHTML = `
         <div class="inc-details-section">
