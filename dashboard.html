@@ -39,8 +39,12 @@ body{background:var(--bg-deep);font-family:Arial,sans-serif;color:var(--text);tr
     background:linear-gradient(to right,#180401f5,#3a1005f5);
     border-bottom:1px solid #5a1a0a55;
     display:flex;align-items:center;justify-content:space-between;
-    padding:0 18px;position:fixed;top:0;left:0;right:0;z-index:10000;
+    padding:0 18px;
+    padding-left:max(18px, env(safe-area-inset-left));
+    padding-right:max(18px, env(safe-area-inset-right));
+    position:fixed;top:0;left:0;right:0;z-index:10000;
     box-shadow:0 4px 20px #00000066;
+    width:100%;box-sizing:border-box;
 }
 [data-theme="light"] #main-header{background:linear-gradient(to right,#f5e6dcf8,#ecddd5f8);border-bottom:1px solid #c0907888;box-shadow:0 4px 20px #00000022;}
 .header-logo{display:flex;align-items:center;gap:10px;}
@@ -151,7 +155,7 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 #locate-btn{top:50px;right:10px;}
 #route-btn{top:90px;right:10px;}
 #traffic-toggle-btn{top:130px;right:10px;}
-.zoom-group{position:absolute;bottom:60px;right:10px;z-index:1000;display:flex;flex-direction:column;background:white;border:2px solid var(--accent);border-radius:10px;overflow:hidden;box-shadow:0 2px 8px #00000055;}
+.zoom-group{position:absolute;bottom:16px;right:10px;z-index:1000;display:flex;flex-direction:column;background:white;border:2px solid var(--accent);border-radius:10px;overflow:hidden;box-shadow:0 2px 8px #00000055;}
 .zoom-group:hover{outline:3px solid var(--accent);}
 [data-theme="light"] .zoom-group{background:#fff8f5;box-shadow:0 2px 8px #00000033;}
 .zoom-btn{background:transparent;border:none;color:var(--accent);font-size:14px;font-weight:bold;padding:7px 0;width:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s;}
@@ -178,7 +182,7 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 /* ── CH Route info box ── */
 #route-info-box{
     position:absolute;top:20px;left:50%;transform:translateX(-50%);
-    z-index:1001;background:#1a0806f0;
+    z-index:9999!important;background:#1a0806f0;
     border:2px solid var(--accent);border-radius:14px;
     padding:10px 14px 10px 14px;
     display:none;flex-direction:column;gap:6px;
@@ -919,7 +923,8 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
     }
     .flames-map-wrap{isolation:isolate;height:100%;}
     #flames-map{height:100%;}
-    .map-btn,.zoom-group,#route-info-box,.route-menu{z-index:500!important;}
+    .map-btn,.zoom-group,.route-menu{z-index:500!important;}
+    #route-info-box{z-index:9999;}
     .map-search-float{z-index:500!important;}
     .right-col-wrapper{min-height:auto;width:100%;}
     .right-mid-row{grid-template-columns:1fr 1fr;gap:10px;}
@@ -943,6 +948,7 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 /* ── Mobile (600px and below) ── */
 @media (max-width:600px){
     :root{--hdr:52px;}
+    #main-header{padding:0 10px;padding-left:max(10px,env(safe-area-inset-left));padding-right:max(10px,env(safe-area-inset-right));}
     html,body{height:auto;overflow-y:auto;overflow-x:hidden;}
 
     /* Header */
