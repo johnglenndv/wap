@@ -1549,6 +1549,10 @@ function _applyMainRouteTraffic(traffic, rt) {
 // Apply traffic to incident modal route
 function _applyDetailRouteTraffic(traffic, rt) {
     if (!_incDetailMap || !_activeDetailRouteState) return;
+    // Declare vehicle type FIRST before any usage
+    const _detailRescueInfo = _incidentRescueMap[_currentOpenIncidentData?.incident_id];
+    const _detailVehicleType = _detailRescueInfo?.vehicleType || _selectedVehicle;
+    const vt = VEHICLE_TYPES[_detailVehicleType];
     _detailRouteGradientLayers.forEach(l => { try { l.remove(); } catch {} });
     _detailRouteGradientLayers = _drawGradientRoute(_activeDetailRouteState.coords, traffic, _incDetailMap, 5, _detailVehicleType);
     const elEta    = document.getElementById('imd-eta');
@@ -1557,10 +1561,6 @@ function _applyDetailRouteTraffic(traffic, rt) {
     const elTraf   = document.getElementById('imd-traffic-badge');
     const elAlgo   = document.getElementById('imd-algo');
     const { label: dLabel } = getFiretruckSpeed();
-    // Use dispatched vehicle type — same as card + full details
-    const _detailRescueInfo = _incidentRescueMap[_currentOpenIncidentData?.incident_id];
-    const _detailVehicleType = _detailRescueInfo?.vehicleType || _selectedVehicle;
-    const vt = VEHICLE_TYPES[_detailVehicleType];
     // Vehicle-aware ETA
     const etaMin = getVehicleETA(rt.timeMins, traffic, _detailVehicleType);
     if (elEta) elEta.textContent = `~${etaMin} min` + (rt.isFallback ? ' (est.)' : '');
@@ -2657,13 +2657,11 @@ async function loadLiveIncidents(silent=false){
             const firstInc = incidents[0];
             let _cardTrafficData = _activeIncidentCardTrafficState?.lastTraffic || _activeDetailRouteState?.lastTraffic || _activeRouteState?.lastTraffic || null;
             if (firstInc.latitude && firstInc.longitude) {
-                const midLat = (gw0ref.lat + parseFloat(firstInc.latitude)) / 2;
-                const midLng = (gw0ref.lng + parseFloat(firstInc.longitude)) / 2;
-                const _cardCoords = [
-                    [gw0ref.lat, gw0ref.lng],
-                    [midLat, midLng],
-                    [parseFloat(firstInc.latitude), parseFloat(firstInc.longitude)]
-                ];
+                const _iLat = parseFloat(firstInc.latitude), _iLng = parseFloat(firstInc.longitude);
+                const _cardCoords = Array.from({length: 8}, (_, i) => {
+                    const t = i / 7;
+                    return [gw0ref.lat + (_iLat - gw0ref.lat) * t, gw0ref.lng + (_iLng - gw0ref.lng) * t];
+                });
                 try {
                     _cardTrafficData = await fetchTrafficOnRoute(_cardCoords);
                 } catch(e) {}
@@ -3218,12 +3216,21 @@ async function openIncidentDetailsModal(incidentId) {
     // Start own traffic ticker for this modal using straight-line sample points around the incident
     if (data.latitude && data.longitude) {
         const _gw2 = getPrimaryGateway();
-        const _sampleCoords = [
-            [_gw2.lat, _gw2.lng],
-            [(_gw2.lat + parseFloat(data.latitude)) / 2, (_gw2.lng + parseFloat(data.longitude)) / 2],
-            [parseFloat(data.latitude), parseFloat(data.longitude)]
-        ];
+        const _iLat = parseFloat(data.latitude), _iLng = parseFloat(data.longitude);
+        // Generate 8 evenly spaced points from gateway to incident
+        const _sampleCoords = Array.from({length: 8}, (_, i) => {
+            const t = i / 7;
+            return [_gw2.lat + (_iLat - _gw2.lat) * t, _gw2.lng + (_iLng - _gw2.lng) * t];
+        });
         _activateDetailsModalTraffic(_sampleCoords);
+        // Immediate first fetch — don't wait 30s
+        fetchTrafficOnRoute(_sampleCoords).then(t => {
+            if (t && _activeDetailsModalTrafficState) {
+                _activeDetailsModalTrafficState.lastTraffic = t;
+                _activeDetailsModalTrafficState.lastFetch = Date.now();
+                _patchDetailsModal();
+            }
+        }).catch(() => {});
     }
     body.innerHTML = `
         <div class="inc-details-section">
