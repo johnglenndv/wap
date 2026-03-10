@@ -607,6 +607,9 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 .inc-timeline-item{display:flex;align-items:flex-start;gap:12px;padding:8px 0;position:relative;}
 .inc-timeline-item:not(:last-child)::after{content:'';position:absolute;left:10px;top:28px;bottom:-4px;width:2px;background:#3a1a0a66;}
 [data-theme="light"] .inc-timeline-item:not(:last-child)::after{background:#c0907855;}
+.inc-timeline-item.incident:not(:last-child)::after{background:linear-gradient(to bottom,#ff475788,#f1c40f44);}
+.inc-timeline-item.dispatched-step:not(:last-child)::after{background:linear-gradient(to bottom,#f1c40f88,#3d9cff44);}
+.inc-timeline-item.en-route-step:not(:last-child)::after{background:linear-gradient(to bottom,#3d9cff88,#2ecc7144);}
 .inc-timeline-dot{width:20px;height:20px;border-radius:50%;border:2px solid;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;margin-top:2px;}
 .inc-timeline-dot.dispatched{border-color:#f1c40f;background:#f1c40f22;color:#f1c40f;}
 [data-theme="light"] .inc-timeline-dot.dispatched{border-color:#c89400;background:#fff8e0;color:#8a6400;}
@@ -3296,10 +3299,10 @@ async function openIncidentDetailsModal(incidentId) {
         <div class="inc-details-section">
             <div class="inc-details-section-title">Response Timeline</div>
             <div class="inc-response-timeline">
-                <div class="inc-timeline-item"><div class="inc-timeline-dot incident">🔥</div><div class="inc-timeline-content"><div class="inc-timeline-action">Fire Detected</div><div class="inc-timeline-time">${formatTimestamp(data.started_at)||'—'}</div></div></div>
+                <div class="inc-timeline-item incident"><div class="inc-timeline-dot incident">🔥</div><div class="inc-timeline-content"><div class="inc-timeline-action">Fire Detected</div><div class="inc-timeline-time">${formatTimestamp(data.started_at)||'—'}</div></div></div>
                 ${rescueInfo?`
-                <div class="inc-timeline-item"><div class="inc-timeline-dot dispatched">🚨</div><div class="inc-timeline-content"><div class="inc-timeline-action">Rescue Dispatched</div><div class="inc-timeline-time">${rescueInfo.dispatchTime||'—'}</div><div class="inc-timeline-org">${rescueInfo.orgName}</div></div></div>
-                <div class="inc-timeline-item"><div class="inc-timeline-dot en-route">🚒</div><div class="inc-timeline-content"><div class="inc-timeline-action">En Route to Scene</div><div class="inc-timeline-time">${rescueInfo.dispatchTime||'—'}</div><div class="inc-timeline-org">${rescueInfo.orgName}</div></div></div>
+                <div class="inc-timeline-item dispatched-step"><div class="inc-timeline-dot dispatched">🚨</div><div class="inc-timeline-content"><div class="inc-timeline-action">Rescue Dispatched</div><div class="inc-timeline-time">${rescueInfo.dispatchTime||'—'}</div><div class="inc-timeline-org">${rescueInfo.orgName}</div></div></div>
+                <div class="inc-timeline-item en-route-step"><div class="inc-timeline-dot en-route">🚒</div><div class="inc-timeline-content"><div class="inc-timeline-action">En Route to Scene</div><div class="inc-timeline-time">${rescueInfo.dispatchTime||'—'}</div><div class="inc-timeline-org">${rescueInfo.orgName}</div></div></div>
                 ${rescueInfo.status==='rescued'?`<div class="inc-timeline-item"><div class="inc-timeline-dot rescued">✓</div><div class="inc-timeline-content"><div class="inc-timeline-action">Incident Resolved</div><div class="inc-timeline-time">${rescueInfo.rescuedTime||'—'}</div><div class="inc-timeline-org">${rescueInfo.orgName}</div></div></div>`:''}`
                 :'<div class="no-response-msg">No rescue dispatched yet</div>'}
             </div>
@@ -3312,12 +3315,8 @@ async function openIncidentDetailsModal(incidentId) {
             ${data.smoke!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Smoke</span><span class="inc-details-row-val">${data.smoke} ppm</span></div>`:''}
             ${data.flame!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Flame Sensor</span><span class="inc-details-row-val">${data.flame}</span></div>`:''}
         </div>`:''}
-        ${(!isRescued&&!isAlreadyResolved)?`
-        <div class="inc-details-action-row">
-            <button class="inc-details-rescue-btn" onclick="closeIncidentDetailsModal();openRescueModal(${incidentId},'${data.node_id||''}','${(data.location_name||'Node '+(data.node_id||'')).replace(/'/g,"\\'")}')">🚒 Dispatch Rescue</button>
-            <button class="inc-details-resolve-btn" id="details-resolve-btn-${incidentId}" onclick="resolveIncident(${incidentId},'${data.node_id||''}')">✓ Mark Resolved</button>
-        </div>`:`
-        <div style="margin-top:16px;padding:10px;background:#0a1a0a55;border:1px solid #2ecc7144;border-radius:9px;text-align:center;color:#2ecc71;font-size:12px;font-weight:600;">✓ This incident has been resolved</div>`}`;
+        ${isAlreadyResolved||isRescued?`
+        <div style="margin-top:16px;padding:10px;background:#0a1a0a55;border:1px solid #2ecc7144;border-radius:9px;text-align:center;color:#2ecc71;font-size:12px;font-weight:600;">✓ This incident has been resolved</div>`:''}`;
 }
 
 function closeIncidentDetailsModal() { document.getElementById('incident-details-modal').classList.remove('open'); _detailsModalIncidentId = null; _deactivateDetailsModalTraffic(); }
