@@ -1586,12 +1586,12 @@ function _trafficColor(jamFactor) {
     return `hsl(${hue},100%,${lit}%)`;
 }
 function _jamLabel(jf) {
-    if (jf <= 2)  return { cls: 'free',     text: '🟢 FREE FLOW' };
-    if (jf <= 4)  return { cls: 'moderate', text: '🟡 MODERATE' };
-    if (jf <= 7)  return { cls: 'heavy',    text: '🟠 HEAVY' };
-    return              { cls: 'severe',    text: '🔴 SEVERE' };
+    if (jf <= 1.5) return { cls: 'free',     text: '🟢 FREE FLOW' };
+    if (jf <= 3.5) return { cls: 'moderate', text: '🟡 MODERATE' };
+    if (jf <= 6.5) return { cls: 'heavy',    text: '🟠 HEAVY' };
+    return               { cls: 'severe',    text: '🔴 SEVERE' };
 }
-function _samplePoints(coords, n = 6) {
+function _samplePoints(coords, n = 10) {
     if (coords.length <= n) return coords;
     const step = (coords.length - 1) / (n - 1);
     return Array.from({ length: n }, (_, i) => coords[Math.round(i * step)]);
@@ -1602,22 +1602,31 @@ async function _fetchFlowPoint(lat, lng) {
     if (!r.ok) throw new Error(`TomTom HTTP ${r.status}`);
     const j = await r.json();
     const fd = j.flowSegmentData;
+    const currentSpeed  = fd.currentSpeed;
+    const freeFlowSpeed = fd.freeFlowSpeed;
+    // Use speed ratio for jamFactor — more accurate than travelTime ratio
+    // 0 = free flow, 10 = completely stopped
+    const jamFactor = freeFlowSpeed > 0
+        ? Math.max(0, Math.min(10, (1 - currentSpeed / freeFlowSpeed) * 10))
+        : 0;
     return {
-        currentSpeed:  fd.currentSpeed,
-        freeFlowSpeed: fd.freeFlowSpeed,
-        jamFactor:     Math.min(fd.currentTravelTime / fd.freeFlowTravelTime * 5, 10),
-        confidence:    fd.confidence,
+        currentSpeed,
+        freeFlowSpeed,
+        jamFactor,
+        confidence: fd.confidence,
     };
 }
 async function fetchTrafficOnRoute(coords) {
     if (!TOMTOM_KEY || TOMTOM_KEY === 'YOUR_TOMTOM_API_KEY') return null;
     try {
-        const pts = _samplePoints(coords, 6);
+        const pts = _samplePoints(coords, 10);
         const results = await Promise.allSettled(pts.map(p => _fetchFlowPoint(p[0], p[1])));
         const valid = results.filter(r => r.status === 'fulfilled').map(r => r.value);
         if (!valid.length) return null;
-        const avgJam   = valid.reduce((s, v) => s + v.jamFactor, 0) / valid.length;
-        const avgSpeed = Math.round(valid.reduce((s, v) => s + v.currentSpeed, 0) / valid.length);
+        // Weight by confidence — more confident readings have more influence
+        const totalConf = valid.reduce((s, v) => s + (v.confidence || 1), 0);
+        const avgJam   = valid.reduce((s, v) => s + v.jamFactor   * (v.confidence || 1), 0) / totalConf;
+        const avgSpeed = Math.round(valid.reduce((s, v) => s + v.currentSpeed * (v.confidence || 1), 0) / totalConf);
         return { avgJam, avgSpeed, segments: valid };
     } catch(err) { console.warn('TomTom traffic:', err.message); return null; }
 }
