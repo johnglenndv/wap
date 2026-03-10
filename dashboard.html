@@ -2652,28 +2652,30 @@ async function loadLiveIncidents(silent=false){
             listEl.innerHTML='<div class="node-placeholder">No active incidents right now</div>';
             _deactivateIncidentCardTraffic();
         } else {
-            // Fetch TomTom traffic FIRST before rendering cards so speed is live immediately
+            // Fetch OSRM routes per incident for accurate traffic data
             const gw0ref = getPrimaryGateway();
-            const firstInc = incidents[0];
-            let _cardTrafficData = _activeIncidentCardTrafficState?.lastTraffic || _activeDetailRouteState?.lastTraffic || _activeRouteState?.lastTraffic || null;
-            if (firstInc.latitude && firstInc.longitude) {
-                const _iLat = parseFloat(firstInc.latitude), _iLng = parseFloat(firstInc.longitude);
-                const _cardCoords = Array.from({length: 8}, (_, i) => {
-                    const t = i / 7;
-                    return [gw0ref.lat + (_iLat - gw0ref.lat) * t, gw0ref.lng + (_iLng - gw0ref.lng) * t];
-                });
+            // Pre-fetch OSRM coords + traffic per incident (parallel)
+            const _incRouteMap = {}; // incidentId → { coords, traffic, distKm, timeMins }
+            await Promise.allSettled(incidents.map(async inc => {
+                if (!inc.latitude || !inc.longitude) return;
                 try {
-                    _cardTrafficData = await fetchTrafficOnRoute(_cardCoords);
+                    const rt = await chRoute(gw0ref.lat, gw0ref.lng, parseFloat(inc.latitude), parseFloat(inc.longitude));
+                    const traffic = await fetchTrafficOnRoute(rt.coords);
+                    _incRouteMap[inc.incident_id] = { coords: rt.coords, traffic, distKm: rt.distKm, timeMins: rt.timeMins };
                 } catch(e) {}
-                // Activate ticker for ongoing 30s refreshes
+            }));
+            // Use first incident coords for shared card traffic ticker
+            const firstInc = incidents[0];
+            if (firstInc && _incRouteMap[firstInc.incident_id]) {
+                const _sharedCoords = _incRouteMap[firstInc.incident_id].coords;
                 if (_activeIncidentCardTrafficState) {
-                    _activeIncidentCardTrafficState.coords = _cardCoords;
-                    _activeIncidentCardTrafficState.lastTraffic = _cardTrafficData;
+                    _activeIncidentCardTrafficState.coords = _sharedCoords;
+                    _activeIncidentCardTrafficState.lastTraffic = _incRouteMap[firstInc.incident_id].traffic;
                     _activeIncidentCardTrafficState.lastFetch = Date.now();
                 } else {
-                    _activateIncidentCardTraffic(_cardCoords);
+                    _activateIncidentCardTraffic(_sharedCoords);
                     if (_activeIncidentCardTrafficState) {
-                        _activeIncidentCardTrafficState.lastTraffic = _cardTrafficData;
+                        _activeIncidentCardTrafficState.lastTraffic = _incRouteMap[firstInc.incident_id].traffic;
                         _activeIncidentCardTrafficState.lastFetch = Date.now();
                     }
                 }
@@ -2687,16 +2689,17 @@ async function loadLiveIncidents(silent=false){
                 const isRescued=rescueInfo&&rescueInfo.status==='rescued';
                 const isEnRoute=rescueInfo&&rescueInfo.status==='en_route';
                 const gw0 = getPrimaryGateway();
-                const distKm0 = calcDistance(gw0.lat, gw0.lng, parseFloat(inc.latitude||0), parseFloat(inc.longitude||0));
+                const _incRoute = _incRouteMap[inc.incident_id];
+                const distKm0 = _incRoute?.distKm ?? calcDistance(gw0.lat, gw0.lng, parseFloat(inc.latitude||0), parseFloat(inc.longitude||0));
                 const { speed: spd0, factor: fac0 } = getFiretruckSpeed();
-                const baseTime0 = Math.round((distKm0 * fac0) / spd0 * 60);
-                const traffic0 = _cardTrafficData;
+                const baseTime0 = _incRoute?.timeMins ?? Math.round((distKm0 * fac0) / spd0 * 60);
+                const traffic0 = _incRoute?.traffic || _activeIncidentCardTrafficState?.lastTraffic || null;
                 const dispatchedVehicle = rescueInfo?.vehicleType || _selectedVehicle;
                 const vt0 = VEHICLE_TYPES[dispatchedVehicle];
                 const cardEta = getVehicleETA(baseTime0, traffic0, dispatchedVehicle);
                 const cardSpeed = traffic0 ? Math.round(traffic0.avgSpeed * vt0.speedMult) : Math.round(spd0 * vt0.speedMult);
                 listEl.innerHTML+=`
-                <div class="incident-card" id="incident-card-${inc.incident_id}" data-lat="${inc.latitude||0}" data-lng="${inc.longitude||0}">
+                <div class="incident-card" id="incident-card-${inc.incident_id}" data-lat="${inc.latitude||0}" data-lng="${inc.longitude||0}" data-timemins="${baseTime0}">
                     <div class="incident-title">${inc.location_name||`Node ${inc.node_id}`}</div>
                     <div class="incident-meta">Status: <span class="${inc.status_class}">${inc.status}</span>${isEnRoute?` · <span style="color:#f1c40f;font-weight:600;">🚒 En Route</span>`:isRescued?` · <span style="color:#2ecc71;font-weight:600;">✓ Rescued</span>`:''}</div>
                     <div class="incident-meta">AI: <strong>${predLabel}</strong> <span style="color:${confColor};font-weight:600;">(${inc.confidence_pct}%)</span></div>
@@ -2736,16 +2739,17 @@ function _patchIncidentCards() {
         // Only patch cards that have dispatched rescue (ETA row is present)
         const elEta = card.querySelector('[data-field="card-eta"]');
         if (!elEta) return;
+        // Use OSRM timeMins stored in data-timemins — fallback to straight-line if missing
+        const storedTime = parseFloat(card.dataset.timemins || 0);
         const lat = parseFloat(card.dataset.lat || 0);
         const lng = parseFloat(card.dataset.lng || 0);
-        if (!lat && !lng) return;
-        // Use dispatched vehicle type, not selected vehicle
+        const baseTime = storedTime > 0
+            ? storedTime
+            : Math.round((calcDistance(gw.lat, gw.lng, lat, lng) * factor) / speed * 60);
         const incId = card.id.replace('incident-card-', '');
         const rescueInfo = _incidentRescueMap[incId];
         const vehicleType = rescueInfo?.vehicleType || _selectedVehicle;
         const vt = VEHICLE_TYPES[vehicleType];
-        const distKm = calcDistance(gw.lat, gw.lng, lat, lng);
-        const baseTime = Math.round((distKm * factor) / speed * 60);
         const etaMin = getVehicleETA(baseTime, traffic, vehicleType);
         const liveSpeed = traffic ? Math.round(traffic.avgSpeed * vt.speedMult) : Math.round(speed * vt.speedMult);
         const elSpeed   = card.querySelector('[data-field="card-speed"]');
