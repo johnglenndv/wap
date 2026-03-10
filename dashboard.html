@@ -1412,7 +1412,7 @@ const CH_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 //  RAF-based ticker: updates every 30s (TomTom's native cycle).
 //  No setInterval. No manual refresh. Zero user action needed.
 // ═══════════════════════════════════════════════════════════════
-const TOMTOM_KEY           = 'jR6HpPSkoXiLd1IrkSg6Hx5S6hExxGmH';
+const TOMTOM_KEY           = 'lOWQDi4zApH4e7ErhUadSnRFHgYLg05X';
 const TOMTOM_FLOW_BASE     = 'https://api.tomtom.com/traffic/services/4/flowSegmentData/relative0/10/json';
 const TOMTOM_TILE_URL      = `https://api.tomtom.com/traffic/map/4/tile/flow/relative0/{z}/{x}/{y}.png?key=${TOMTOM_KEY}&tileSize=256&style=2`;
 const TRAFFIC_LIVE_INTERVAL = 30_000; // TomTom flow data refreshes every 30 seconds
@@ -1709,9 +1709,9 @@ function getFiretruckSpeed() {
 // speedMult  : multiplier on base speed  (higher = faster = lower ETA)
 // trafficMult: how much traffic jams affect this vehicle (higher = more affected)
 const VEHICLE_TYPES = {
-    motor: { speedMult: 1.4,  trafficMult: 0.6, label: '🏍 Motor',       shortLabel: 'Motor' },
-    small: { speedMult: 1.0,  trafficMult: 1.0, label: '🚒 Small Truck', shortLabel: 'Small' },
-    big:   { speedMult: 0.75, trafficMult: 1.3, label: '🚛 Big Truck',   shortLabel: 'Big'   },
+    motor: { speedMult: 1.4,  trafficMult: 0.6, label: 'Motor',       shortLabel: 'Motor' },
+    small: { speedMult: 1.0,  trafficMult: 1.0, label: 'Small Truck', shortLabel: 'Small' },
+    big:   { speedMult: 0.75, trafficMult: 1.3, label: 'Big Truck',   shortLabel: 'Big'   },
 };
 let _selectedVehicle = 'small';
 
@@ -1976,9 +1976,12 @@ document.getElementById('locate-btn').addEventListener('click',()=>navigator.geo
 document.getElementById('zoom-in').addEventListener('click',()=>map.zoomIn());
 document.getElementById('zoom-out').addEventListener('click',()=>map.zoomOut());
 
-const greenIcon    = L.icon({iconUrl:'icons/StartingPoint.png',iconSize:[60,60],iconAnchor:[30,55],popupAnchor:[0,-60]});
-const redIcon      = L.icon({iconUrl:'icons/EndPoint.png',iconSize:[60,60],iconAnchor:[30,55],popupAnchor:[0,-60]});
+const greenIcon    = L.icon({iconUrl:'icons/StartingPoint.png',iconSize:[60,60],iconAnchor:[30,40],popupAnchor:[0,-60]});
+
+const redIcon      = L.icon({iconUrl:'icons/EndPoint.png',iconSize:[60,60],iconAnchor:[30,40],popupAnchor:[0,-60]});
+
 const nodeIcon     = L.icon({iconUrl:'icons/Node.png',iconSize:[50,50],iconAnchor:[18,18]});
+
 const gwIcon       = L.icon({iconUrl:'icons/Gateway.png',iconSize:[55,55],iconAnchor:[20,20]});
 
 function makeFireNodeIcon(isPossible) {
