@@ -1503,7 +1503,7 @@ const CH_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 //  RAF-based ticker: updates every 30s (TomTom's native cycle).
 //  No setInterval. No manual refresh. Zero user action needed.
 // ═══════════════════════════════════════════════════════════════
-const TOMTOM_KEY           = 'jR6HpPSkoXiLd1IrkSg6Hx5S6hExxGmH';
+const TOMTOM_KEY           = 'lOWQDi4zApH4e7ErhUadSnRFHgYLg05X';
 const TOMTOM_FLOW_BASE     = 'https://api.tomtom.com/traffic/services/4/flowSegmentData/relative0/10/json';
 const TOMTOM_TILE_URL      = `https://api.tomtom.com/traffic/map/4/tile/flow/relative0/{z}/{x}/{y}.png?key=${TOMTOM_KEY}&tileSize=256&style=2`;
 
@@ -1524,8 +1524,6 @@ let _globalLsfRoute      = 0; // lastSuccessfulFetch for main route
 let _globalLsfDetail     = 0; // lastSuccessfulFetch for incident map modal
 let _globalLsfModal      = 0; // lastSuccessfulFetch for full details modal
 let _globalLsfCards      = 0; // lastSuccessfulFetch for incident cards
-let _modalBgCoords       = null; // persists route coords — RAF ticks even when modal is closed
-let _modalBgLastFetch    = 0;    // last fetch time for background modal ticker
 let _trafficTickerRunning   = false;
 
 // Inject live-pulse CSS once
@@ -1544,7 +1542,7 @@ function _startTrafficTicker() {
     if (_trafficTickerRunning) return;
     _trafficTickerRunning = true;
     async function tick() {
-        if (!_activeRouteState && !_activeDetailRouteState && !_activeDetailsModalTrafficState && !_activeIncidentCardTrafficState && !_modalBgCoords) {
+        if (!_activeRouteState && !_activeDetailRouteState && !_activeDetailsModalTrafficState && !_activeIncidentCardTrafficState) {
             _trafficTickerRunning = false;
             return;
         }
@@ -1577,23 +1575,11 @@ function _startTrafficTicker() {
             const age = now - (_activeDetailsModalTrafficState.lastFetch || 0);
             if (age >= TRAFFIC_LIVE_INTERVAL) {
                 _activeDetailsModalTrafficState.lastFetch = now;
-                _modalBgLastFetch = now;
                 try {
                     const t = await fetchTrafficOnRoute(_activeDetailsModalTrafficState.coords);
                     _activeDetailsModalTrafficState.lastTraffic = t;
                     if (t) { _activeDetailsModalTrafficState.lastSuccessfulFetch = now; _globalLsfModal = now; }
                     _patchDetailsModal();
-                } catch(e) {}
-            }
-        }
-        // Background fetch — modal CLOSED, incident still live, keeps _globalLsfModal ticking every 5mins
-        if (_modalBgCoords && !_activeDetailsModalTrafficState) {
-            const age = now - (_modalBgLastFetch || 0);
-            if (age >= TRAFFIC_LIVE_INTERVAL) {
-                _modalBgLastFetch = now;
-                try {
-                    const t = await fetchTrafficOnRoute(_modalBgCoords);
-                    if (t) _globalLsfModal = now;
                 } catch(e) {}
             }
         }
@@ -1625,8 +1611,15 @@ function _activateDetailRoute(coords, rt) {
 }
 function _deactivateDetailRoute() { _activeDetailRouteState = null; }
 function _activateDetailsModalTraffic(coords) {
-    _modalBgCoords = coords;
-    _activeDetailsModalTrafficState = { coords, lastFetch: _modalBgLastFetch || _globalLsfModal || 0, lastTraffic: null, lastSuccessfulFetch: _globalLsfModal || 0 };
+    // Inherit lastFetch from _globalLsfCards (incident card ticker always runs in background).
+    // If lastFetch=0 here, RAF ticker fires TomTom immediately on open → resets age to "just now".
+    const _inherited = _globalLsfCards || _globalLsfModal || 0;
+    _activeDetailsModalTrafficState = {
+        coords,
+        lastFetch: _inherited,
+        lastTraffic: _activeIncidentCardTrafficState?.lastTraffic || null,
+        lastSuccessfulFetch: _inherited
+    };
     _startTrafficTicker();
 }
 function _deactivateDetailsModalTraffic() { _activeDetailsModalTrafficState = null; }
@@ -1634,7 +1627,7 @@ function _activateIncidentCardTraffic(coords) {
     _activeIncidentCardTrafficState = { coords, lastFetch: 0, lastTraffic: null, lastSuccessfulFetch: 0 };
     _startTrafficTicker();
 }
-function _deactivateIncidentCardTraffic() { _activeIncidentCardTrafficState = null; _modalBgCoords = null; _modalBgLastFetch = 0; _globalLsfModal = 0; }
+function _deactivateIncidentCardTraffic() { _activeIncidentCardTrafficState = null; }
 
 // Apply traffic to main map route
 // ── Traffic age indicator helpers ─────────────────────────────────────────────
@@ -2845,22 +2838,14 @@ async function loadLiveIncidents(silent=false){
             const firstInc = incidents[0];
             if (firstInc && _incRouteMap[firstInc.incident_id]) {
                 const _sharedCoords = _incRouteMap[firstInc.incident_id].coords;
-                const _sharedTraffic = _incRouteMap[firstInc.incident_id].traffic;
-                // Auto-activate background modal traffic — no need to open full details modal first
-                if (!_modalBgCoords) {
-                    _modalBgCoords = _sharedCoords;
-                    _modalBgLastFetch = Date.now();
-                    if (_sharedTraffic) _globalLsfModal = Date.now();
-                    _startTrafficTicker();
-                }
                 if (_activeIncidentCardTrafficState) {
                     _activeIncidentCardTrafficState.coords = _sharedCoords;
-                    _activeIncidentCardTrafficState.lastTraffic = _sharedTraffic;
+                    _activeIncidentCardTrafficState.lastTraffic = _incRouteMap[firstInc.incident_id].traffic;
                     _activeIncidentCardTrafficState.lastFetch = Date.now();
                 } else {
                     _activateIncidentCardTraffic(_sharedCoords);
                     if (_activeIncidentCardTrafficState) {
-                        _activeIncidentCardTrafficState.lastTraffic = _sharedTraffic;
+                        _activeIncidentCardTrafficState.lastTraffic = _incRouteMap[firstInc.incident_id].traffic;
                         _activeIncidentCardTrafficState.lastFetch = Date.now();
                     }
                 }
@@ -2976,7 +2961,10 @@ function _patchDetailsModal() {
     if (elPeak)    elPeak.textContent    = peakLabel;
     if (elVehicle) elVehicle.textContent = vt.label;
     // Age indicator
-    const lsfM = 0; // age indicator removed from full details modal
+    // _globalLsfCards = actual last TomTom fetch time (incident card ticker always runs in background)
+    const lsfM = _globalLsfCards || _globalLsfModal || 0;
+    const _ageEl = document.querySelector('#inc-details-body [data-field="details-speed-age"]');
+    if (_ageEl && lsfM) _applyAgeEl(_ageEl, lsfM);
 }
 
 // RAF ticker handles _patchIncidentCards and _patchDetailsModal every 30s — no duplicate setInterval needed
@@ -2993,6 +2981,9 @@ setInterval(() => {
     const lsf4 = _globalLsfCards || _globalLsfDetail || _globalLsfRoute;
     if (lsf4) {
         document.querySelectorAll('[data-field="card-speed-age"]').forEach(el => _applyAgeEl(el, lsf4));
+        // Keep details modal age ticking while open
+        const _dm = document.querySelector('#inc-details-body [data-field="details-speed-age"]');
+        if (_dm) _applyAgeEl(_dm, lsf4);
     }
 }, 10000);
 
@@ -3417,19 +3408,18 @@ async function openIncidentDetailsModal(incidentId) {
     const _vehicleType = rescueInfo?.vehicleType || _selectedVehicle;
     const _vt = VEHICLE_TYPES[_vehicleType];
     const _etaMin = getVehicleETA(_baseTime, _traffic, _vehicleType);
-    const _liveSpeed = _traffic ? `${Math.round(_traffic.avgSpeed * _vt.speedMult)} km/h` : '— km/h';
+    const _liveSpeed = _traffic ? Math.round(_traffic.avgSpeed * _vt.speedMult) : Math.round(_spd * _vt.speedMult);
     // Start own traffic ticker using actual OSRM route coords (not straight-line)
     if (data.latitude && data.longitude) {
         const _gw2 = getPrimaryGateway();
         const _iLat = parseFloat(data.latitude), _iLng = parseFloat(data.longitude);
-        const _msSinceLast = _globalLsfModal ? (Date.now() - _globalLsfModal) : Infinity;
-        // Fetch actual OSRM route coords then activate traffic ticker
         chRoute(_gw2.lat, _gw2.lng, _iLat, _iLng).then(rt => {
             _activateDetailsModalTraffic(rt.coords);
-            // Skip TomTom re-fetch if data still fresh within 5mins — no "just now" on reopen
+            // KEY FIX: skip TomTom fetch if incident card data is still fresh.
+            // Fetching here would set _globalLsfModal=now → age resets to "just now" on every open.
+            const _msSinceLast = _globalLsfCards ? (Date.now() - _globalLsfCards) : Infinity;
             if (_msSinceLast < TRAFFIC_LIVE_INTERVAL) {
-                _activeDetailsModalTrafficState.lastTraffic = _traffic;
-                _patchDetailsModal();
+                _patchDetailsModal(); // just patch display, no new fetch
                 return Promise.resolve(null);
             }
             return fetchTrafficOnRoute(rt.coords);
@@ -3438,27 +3428,21 @@ async function openIncidentDetailsModal(incidentId) {
                 _activeDetailsModalTrafficState.lastTraffic = t;
                 _activeDetailsModalTrafficState.lastFetch = Date.now();
                 _globalLsfModal = Date.now();
-                _modalBgLastFetch = Date.now();
                 _patchDetailsModal();
             }
         }).catch(() => {
-            // Fallback to straight-line if OSRM fails
             const _sampleCoords = Array.from({length: 8}, (_, i) => {
                 const frac = i / 7;
                 return [_gw2.lat + (_iLat - _gw2.lat) * frac, _gw2.lng + (_iLng - _gw2.lng) * frac];
             });
             _activateDetailsModalTraffic(_sampleCoords);
-            if (_msSinceLast < TRAFFIC_LIVE_INTERVAL) {
-                if (_activeDetailsModalTrafficState) _activeDetailsModalTrafficState.lastTraffic = _traffic;
-                _patchDetailsModal();
-                return;
-            }
+            const _msSinceLast2 = _globalLsfCards ? (Date.now() - _globalLsfCards) : Infinity;
+            if (_msSinceLast2 < TRAFFIC_LIVE_INTERVAL) { _patchDetailsModal(); return; }
             fetchTrafficOnRoute(_sampleCoords).then(t => {
                 if (t && _activeDetailsModalTrafficState) {
                     _activeDetailsModalTrafficState.lastTraffic = t;
                     _activeDetailsModalTrafficState.lastFetch = Date.now();
                     _globalLsfModal = Date.now();
-                    _modalBgLastFetch = Date.now();
                     _patchDetailsModal();
                 }
             }).catch(() => {});
@@ -3480,7 +3464,7 @@ async function openIncidentDetailsModal(incidentId) {
             <div class="inc-details-section-title">Routing · <span data-field="details-vehicle">${_vt.label}</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Distance</span><span class="inc-details-row-val" style="color:var(--green);">${_distKm.toFixed(1)} km (est.)</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">ETA</span><span class="inc-details-row-val" data-field="details-eta" style="color:var(--yellow);">~${_etaMin} min</span></div>
-            <div class="inc-details-row"><span class="inc-details-row-label">Live Speed</span><span class="inc-details-row-val" data-field="details-speed" style="color:#4da8ff;">${_liveSpeed}</span></div>
+            <div class="inc-details-row"><span class="inc-details-row-label">Live Speed</span><span class="inc-details-row-val" data-field="details-speed" style="color:#4da8ff;">${_liveSpeed} km/h</span>&nbsp;<span class="traffic-age" data-field="details-speed-age"></span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Peak Period</span><span class="inc-details-row-val" data-field="details-peak">${_peakLabel}</span></div>
         </div>` : ''}
         <div class="inc-details-section">
@@ -3503,7 +3487,13 @@ async function openIncidentDetailsModal(incidentId) {
             ${data.flame!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Flame Sensor</span><span class="inc-details-row-val">${data.flame}</span></div>`:''}
         </div>`:''}
         ${isAlreadyResolved||isRescued?`
-        <div style="margin-top:16px;padding:10px;background:#0a1a0a55;border:1px solid #2ecc7144;border-radius:9px;text-align:center;color:#2ecc71;font-size:12px;font-weight:600;">✓ This incident has been resolved</div>`:''}`;
+        <div style="margin-top:16px;padding:10px;background:#0a1a0a55;border:1px solid #2ecc7144;border-radius:9px;text-align:center;color:#2ecc71;font-size:12px;font-weight:600;">✓ This incident has been resolved</div>`:''}`
+    // Apply age RIGHT NOW after DOM renders — don't wait for 10s interval tick
+    const _nowLsf = _globalLsfCards || _globalLsfModal || 0;
+    if (_nowLsf) {
+        const _ageNow = document.querySelector('#inc-details-body [data-field="details-speed-age"]');
+        if (_ageNow) _applyAgeEl(_ageNow, _nowLsf);
+    }
 }
 
 function closeIncidentDetailsModal() { document.getElementById('incident-details-modal').classList.remove('open'); _detailsModalIncidentId = null; _deactivateDetailsModalTraffic(); }
