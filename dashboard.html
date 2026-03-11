@@ -206,6 +206,11 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 [data-theme="light"] .rib-cell{background:#f5e8e066;border-color:#c0907866;}
 .rib-cell-val{font-size:13px;font-weight:700;line-height:1.2;}
 .rib-cell-label{font-size:8px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-top:1px;}
+.traffic-age{font-size:8px;letter-spacing:.4px;margin-top:2px;display:none;}
+.traffic-age.fresh{color:#2ecc71;}
+.traffic-age.warn{color:#f1c40f;animation:age-blink 1.4s ease-in-out infinite;}
+.traffic-age.stale{color:#ff4757;animation:age-blink 1s ease-in-out infinite;}
+@keyframes age-blink{0%,100%{opacity:1;}50%{opacity:.2;}}
 /* traffic row */
 #route-info-box .rib-traffic{display:none;align-items:center;justify-content:center;gap:6px;padding-top:2px;}
 #route-info-box .rib-traffic.visible{display:flex;}
@@ -1198,6 +1203,7 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
                 <div class="rib-cell">
                     <span id="route-traffic-speed" class="rib-cell-val" style="color:#4da8ff;font-weight:700;">— km/h</span>
                     <span class="rib-cell-label">Live Speed</span>
+                    <span class="traffic-age" id="route-traffic-age"></span>
                 </div>
             </div>
         </div>
@@ -1543,6 +1549,7 @@ function _startTrafficTicker() {
                 try {
                     const t = await fetchTrafficOnRoute(_activeRouteState.coords);
                     _activeRouteState.lastTraffic = t;
+                    if (t) _activeRouteState.lastSuccessfulFetch = Date.now();
                     _applyMainRouteTraffic(t, _activeRouteState.rt);
                 } catch(e) {}
             }
@@ -1554,6 +1561,7 @@ function _startTrafficTicker() {
                 try {
                     const t = await fetchTrafficOnRoute(_activeDetailRouteState.coords);
                     _activeDetailRouteState.lastTraffic = t;
+                    if (t) _activeDetailRouteState.lastSuccessfulFetch = Date.now();
                     _applyDetailRouteTraffic(t, _activeDetailRouteState.rt);
                 } catch(e) {}
             }
@@ -1565,6 +1573,7 @@ function _startTrafficTicker() {
                 try {
                     const t = await fetchTrafficOnRoute(_activeDetailsModalTrafficState.coords);
                     _activeDetailsModalTrafficState.lastTraffic = t;
+                    if (t) _activeDetailsModalTrafficState.lastSuccessfulFetch = Date.now();
                     _patchDetailsModal();
                 } catch(e) {}
             }
@@ -1576,6 +1585,7 @@ function _startTrafficTicker() {
                 try {
                     const t = await fetchTrafficOnRoute(_activeIncidentCardTrafficState.coords);
                     _activeIncidentCardTrafficState.lastTraffic = t;
+                    if (t) _activeIncidentCardTrafficState.lastSuccessfulFetch = Date.now();
                     _patchIncidentCards();
                 } catch(e) {}
             }
@@ -1586,27 +1596,52 @@ function _startTrafficTicker() {
 }
 
 function _activateMainRoute(coords, rt) {
-    _activeRouteState = { coords, rt, lastFetch: 0, lastTraffic: null };
+    _activeRouteState = { coords, rt, lastFetch: 0, lastTraffic: null, lastSuccessfulFetch: 0 };
     _startTrafficTicker();
 }
 function _deactivateMainRoute() { _activeRouteState = null; }
 function _activateDetailRoute(coords, rt) {
-    _activeDetailRouteState = { coords, rt, lastFetch: 0, lastTraffic: null };
+    _activeDetailRouteState = { coords, rt, lastFetch: 0, lastTraffic: null, lastSuccessfulFetch: 0 };
     _startTrafficTicker();
 }
 function _deactivateDetailRoute() { _activeDetailRouteState = null; }
 function _activateDetailsModalTraffic(coords) {
-    _activeDetailsModalTrafficState = { coords, lastFetch: 0, lastTraffic: null };
+    _activeDetailsModalTrafficState = { coords, lastFetch: 0, lastTraffic: null, lastSuccessfulFetch: 0 };
     _startTrafficTicker();
 }
 function _deactivateDetailsModalTraffic() { _activeDetailsModalTrafficState = null; }
 function _activateIncidentCardTraffic(coords) {
-    _activeIncidentCardTrafficState = { coords, lastFetch: 0, lastTraffic: null };
+    _activeIncidentCardTrafficState = { coords, lastFetch: 0, lastTraffic: null, lastSuccessfulFetch: 0 };
     _startTrafficTicker();
 }
 function _deactivateIncidentCardTraffic() { _activeIncidentCardTrafficState = null; }
 
 // Apply traffic to main map route
+// ── Traffic age indicator helpers ─────────────────────────────────────────────
+function _trafficAgeLabel(lsf) {
+    if (!lsf) return null;
+    const mins = Math.floor((Date.now() - lsf) / 60000);
+    if (mins < 1)  return { text: 'just now', cls: 'fresh' };
+    if (mins < 6)  return { text: `${mins} min ago`, cls: 'fresh' };
+    if (mins < 15) return { text: `${mins} mins ago`, cls: 'warn' };
+    return             { text: `${mins} mins ago`, cls: 'stale' };
+}
+function _applyAgeEl(el, lsf) {
+    if (!el) return;
+    const a = _trafficAgeLabel(lsf);
+    if (!a) { el.style.display = 'none'; return; }
+    el.textContent = a.text;
+    el.className = `traffic-age ${a.cls}`;
+    el.style.display = 'block';
+}
+function _applyAgeBadge(badgeEl, lsf) {
+    if (!badgeEl || badgeEl.style.display === 'none') return;
+    const mins = lsf ? Math.floor((Date.now() - lsf) / 60000) : 0;
+    const isStale = lsf && mins >= 6;
+    const clean = badgeEl.textContent.replace(/^⚠️\s*/,'');
+    badgeEl.textContent = isStale ? `⚠️ ${clean}` : clean;
+}
+
 function _applyMainRouteTraffic(traffic, rt) {
     if (!_activeRouteState) return;
     _routeGradientLayers.forEach(l => { try { map.removeLayer(l); } catch {} });
@@ -1633,6 +1668,10 @@ function _applyMainRouteTraffic(traffic, rt) {
     }
     // Traffic badge
     _updateRouteTrafficUI(traffic);
+    // Age indicator
+    const lsf = _activeRouteState?.lastSuccessfulFetch || 0;
+    _applyAgeEl(document.getElementById('route-traffic-age'), lsf);
+    _applyAgeBadge(document.getElementById('route-traffic-badge'), lsf);
 }
 
 // Apply traffic to incident modal route
@@ -1667,6 +1706,10 @@ function _applyDetailRouteTraffic(traffic, rt) {
         if (elSpeed)  elSpeed.textContent  = `~${Math.round(fbSpd * vt.speedMult)} km/h`;
         if (elTraf)  { elTraf.textContent  = '⏳ No live data'; elTraf.className = 'inc-traffic-badge free'; }
     }
+    // Age indicator
+    const lsfD = _activeDetailRouteState?.lastSuccessfulFetch || 0;
+    _applyAgeEl(document.getElementById('imd-traffic-age'), lsfD);
+    _applyAgeBadge(document.getElementById('imd-traffic-badge'), lsfD);
 }
 
 function _trafficColor(jamFactor) {
@@ -2827,6 +2870,7 @@ async function loadLiveIncidents(silent=false){
                         <span style="color:#aaa;font-size:10px;" data-field="card-vehicle">${vt0.label}</span>
                         <span style="color:var(--yellow);font-size:10px;">⏱ ETA: <strong data-field="card-eta">~${cardEta} min</strong></span>
                         <span style="color:#4da8ff;font-size:10px;">🚗 <strong data-field="card-speed">${cardSpeed} km/h</strong></span>
+                        <span class="traffic-age" data-field="card-speed-age"></span>
                         <span style="color:#9a6a5a;font-size:9px;" data-field="card-peak">${({ label } = getFiretruckSpeed(), label)}</span>
                     </div>`:''}
                     <div class="incident-btn-row1">
@@ -2877,6 +2921,9 @@ function _patchIncidentCards() {
         if (elSpeed)   elSpeed.textContent   = `${liveSpeed} km/h`;
         if (elVehicle) elVehicle.textContent = vt.label;
         if (elPeak)    elPeak.textContent    = peakLabel;
+        // Age indicator
+        const lsfC = _activeIncidentCardTrafficState?.lastSuccessfulFetch || _activeDetailRouteState?.lastSuccessfulFetch || _activeRouteState?.lastSuccessfulFetch || 0;
+        _applyAgeEl(card.querySelector('[data-field="card-speed-age"]'), lsfC);
     });
 }
 
@@ -2904,9 +2951,33 @@ function _patchDetailsModal() {
     if (elSpeed)   elSpeed.textContent   = `${liveSpeed} km/h`;
     if (elPeak)    elPeak.textContent    = peakLabel;
     if (elVehicle) elVehicle.textContent = vt.label;
+    // Age indicator
+    const lsfM = _activeDetailsModalTrafficState?.lastSuccessfulFetch || _activeDetailRouteState?.lastSuccessfulFetch || _activeRouteState?.lastSuccessfulFetch || 0;
+    _applyAgeEl(document.querySelector('#inc-details-body [data-field="details-speed-age"]'), lsfM);
 }
 
 // RAF ticker handles _patchIncidentCards and _patchDetailsModal every 30s — no duplicate setInterval needed
+// Age indicator refresh — updates "X mins ago" every 60s, zero API calls
+setInterval(() => {
+    const lsf1 = _activeRouteState?.lastSuccessfulFetch || 0;
+    if (lsf1) {
+        _applyAgeEl(document.getElementById('route-traffic-age'), lsf1);
+        _applyAgeBadge(document.getElementById('route-traffic-badge'), lsf1);
+    }
+    const lsf2 = _activeDetailRouteState?.lastSuccessfulFetch || 0;
+    if (lsf2) {
+        _applyAgeEl(document.getElementById('imd-traffic-age'), lsf2);
+        _applyAgeBadge(document.getElementById('imd-traffic-badge'), lsf2);
+    }
+    const lsf3 = _activeDetailsModalTrafficState?.lastSuccessfulFetch || 0;
+    if (lsf3) {
+        _applyAgeEl(document.querySelector('#inc-details-body [data-field="details-speed-age"]'), lsf3);
+    }
+    const lsf4 = _activeIncidentCardTrafficState?.lastSuccessfulFetch || _activeDetailRouteState?.lastSuccessfulFetch || _activeRouteState?.lastSuccessfulFetch || 0;
+    if (lsf4) {
+        document.querySelectorAll('[data-field="card-speed-age"]').forEach(el => _applyAgeEl(el, lsf4));
+    }
+}, 60000);
 
 loadLiveIncidents();
 setInterval(()=>loadLiveIncidents(true),20000);
@@ -3187,6 +3258,7 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
                 <div class="inc-route-stat blue">
                     <div class="inc-route-stat-val blue" id="imd-speed">— km/h</div>
                     <div class="inc-route-stat-label">Live Speed</div>
+                    <div class="traffic-age" id="imd-traffic-age"></div>
                 </div>
                 <div class="inc-route-stat orange">
                     <div class="inc-route-stat-val orange" id="imd-algo"></div>
@@ -3382,7 +3454,7 @@ async function openIncidentDetailsModal(incidentId) {
             <div class="inc-details-section-title">Routing · <span data-field="details-vehicle">${_vt.label}</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Distance</span><span class="inc-details-row-val" style="color:var(--green);">${_distKm.toFixed(1)} km (est.)</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">ETA</span><span class="inc-details-row-val" data-field="details-eta" style="color:var(--yellow);">~${_etaMin} min</span></div>
-            <div class="inc-details-row"><span class="inc-details-row-label">Live Speed</span><span class="inc-details-row-val" data-field="details-speed" style="color:#4da8ff;">${_liveSpeed} km/h</span></div>
+            <div class="inc-details-row"><span class="inc-details-row-label">Live Speed</span><span class="inc-details-row-val" data-field="details-speed" style="color:#4da8ff;">${_liveSpeed} km/h</span><span class="traffic-age" data-field="details-speed-age"></span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Peak Period</span><span class="inc-details-row-val" data-field="details-peak">${_peakLabel}</span></div>
         </div>` : ''}
         <div class="inc-details-section">
