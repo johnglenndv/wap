@@ -1555,6 +1555,7 @@ function _startTrafficTicker() {
                     const t = await fetchTrafficOnRoute(_activeRouteState.coords);
                     _activeRouteState.lastTraffic = t;
                     if (t) { _activeRouteState.lastSuccessfulFetch = now; _globalLsfRoute = now; }
+                    else { _globalLsfRoute = _activeRouteState.lastSuccessfulFetch || now; }
                     _applyMainRouteTraffic(t, _activeRouteState.rt);
                 } catch(e) {}
             }
@@ -1567,6 +1568,7 @@ function _startTrafficTicker() {
                     const t = await fetchTrafficOnRoute(_activeDetailRouteState.coords);
                     _activeDetailRouteState.lastTraffic = t;
                     if (t) { _activeDetailRouteState.lastSuccessfulFetch = now; _globalLsfDetail = now; }
+                    else { _globalLsfDetail = _activeDetailRouteState.lastSuccessfulFetch || now; }
                     _applyDetailRouteTraffic(t, _activeDetailRouteState.rt);
                 } catch(e) {}
             }
@@ -1579,6 +1581,7 @@ function _startTrafficTicker() {
                     const t = await fetchTrafficOnRoute(_activeDetailsModalTrafficState.coords);
                     _activeDetailsModalTrafficState.lastTraffic = t;
                     if (t) { _activeDetailsModalTrafficState.lastSuccessfulFetch = now; _globalLsfModal = now; }
+                    else { _globalLsfModal = _activeDetailsModalTrafficState.lastSuccessfulFetch || now; }
                     _patchDetailsModal();
                 } catch(e) {}
             }
@@ -1591,6 +1594,7 @@ function _startTrafficTicker() {
                     const t = await fetchTrafficOnRoute(_activeIncidentCardTrafficState.coords);
                     _activeIncidentCardTrafficState.lastTraffic = t;
                     if (t) { _activeIncidentCardTrafficState.lastSuccessfulFetch = now; _globalLsfCards = now; }
+                    else { _globalLsfCards = _activeIncidentCardTrafficState.lastSuccessfulFetch || now; }
                     _patchIncidentCards();
                 } catch(e) {}
             }
@@ -2843,7 +2847,8 @@ async function loadLiveIncidents(silent=false){
             if (firstInc && _incRouteMap[firstInc.incident_id]) {
                 const _sharedCoords = _incRouteMap[firstInc.incident_id].coords;
                 const _sharedTraffic = _incRouteMap[firstInc.incident_id].traffic;
-                _globalLsfCards = _sharedTraffic ? Date.now() : (_globalLsfDetail || Date.now());
+                if (_sharedTraffic) { _globalLsfCards = Date.now(); }
+                else if (!_globalLsfCards) { _globalLsfCards = _globalLsfDetail || Date.now(); }
                 console.log('[FLAMES] loadLiveIncidents: hasTraffic=', !!_sharedTraffic, '_globalLsfCards=', new Date(_globalLsfCards).toLocaleTimeString());
                 if (_activeIncidentCardTrafficState) {
                     _activeIncidentCardTrafficState.coords = _sharedCoords;
