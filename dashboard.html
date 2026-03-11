@@ -1517,9 +1517,7 @@ let _detailRouteGradientLayers = [];
 // Active route state — null when no route is drawn
 let _activeRouteState       = null; // { coords, rt, lastFetch, lastTraffic }
 let _activeDetailRouteState = null; // { coords, rt, lastFetch, lastTraffic }
-let _bgDetailState = null;          // Background state — persists when modal closed, keeps TomTom ticking every 5mins
 let _activeDetailsModalTrafficState = null; // { coords, lastFetch, lastTraffic } — Full Details modal (no map)
-let _bgModalState = null;                   // Background state — persists when full details modal closed
 let _activeIncidentCardTrafficState = null; // { coords, lastFetch, lastTraffic } — Incident sidebar cards
 // Persistent fetch timestamps — survive modal close/reopen
 let _globalLsfRoute      = 0; // lastSuccessfulFetch for main route
@@ -1544,7 +1542,7 @@ function _startTrafficTicker() {
     if (_trafficTickerRunning) return;
     _trafficTickerRunning = true;
     async function tick() {
-        if (!_activeRouteState && !_activeDetailRouteState && !_activeDetailsModalTrafficState && !_activeIncidentCardTrafficState && !_bgDetailState && !_bgModalState) {
+        if (!_activeRouteState && !_activeDetailRouteState && !_activeDetailsModalTrafficState && !_activeIncidentCardTrafficState) {
             _trafficTickerRunning = false;
             return;
         }
@@ -1573,18 +1571,6 @@ function _startTrafficTicker() {
                 } catch(e) {}
             }
         }
-        // Background fetch — runs even when modal is closed, keeps _globalLsfDetail accurate
-        if (_bgDetailState && !_activeDetailRouteState) {
-            const age = now - (_bgDetailState.lastFetch || 0);
-            if (age >= TRAFFIC_LIVE_INTERVAL) {
-                _bgDetailState.lastFetch = now;
-                try {
-                    const t = await fetchTrafficOnRoute(_bgDetailState.coords);
-                    _bgDetailState.lastTraffic = t;
-                    if (t) { _bgDetailState.lastSuccessfulFetch = now; _globalLsfDetail = now; }
-                } catch(e) {}
-            }
-        }
         if (_activeDetailsModalTrafficState) {
             const age = now - (_activeDetailsModalTrafficState.lastFetch || 0);
             if (age >= TRAFFIC_LIVE_INTERVAL) {
@@ -1594,18 +1580,6 @@ function _startTrafficTicker() {
                     _activeDetailsModalTrafficState.lastTraffic = t;
                     if (t) { _activeDetailsModalTrafficState.lastSuccessfulFetch = now; _globalLsfModal = now; }
                     _patchDetailsModal();
-                } catch(e) {}
-            }
-        }
-        // Background fetch for full details modal — runs even when modal is closed
-        if (_bgModalState && !_activeDetailsModalTrafficState) {
-            const age = now - (_bgModalState.lastFetch || 0);
-            if (age >= TRAFFIC_LIVE_INTERVAL) {
-                _bgModalState.lastFetch = now;
-                try {
-                    const t = await fetchTrafficOnRoute(_bgModalState.coords);
-                    _bgModalState.lastTraffic = t;
-                    if (t) { _bgModalState.lastSuccessfulFetch = now; _globalLsfModal = now; }
                 } catch(e) {}
             }
         }
@@ -1632,15 +1606,12 @@ function _activateMainRoute(coords, rt) {
 }
 function _deactivateMainRoute() { _activeRouteState = null; }
 function _activateDetailRoute(coords, rt) {
-    // Restore lastFetch from bgDetailState so we don't re-fetch immediately if background already fetched recently
-    const inheritedFetch = _bgDetailState?.lastFetch || 0;
-    _activeDetailRouteState = { coords, rt, lastFetch: inheritedFetch, lastTraffic: _bgDetailState?.lastTraffic || null, lastSuccessfulFetch: _globalLsfDetail };
+    _activeDetailRouteState = { coords, rt, lastFetch: 0, lastTraffic: null, lastSuccessfulFetch: _globalLsfDetail };
     _startTrafficTicker();
 }
 function _deactivateDetailRoute() { _activeDetailRouteState = null; }
 function _activateDetailsModalTraffic(coords) {
-    const inheritedFetch = _bgModalState?.lastFetch || 0;
-    _activeDetailsModalTrafficState = { coords, lastFetch: inheritedFetch, lastTraffic: _bgModalState?.lastTraffic || null, lastSuccessfulFetch: _globalLsfModal };
+    _activeDetailsModalTrafficState = { coords, lastFetch: 0, lastTraffic: null, lastSuccessfulFetch: 0 };
     _startTrafficTicker();
 }
 function _deactivateDetailsModalTraffic() { _activeDetailsModalTrafficState = null; }
@@ -2982,8 +2953,7 @@ function _patchDetailsModal() {
     if (elPeak)    elPeak.textContent    = peakLabel;
     if (elVehicle) elVehicle.textContent = vt.label;
     // Age indicator
-    const lsfM = _globalLsfModal || _activeDetailsModalTrafficState?.lastSuccessfulFetch || 0;
-    _applyAgeEl(document.querySelector('#inc-details-body [data-field="details-speed-age"]'), lsfM);
+    const lsfM = 0; // age indicator removed from full details modal
 }
 
 // RAF ticker handles _patchIncidentCards and _patchDetailsModal every 30s — no duplicate setInterval needed
@@ -2996,9 +2966,6 @@ setInterval(() => {
     if (_globalLsfDetail) {
         _applyAgeEl(document.getElementById('imd-traffic-age'), _globalLsfDetail);
         _applyAgeBadge(document.getElementById('imd-traffic-badge'), _globalLsfDetail);
-    }
-    if (_globalLsfModal) {
-        _applyAgeEl(document.querySelector('#inc-details-body [data-field="details-speed-age"]'), _globalLsfModal);
     }
     const lsf4 = _globalLsfCards || _globalLsfDetail || _globalLsfRoute;
     if (lsf4) {
@@ -3349,10 +3316,6 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
         const gwMarker = L.marker([gw.lat, gw.lng], {icon: greenIcon}).addTo(_incDetailMap);
         gwMarker.bindPopup('<div style="font-weight:700;color:#2ecc71;">🏠 Gateway / Start Point</div>');
         _incDetailMarkers.push(gwMarker);
-        // If background state has cached traffic, show it immediately while route re-calculates
-        if (_bgDetailState?.lastTraffic) {
-            _applyDetailRouteTraffic(_bgDetailState.lastTraffic, _bgDetailState.rt);
-        }
         calculateDetailRoute(gw, {lat:incLat, lng:incLng});
     }, 150);
 }
@@ -3375,9 +3338,6 @@ async function calculateDetailRoute(start, end) {
         _activeDetailRouteState.lastTraffic = traffic;
         _activeDetailRouteState.lastFetch = Date.now();
         if (traffic) { _activeDetailRouteState.lastSuccessfulFetch = Date.now(); _globalLsfDetail = Date.now(); }
-        // Background state — persists when modal closes so TomTom keeps ticking
-        _bgDetailState = { coords: rt.coords, rt, lastFetch: Date.now(), lastTraffic: traffic, lastSuccessfulFetch: _globalLsfDetail };
-        _startTrafficTicker();
 
         // Invisible bounds helper
         _incDetailRouteLayer = L.polyline(rt.coords, { opacity: 0, weight: 0,
@@ -3434,7 +3394,7 @@ async function openIncidentDetailsModal(incidentId) {
     const _vehicleType = rescueInfo?.vehicleType || _selectedVehicle;
     const _vt = VEHICLE_TYPES[_vehicleType];
     const _etaMin = getVehicleETA(_baseTime, _traffic, _vehicleType);
-    const _liveSpeed = _traffic ? `${Math.round(_traffic.avgSpeed * _vt.speedMult)} km/h` : '— km/h';
+    const _liveSpeed = _traffic ? Math.round(_traffic.avgSpeed * _vt.speedMult) : Math.round(_spd * _vt.speedMult);
     // Start own traffic ticker using actual OSRM route coords (not straight-line)
     if (data.latitude && data.longitude) {
         const _gw2 = getPrimaryGateway();
@@ -3443,15 +3403,11 @@ async function openIncidentDetailsModal(incidentId) {
         chRoute(_gw2.lat, _gw2.lng, _iLat, _iLng).then(rt => {
             _activateDetailsModalTraffic(rt.coords);
             // Immediate first fetch with real road coords
-            return fetchTrafficOnRoute(rt.coords).then(t => ({ t, coords: rt.coords }));
-        }).then(({ t, coords }) => {
+            return fetchTrafficOnRoute(rt.coords);
+        }).then(t => {
             if (t && _activeDetailsModalTrafficState) {
                 _activeDetailsModalTrafficState.lastTraffic = t;
                 _activeDetailsModalTrafficState.lastFetch = Date.now();
-                _activeDetailsModalTrafficState.lastSuccessfulFetch = Date.now();
-                _globalLsfModal = Date.now();
-                _bgModalState = { coords, lastFetch: Date.now(), lastTraffic: t, lastSuccessfulFetch: _globalLsfModal };
-                _startTrafficTicker();
                 _patchDetailsModal();
             }
         }).catch(() => {
@@ -3465,10 +3421,6 @@ async function openIncidentDetailsModal(incidentId) {
                 if (t && _activeDetailsModalTrafficState) {
                     _activeDetailsModalTrafficState.lastTraffic = t;
                     _activeDetailsModalTrafficState.lastFetch = Date.now();
-                    _activeDetailsModalTrafficState.lastSuccessfulFetch = Date.now();
-                    _globalLsfModal = Date.now();
-                    _bgModalState = { coords: _sampleCoords, lastFetch: Date.now(), lastTraffic: t, lastSuccessfulFetch: _globalLsfModal };
-                    _startTrafficTicker();
                     _patchDetailsModal();
                 }
             }).catch(() => {});
@@ -3490,7 +3442,7 @@ async function openIncidentDetailsModal(incidentId) {
             <div class="inc-details-section-title">Routing · <span data-field="details-vehicle">${_vt.label}</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Distance</span><span class="inc-details-row-val" style="color:var(--green);">${_distKm.toFixed(1)} km (est.)</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">ETA</span><span class="inc-details-row-val" data-field="details-eta" style="color:var(--yellow);">~${_etaMin} min</span></div>
-            <div class="inc-details-row"><span class="inc-details-row-label">Live Speed</span><span class="inc-details-row-val" data-field="details-speed" style="color:#4da8ff;">${_liveSpeed}</span><span class="traffic-age" data-field="details-speed-age"></span></div>
+            <div class="inc-details-row"><span class="inc-details-row-label">Live Speed</span><span class="inc-details-row-val" data-field="details-speed" style="color:#4da8ff;">${_liveSpeed} km/h</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Peak Period</span><span class="inc-details-row-val" data-field="details-peak">${_peakLabel}</span></div>
         </div>` : ''}
         <div class="inc-details-section">
