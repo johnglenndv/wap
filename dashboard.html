@@ -1720,7 +1720,7 @@ function _applyDetailRouteTraffic(traffic, rt) {
     } else {
         if (elEtaLbl) elEtaLbl.textContent = `ETA · ${vt.label}`;
         if (elSpeed)  elSpeed.textContent  = '— km/h';
-        if (elTraf)  { elTraf.textContent  = '⏳ No live data'; elTraf.className = 'inc-traffic-badge free'; }
+        if (elTraf)  { elTraf.textContent  = 'No live data'; elTraf.className = 'inc-traffic-badge free'; }
     }
     // Age indicator
     const lsfD = _globalLsfCards || _globalLsfDetail || _activeDetailRouteState?.lastSuccessfulFetch || 0;
@@ -3281,7 +3281,7 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
             </div>
             <div class="inc-traffic-row" style="margin-top:4px;">
                 <span class="inc-traffic-label">Traffic Condition</span>
-                <span class="inc-traffic-badge free" id="imd-traffic-badge">⏳ Loading…</span>
+                <span class="inc-traffic-badge free" id="imd-traffic-badge">Loading…</span>
             </div>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-top:5px;padding:0 2px;">
                 <span style="font-size:9px;letter-spacing:.8px;text-transform:uppercase;color:#5a3a2a;">Updated</span>
