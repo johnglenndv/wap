@@ -1590,7 +1590,16 @@ function _startTrafficTicker() {
                 try {
                     const t = await fetchTrafficOnRoute(_activeIncidentCardTrafficState.coords);
                     _activeIncidentCardTrafficState.lastTraffic = t;
-                    if (t) { _activeIncidentCardTrafficState.lastSuccessfulFetch = now; _globalLsfCards = now; }
+                    if (t) {
+                        _activeIncidentCardTrafficState.lastSuccessfulFetch = now;
+                        _globalLsfCards = now;
+                        // POST to backend so all devices/tabs share same traffic age
+                        fetch(`${API_BASE()}/traffic-state`, {
+                            method: 'POST',
+                            headers: {...authHeader(), 'Content-Type': 'application/json'},
+                            body: JSON.stringify({ cards: t })
+                        }).catch(()=>{});
+                    }
                     _patchIncidentCards();
                 } catch(e) {}
             }
@@ -2374,6 +2383,25 @@ function connectWebSocket(){
             const msg=JSON.parse(event.data);
             // Ignore server keepalive pings
             if(msg.type==='ping')return;
+            // Server broadcast: another device just fetched fresh traffic data
+            if(msg.type==='traffic_update' && msg.state) {
+                if(msg.state.cards && msg.state.cards.fetchedAt) {
+                    const t = msg.state.cards.fetchedAt;
+                    if(t > _globalLsfCards) {
+                        _globalLsfCards = t;
+                        if(_activeIncidentCardTrafficState) {
+                            _activeIncidentCardTrafficState.lastTraffic = msg.state.cards;
+                            _activeIncidentCardTrafficState.lastFetch = t;
+                            _activeIncidentCardTrafficState.lastSuccessfulFetch = t;
+                        }
+                        _patchIncidentCards();
+                    }
+                }
+                if(msg.state.detail && msg.state.detail.fetchedAt) {
+                    if(msg.state.detail.fetchedAt > _globalLsfDetail) _globalLsfDetail = msg.state.detail.fetchedAt;
+                }
+                return;
+            }
             if(msg.type==='sensor_data'||msg.type==='new_reading'){
                 loadAndPlaceNodes(true);
                 if(_hm_node&&(!msg.node_id||msg.node_id===_hm_node))fetchHistory();
@@ -3008,7 +3036,31 @@ setInterval(() => {
     }
 }, 10000);
 
-loadLiveIncidents();
+// On page load: fetch shared traffic state from backend.
+// Server timestamp is authoritative - age indicator stays accurate on refresh/new device.
+async function _initSharedTrafficState() {
+    try {
+        const res = await fetch(`${API_BASE()}/traffic-state`, {headers: authHeader(), cache: 'no-cache'});
+        if (!res.ok) return;
+        const state = await res.json();
+        if (state.cards && state.cards.fetchedAt) {
+            const t = state.cards.fetchedAt;
+            if (!_activeIncidentCardTrafficState) {
+                _activeIncidentCardTrafficState = { coords: null, lastFetch: t, lastTraffic: state.cards, lastSuccessfulFetch: t };
+            } else {
+                _activeIncidentCardTrafficState.lastTraffic = state.cards;
+                _activeIncidentCardTrafficState.lastFetch = t;
+                _activeIncidentCardTrafficState.lastSuccessfulFetch = t;
+            }
+            _globalLsfCards = t;
+        }
+        if (state.detail && state.detail.fetchedAt) {
+            _globalLsfDetail = state.detail.fetchedAt;
+        }
+    } catch(e) { console.warn('[FLAMES] shared traffic init failed:', e.message); }
+}
+
+_initSharedTrafficState().then(() => loadLiveIncidents());
 setInterval(()=>loadLiveIncidents(true),20000);
 
 // ====================== RESOLVED INCIDENTS ======================
