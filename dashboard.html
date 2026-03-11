@@ -1503,7 +1503,7 @@ const CH_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 //  RAF-based ticker: updates every 30s (TomTom's native cycle).
 //  No setInterval. No manual refresh. Zero user action needed.
 // ═══════════════════════════════════════════════════════════════
-const TOMTOM_KEY           = 'iy3ljq06nVjJYIdgJdqJZAHiDaYPattE';
+const TOMTOM_KEY           = 'lOWQDi4zApH4e7ErhUadSnRFHgYLg05X';
 const TOMTOM_FLOW_BASE     = 'https://api.tomtom.com/traffic/services/4/flowSegmentData/relative0/10/json';
 const TOMTOM_TILE_URL      = `https://api.tomtom.com/traffic/map/4/tile/flow/relative0/{z}/{x}/{y}.png?key=${TOMTOM_KEY}&tileSize=256&style=2`;
 
@@ -2848,15 +2848,13 @@ async function loadLiveIncidents(silent=false){
                 if (_activeIncidentCardTrafficState) {
                     _activeIncidentCardTrafficState.coords = _sharedCoords;
                     _activeIncidentCardTrafficState.lastTraffic = _sharedTraffic;
-                    // FIX: keep lastFetch=0 so RAF ticker fetches immediately on every fresh page load/device
-                    _activeIncidentCardTrafficState.lastFetch = _sharedTraffic ? Date.now() : 0;
+                    _activeIncidentCardTrafficState.lastFetch = Date.now();
                     if (_sharedTraffic) _activeIncidentCardTrafficState.lastSuccessfulFetch = Date.now();
                 } else {
                     _activateIncidentCardTraffic(_sharedCoords);
                     if (_activeIncidentCardTrafficState) {
                         _activeIncidentCardTrafficState.lastTraffic = _sharedTraffic;
-                        // FIX: lastFetch=0 forces immediate TomTom fetch on new device/tab
-                        _activeIncidentCardTrafficState.lastFetch = _sharedTraffic ? Date.now() : 0;
+                        _activeIncidentCardTrafficState.lastFetch = Date.now();
                         if (_sharedTraffic) _activeIncidentCardTrafficState.lastSuccessfulFetch = Date.now();
                     }
                 }
@@ -3364,9 +3362,8 @@ async function calculateDetailRoute(start, end) {
         // Activate route state FIRST so _applyDetailRouteTraffic has valid state
         _activateDetailRoute(rt.coords, rt);
         _activeDetailRouteState.lastTraffic = traffic;
-        // FIX: only set lastFetch when we actually got traffic — keeps lastFetch=0 on fresh
-        // load so the RAF ticker fires immediately, ensuring same data across all devices/tabs.
-        if (traffic) { _activeDetailRouteState.lastFetch = Date.now(); _activeDetailRouteState.lastSuccessfulFetch = Date.now(); _globalLsfDetail = Date.now(); }
+        _activeDetailRouteState.lastFetch = Date.now();
+        if (traffic) { _activeDetailRouteState.lastSuccessfulFetch = Date.now(); _globalLsfDetail = Date.now(); }
 
         // Invisible bounds helper
         _incDetailRouteLayer = L.polyline(rt.coords, { opacity: 0, weight: 0,
