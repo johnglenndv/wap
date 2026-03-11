@@ -1923,6 +1923,7 @@ if (!TOKEN()) window.location.href = 'login.html';
         document.getElementById('side-username').textContent = me.username || '—';
         document.getElementById('side-org-name').textContent = me.organization_name || '—';
         const rb = document.getElementById('side-role-badge');
+        await loadServerTrafficFetch();
         if (me.is_admin) {
             rb.textContent='ADMIN'; rb.style.background='linear-gradient(135deg,#5a0a00,#8b1a00)';
             rb.style.borderColor='#e14f0055'; rb.style.color='#ff9055';
