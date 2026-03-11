@@ -1606,7 +1606,9 @@ function _activateMainRoute(coords, rt) {
 }
 function _deactivateMainRoute() { _activeRouteState = null; }
 function _activateDetailRoute(coords, rt) {
-    _activeDetailRouteState = { coords, rt, lastFetch: 0, lastTraffic: null, lastSuccessfulFetch: _globalLsfDetail };
+    // Inherit lastFetch so RAF ticker doesn't immediately re-fetch on modal open -> 'just now'
+    const _inh = _globalLsfCards || _globalLsfDetail || 0;
+    _activeDetailRouteState = { coords, rt, lastFetch: _inh, lastTraffic: _activeIncidentCardTrafficState?.lastTraffic || null, lastSuccessfulFetch: _inh };
     _startTrafficTicker();
 }
 function _deactivateDetailRoute() { _activeDetailRouteState = null; }
@@ -1686,6 +1688,8 @@ function _applyMainRouteTraffic(traffic, rt) {
 // Apply traffic to incident modal route
 function _applyDetailRouteTraffic(traffic, rt) {
     if (!_incDetailMap || !_activeDetailRouteState) return;
+    // Sync _globalLsfDetail with _globalLsfCards so age indicator is consistent
+    if (_globalLsfCards && _globalLsfCards > (_globalLsfDetail || 0)) _globalLsfDetail = _globalLsfCards;
     // Declare vehicle type FIRST before any usage
     const _detailRescueInfo = _incidentRescueMap[_currentOpenIncidentData?.incident_id];
     const _detailVehicleType = _detailRescueInfo?.vehicleType || _selectedVehicle;
@@ -1715,7 +1719,7 @@ function _applyDetailRouteTraffic(traffic, rt) {
         if (elTraf)  { elTraf.textContent  = '⏳ No live data'; elTraf.className = 'inc-traffic-badge free'; }
     }
     // Age indicator
-    const lsfD = _globalLsfDetail || _activeDetailRouteState?.lastSuccessfulFetch || 0;
+    const lsfD = _globalLsfCards || _globalLsfDetail || _activeDetailRouteState?.lastSuccessfulFetch || 0;
     _applyAgeEl(document.getElementById('imd-traffic-age'), lsfD);
     _applyAgeBadge(document.getElementById('imd-traffic-badge'), lsfD);
 }
@@ -2838,15 +2842,20 @@ async function loadLiveIncidents(silent=false){
             const firstInc = incidents[0];
             if (firstInc && _incRouteMap[firstInc.incident_id]) {
                 const _sharedCoords = _incRouteMap[firstInc.incident_id].coords;
+                const _sharedTraffic = _incRouteMap[firstInc.incident_id].traffic;
+                _globalLsfCards = _sharedTraffic ? Date.now() : (_globalLsfDetail || Date.now());
+                console.log('[FLAMES] loadLiveIncidents: hasTraffic=', !!_sharedTraffic, '_globalLsfCards=', new Date(_globalLsfCards).toLocaleTimeString());
                 if (_activeIncidentCardTrafficState) {
                     _activeIncidentCardTrafficState.coords = _sharedCoords;
-                    _activeIncidentCardTrafficState.lastTraffic = _incRouteMap[firstInc.incident_id].traffic;
+                    _activeIncidentCardTrafficState.lastTraffic = _sharedTraffic;
                     _activeIncidentCardTrafficState.lastFetch = Date.now();
+                    if (_sharedTraffic) _activeIncidentCardTrafficState.lastSuccessfulFetch = Date.now();
                 } else {
                     _activateIncidentCardTraffic(_sharedCoords);
                     if (_activeIncidentCardTrafficState) {
-                        _activeIncidentCardTrafficState.lastTraffic = _incRouteMap[firstInc.incident_id].traffic;
+                        _activeIncidentCardTrafficState.lastTraffic = _sharedTraffic;
                         _activeIncidentCardTrafficState.lastFetch = Date.now();
+                        if (_sharedTraffic) _activeIncidentCardTrafficState.lastSuccessfulFetch = Date.now();
                     }
                 }
             }
@@ -2974,9 +2983,10 @@ setInterval(() => {
         _applyAgeEl(document.getElementById('route-traffic-age'), _globalLsfRoute);
         _applyAgeBadge(document.getElementById('route-traffic-badge'), _globalLsfRoute);
     }
-    if (_globalLsfDetail) {
-        _applyAgeEl(document.getElementById('imd-traffic-age'), _globalLsfDetail);
-        _applyAgeBadge(document.getElementById('imd-traffic-badge'), _globalLsfDetail);
+    const _lsfImd = _globalLsfCards || _globalLsfDetail || 0;
+    if (_lsfImd) {
+        _applyAgeEl(document.getElementById('imd-traffic-age'), _lsfImd);
+        _applyAgeBadge(document.getElementById('imd-traffic-badge'), _lsfImd);
     }
     const lsf4 = _globalLsfCards || _globalLsfDetail || _globalLsfRoute;
     if (lsf4) {
@@ -3192,6 +3202,8 @@ setInterval(() => {
 }, 60_000);
 ////////////////////////////////////////////////////////////////PEAK PERIOD END//////////////////////////////////////////////////////////////
 function openIncidentMapModal(inc, sidebarOnly=false) {
+    if (!_globalLsfCards && _globalLsfDetail) _globalLsfCards = _globalLsfDetail;
+    console.log('[FLAMES] openIncidentMapModal: _globalLsfCards=', _globalLsfCards ? new Date(_globalLsfCards).toLocaleTimeString() : 'NONE', '_globalLsfDetail=', _globalLsfDetail ? new Date(_globalLsfDetail).toLocaleTimeString() : 'NONE');
     _currentOpenIncidentData = inc;
     document.getElementById('incident-map-modal').classList.add('open');
     const rescueInfo = _incidentRescueMap[inc.incident_id];
@@ -3385,6 +3397,7 @@ document.getElementById('incident-map-modal').addEventListener('click', e => { i
 let _detailsModalIncidentId = null;
 
 async function openIncidentDetailsModal(incidentId) {
+    console.log('[FLAMES] openIncidentDetailsModal ENTRY, incidentId=', incidentId, '_globalLsfCards=', _globalLsfCards, _globalLsfCards ? new Date(_globalLsfCards).toLocaleTimeString() : 'NOT SET');
     _detailsModalIncidentId = incidentId;
     document.getElementById('incident-details-modal').classList.add('open');
     const body = document.getElementById('inc-details-body');
@@ -3413,7 +3426,9 @@ async function openIncidentDetailsModal(incidentId) {
     if (data.latitude && data.longitude) {
         const _gw2 = getPrimaryGateway();
         const _iLat = parseFloat(data.latitude), _iLng = parseFloat(data.longitude);
+        console.log('[FLAMES] modal: calling chRoute from', _gw2.lat, _gw2.lng, 'to', _iLat, _iLng);
         chRoute(_gw2.lat, _gw2.lng, _iLat, _iLng).then(rt => {
+            console.log('[FLAMES] modal: chRoute resolved, coords length=', rt?.coords?.length);
             _activateDetailsModalTraffic(rt.coords);
             // KEY FIX: skip TomTom fetch if incident card data is still fresh.
             // Fetching here would set _globalLsfModal=now → age resets to "just now" on every open.
@@ -3430,7 +3445,8 @@ async function openIncidentDetailsModal(incidentId) {
                 _globalLsfModal = Date.now();
                 _patchDetailsModal();
             }
-        }).catch(() => {
+        }).catch((err) => {
+            console.log('[FLAMES] modal: chRoute FAILED, falling back to straight-line. Error:', err);
             const _sampleCoords = Array.from({length: 8}, (_, i) => {
                 const frac = i / 7;
                 return [_gw2.lat + (_iLat - _gw2.lat) * frac, _gw2.lng + (_iLng - _gw2.lng) * frac];
