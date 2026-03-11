@@ -511,15 +511,6 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 .inc-status-val.resolved{color:#2ecc71;}
 [data-theme="light"] .inc-status-val.resolved{color:#0e7a38;}
 
-/* Incident elapsed timer */
-.inc-elapsed-timer{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:600;font-family:monospace;padding:2px 7px;border-radius:5px;border:1px solid;letter-spacing:.5px;transition:color .4s,border-color .4s,background .4s;}
-.inc-elapsed-timer.safe{color:#2ecc71;border-color:#2ecc7155;background:#0a1a0a99;}
-[data-theme="light"] .inc-elapsed-timer.safe{color:#0e7a38;border-color:#0e7a3855;background:#e8f8ee;}
-.inc-elapsed-timer.critical{color:#ff4757;border-color:#ff475766;background:#1a000099;animation:age-blink 1s ease-in-out infinite;}
-[data-theme="light"] .inc-elapsed-timer.critical{color:#b82030;border-color:#b8203055;background:#fff0f0;}
-/* on the incident card (smaller) */
-.incident-card .inc-elapsed-timer{font-size:9px;padding:1px 5px;}
-
 /* Section headers in sidebar */
 .inc-sidebar-section{display:flex;flex-direction:column;gap:6px;}
 .inc-sidebar-section-title{font-size:8px;letter-spacing:2px;color:#5a3a2a;text-transform:uppercase;display:flex;align-items:center;gap:5px;padding-bottom:4px;border-bottom:1px solid #2a1a0a55;}
@@ -1498,46 +1489,7 @@ function formatTimestamp(raw) {
     } catch (e) { return raw; }
 }
 
-// ── Incident elapsed timer ────────────────────────────────────────────────────
-// started_at from backend is PH local time (no Z). Parse as PH (UTC+8).
-function parsePhTime(ts) {
-    if (!ts) return null;
-    try {
-        const s = ts.toString().replace('T', ' ').replace(/\.\d+Z?$/, '');
-        // If already has timezone info, use as-is; otherwise treat as Asia/Manila (UTC+8)
-        if (s.includes('Z') || s.includes('+')) return new Date(s);
-        // PH time = UTC+8, so subtract 8h to get UTC ms
-        return new Date(s.replace(' ', 'T') + '+08:00');
-    } catch(e) { return null; }
-}
-
-function _formatElapsed(ms) {
-    if (ms < 0) ms = 0;
-    const totalSecs = Math.floor(ms / 1000);
-    const h = Math.floor(totalSecs / 3600);
-    const m = Math.floor((totalSecs % 3600) / 60);
-    const s = totalSecs % 60;
-    if (h > 0) return `${h}h ${String(m).padStart(2,'0')}m`;
-    return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-}
-
-function _elapsedTimerHtml(startedAt, dataField) {
-    // Just render the shell; the tick interval fills it in
-    return `<span class="inc-elapsed-timer safe" data-field="${dataField}" data-started="${startedAt||''}">⏱ 00:00</span>`;
-}
-
-// Global tick — updates ALL elapsed timers every second, zero API calls
-setInterval(() => {
-    document.querySelectorAll('[data-field="inc-elapsed"][data-started]').forEach(el => {
-        const started = parsePhTime(el.dataset.started);
-        if (!started) return;
-        const elapsed = Date.now() - started.getTime();
-        const isCritical = elapsed >= 5 * 60 * 1000; // 5 minutes
-        el.textContent = `⏱ ${_formatElapsed(elapsed)}`;
-        el.className = `inc-elapsed-timer ${isCritical ? 'critical' : 'safe'}`;
-    });
-}, 1000);
-
+// ── CH Algorithm routing via OSRM (Contraction Hierarchies - fastest path) ──
 // OSRM uses CH by default. It routes by travel TIME (fastest), not distance.
 // Falls back to straight-line estimate if unreachable.
 const OSRM_BASE = 'https://router.project-osrm.org/route/v1/driving';
@@ -1553,7 +1505,7 @@ const CH_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 // ═══════════════════════════════════════════════════════════════
 const TOMTOM_KEY           = 'nWylUeswIa1UtoVl0FZtyvz9Y5PkiYNa';
 const TOMTOM_FLOW_BASE     = 'https://api.tomtom.com/traffic/services/4/flowSegmentData/relative0/10/json';
-const TOMTOM_TILE_URL      = `${API_BASE()}/traffic/tile/{z}/{x}/{y}`;
+const TOMTOM_TILE_URL      = `https://api.tomtom.com/traffic/map/4/tile/flow/relative0/{z}/{x}/{y}.png?key=${TOMTOM_KEY}&tileSize=256&style=2`;
 
 const TRAFFIC_LIVE_INTERVAL = 300_000; // TomTom flow data - UPDATE NG TRAFFIC INTERVAL UPDATE KADA ORAS ( 5 MINUTES)
 
@@ -2928,7 +2880,6 @@ async function loadLiveIncidents(silent=false){
                     <div class="incident-meta">Status: <span class="${inc.status_class}">${inc.status}</span>${isEnRoute?` · <span style="color:#f1c40f;font-weight:600;">🚒 En Route</span>`:isRescued?` · <span style="color:#2ecc71;font-weight:600;">✓ Rescued</span>`:''}</div>
                     <div class="incident-meta">AI: <strong>${predLabel}</strong> <span style="color:${confColor};font-weight:600;">(${inc.confidence_pct}%)</span></div>
                     <div class="incident-meta">Started: <span style="color:var(--text);">${formatTimestamp(inc.started_at)}</span></div>
-                    <div class="incident-meta" style="margin-top:2px;">${_elapsedTimerHtml(inc.started_at, 'inc-elapsed')}</div>
                     ${rescueInfo?`<div class="incident-meta" style="color:#6db8ff;font-size:10px;">🏢 ${rescueInfo.orgName}${rescueInfo.vehicleLabel?' · '+rescueInfo.vehicleLabel:''}${rescueInfo.dispatchTime?' · Dispatched: '+rescueInfo.dispatchTime:''}</div>`:''}
                     ${rescueInfo?`<div class="incident-meta" style="display:flex;gap:10px;margin-top:2px;align-items:center;flex-wrap:wrap;">
                         <span style="color:#aaa;font-size:10px;" data-field="card-vehicle">${vt0.label}</span>
@@ -3290,10 +3241,6 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
                 <span class="inc-info-label">Started</span>
                 <span class="inc-info-val" style="font-size:10px;color:#c8a080;">${formatTimestamp(inc.started_at)||'—'}</span>
             </div>
-            <div class="inc-info-row" style="margin-top:2px;">
-                <span class="inc-info-label">Elapsed</span>
-                ${_elapsedTimerHtml(inc.started_at, 'inc-elapsed')}
-            </div>
         </div>
 
         <!-- Route Stats 2×2 grid — updated by calculateDetailRoute -->
@@ -3504,7 +3451,6 @@ async function openIncidentDetailsModal(incidentId) {
             <div class="inc-details-row"><span class="inc-details-row-label">Confidence</span><span class="inc-details-row-val">${data.confidence_pct??'—'}%</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Status</span><span class="inc-details-row-val">${(isRescued||isAlreadyResolved)?'<span style="color:#2ecc71;">✓ Resolved</span>':isEnRoute?'<span style="color:#f1c40f;">🚒 En Route</span>':'<span style="color:#ff4757;">Active</span>'}</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Started</span><span class="inc-details-row-val" style="font-size:10px;">${formatTimestamp(data.started_at)||'—'}</span></div>
-            ${data.status!=='resolved'?`<div class="inc-details-row"><span class="inc-details-row-label">Elapsed</span>${_elapsedTimerHtml(data.started_at,'inc-elapsed')}</div>`:''}
             <div class="inc-details-row"><span class="inc-details-row-label">Last Updated</span><span class="inc-details-row-val" style="font-size:10px;">${formatTimestamp(data.timestamp)||'—'}</span></div>
         </div>
         ${rescueInfo ? `
