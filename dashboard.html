@@ -1520,10 +1520,36 @@ let _activeDetailRouteState = null; // { coords, rt, lastFetch, lastTraffic }
 let _activeDetailsModalTrafficState = null; // { coords, lastFetch, lastTraffic } — Full Details modal (no map)
 let _activeIncidentCardTrafficState = null; // { coords, lastFetch, lastTraffic } — Incident sidebar cards
 // Persistent fetch timestamps — survive modal close/reopen
-let _globalLsfRoute      = 0; // lastSuccessfulFetch for main route
-let _globalLsfDetail     = 0; // lastSuccessfulFetch for incident map modal
-let _globalLsfModal      = 0; // lastSuccessfulFetch for full details modal
-let _globalLsfCards      = 0; // lastSuccessfulFetch for incident cards
+let _globalLsfRoute      = 0;
+let _globalLsfDetail     = 0;
+let _globalLsfModal      = 0;
+let _globalLsfCards      = 0;
+let _backendTraffic      = null;
+let _backendTrafficTs    = 0;
+let _backendTrafficFailedAt = 0;
+
+function _applyBackendTraffic(data, timestamp, failedAt) {
+    const now = Date.now();
+    if (data) {
+        _backendTraffic = data;
+        _backendTrafficTs = timestamp || now;
+        _backendTrafficFailedAt = 0;
+        _globalLsfRoute = _backendTrafficTs;
+        _globalLsfDetail = _backendTrafficTs;
+        _globalLsfModal = _backendTrafficTs;
+        _globalLsfCards = _backendTrafficTs;
+        if (_activeRouteState) { _activeRouteState.lastTraffic = data; _activeRouteState.lastSuccessfulFetch = _backendTrafficTs; _applyMainRouteTraffic(data, _activeRouteState.rt); }
+        if (_activeDetailRouteState && _incDetailMap) { _activeDetailRouteState.lastTraffic = data; _activeDetailRouteState.lastSuccessfulFetch = _backendTrafficTs; _applyDetailRouteTraffic(data, _activeDetailRouteState.rt); }
+        if (_activeDetailsModalTrafficState) { _activeDetailsModalTrafficState.lastTraffic = data; _activeDetailsModalTrafficState.lastSuccessfulFetch = _backendTrafficTs; _patchDetailsModal(); }
+        if (_activeIncidentCardTrafficState) { _activeIncidentCardTrafficState.lastTraffic = data; _activeIncidentCardTrafficState.lastSuccessfulFetch = _backendTrafficTs; _patchIncidentCards(); }
+    } else {
+        _backendTrafficFailedAt = failedAt || now;
+        if (_activeRouteState) _applyMainRouteTraffic(_activeRouteState.lastTraffic, _activeRouteState.rt);
+        if (_activeDetailRouteState && _incDetailMap) _applyDetailRouteTraffic(_activeDetailRouteState.lastTraffic, _activeDetailRouteState.rt);
+        if (_activeDetailsModalTrafficState) _patchDetailsModal();
+        if (_activeIncidentCardTrafficState) _patchIncidentCards();
+    }
+}
 let _trafficTickerRunning   = false;
 
 // Inject live-pulse CSS once
@@ -1539,69 +1565,11 @@ let _trafficTickerRunning   = false;
 
 // Unified RAF ticker — self-stops when no active routes
 function _startTrafficTicker() {
-    if (_trafficTickerRunning) return;
-    _trafficTickerRunning = true;
-    async function tick() {
-        if (!_activeRouteState && !_activeDetailRouteState && !_activeDetailsModalTrafficState && !_activeIncidentCardTrafficState) {
-            _trafficTickerRunning = false;
-            return;
-        }
-        const now = Date.now(); // Unix ms — consistent with lastFetch timestamps
-        if (_activeRouteState) {
-            const age = now - (_activeRouteState.lastFetch || 0);
-            if (age >= TRAFFIC_LIVE_INTERVAL) {
-                _activeRouteState.lastFetch = now;
-                try {
-                    const t = await fetchTrafficOnRoute(_activeRouteState.coords);
-                    _activeRouteState.lastTraffic = t;
-                    if (t) { _activeRouteState.lastSuccessfulFetch = now; _globalLsfRoute = now; }
-                    else { _globalLsfRoute = _activeRouteState.lastSuccessfulFetch || now; }
-                    _applyMainRouteTraffic(t, _activeRouteState.rt);
-                } catch(e) {}
-            }
-        }
-        if (_activeDetailRouteState && _incDetailMap) {
-            const age = now - (_activeDetailRouteState.lastFetch || 0);
-            if (age >= TRAFFIC_LIVE_INTERVAL) {
-                _activeDetailRouteState.lastFetch = now;
-                try {
-                    const t = await fetchTrafficOnRoute(_activeDetailRouteState.coords);
-                    _activeDetailRouteState.lastTraffic = t;
-                    if (t) { _activeDetailRouteState.lastSuccessfulFetch = now; _globalLsfDetail = now; }
-                    else { _globalLsfDetail = _activeDetailRouteState.lastSuccessfulFetch || now; }
-                    _applyDetailRouteTraffic(t, _activeDetailRouteState.rt);
-                } catch(e) {}
-            }
-        }
-        if (_activeDetailsModalTrafficState) {
-            const age = now - (_activeDetailsModalTrafficState.lastFetch || 0);
-            if (age >= TRAFFIC_LIVE_INTERVAL) {
-                _activeDetailsModalTrafficState.lastFetch = now;
-                try {
-                    const t = await fetchTrafficOnRoute(_activeDetailsModalTrafficState.coords);
-                    _activeDetailsModalTrafficState.lastTraffic = t;
-                    if (t) { _activeDetailsModalTrafficState.lastSuccessfulFetch = now; _globalLsfModal = now; }
-                    else { _globalLsfModal = _activeDetailsModalTrafficState.lastSuccessfulFetch || now; }
-                    _patchDetailsModal();
-                } catch(e) {}
-            }
-        }
-        if (_activeIncidentCardTrafficState) {
-            const age = now - (_activeIncidentCardTrafficState.lastFetch || 0);
-            if (age >= TRAFFIC_LIVE_INTERVAL) {
-                _activeIncidentCardTrafficState.lastFetch = now;
-                try {
-                    const t = await fetchTrafficOnRoute(_activeIncidentCardTrafficState.coords);
-                    _activeIncidentCardTrafficState.lastTraffic = t;
-                    if (t) { _activeIncidentCardTrafficState.lastSuccessfulFetch = now; _globalLsfCards = now; }
-                    else { _globalLsfCards = _activeIncidentCardTrafficState.lastSuccessfulFetch || now; }
-                    _patchIncidentCards();
-                } catch(e) {}
-            }
-        }
-        requestAnimationFrame(tick);
+    // TomTom fetching moved to backend. Traffic arrives via WebSocket traffic_update.
+    // Apply latest backend traffic to any newly activated state.
+    if (_backendTraffic) {
+        _applyBackendTraffic(_backendTraffic, _backendTrafficTs, _backendTrafficFailedAt);
     }
-    requestAnimationFrame(tick);
 }
 
 function _activateMainRoute(coords, rt) {
@@ -2448,11 +2416,35 @@ function connectWebSocket(){
                 loadGatewayStatusPanel(true);
                 if(document.getElementById('admin-modal').style.display==='flex')loadOrganizations();
             }
+            if(msg.type==='traffic_update'){
+                _applyBackendTraffic(msg.data||null, msg.timestamp||0, msg.failed_at||0);
+                console.log('[FLAMES] traffic_update: data=', !!msg.data, 'ts=', msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : 'none');
+            }
         }catch{}
     };
     return ws;
 }
 connectWebSocket();
+
+async function _initBackendTraffic() {
+    try {
+        await new Promise(res => setTimeout(res, 2000));
+        const gw = getPrimaryGateway();
+        await fetch(`${API_BASE()}/traffic/gateway`, {
+            method: 'POST', headers: { ...authHeader(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lat: gw.lat, lng: gw.lng })
+        });
+        const res = await fetch(`${API_BASE()}/traffic/latest`, { headers: authHeader() });
+        if (res.ok) {
+            const d = await res.json();
+            if (d.timestamp) {
+                _applyBackendTraffic(d.data, d.timestamp, d.failed_at);
+                console.log('[FLAMES] traffic/latest loaded: data=', !!d.data, 'ts=', new Date(d.timestamp).toLocaleTimeString());
+            }
+        }
+    } catch(e) { console.warn('[FLAMES] _initBackendTraffic error:', e.message); }
+}
+_initBackendTraffic();
 
 // ====================== SENSOR BAR ======================
 function updateSensorBar(d,nodeId){
@@ -2745,8 +2737,7 @@ async function calculateRoute(start, end) {
         _routeGradientLayers.forEach(l => map.removeLayer(l));
         _routeGradientLayers = [];
 
-        // Fetch live traffic data along the route (TomTom)
-        const traffic = await fetchTrafficOnRoute(rt.coords);
+        const traffic = _backendTraffic || null;
 
         document.getElementById('route-info-box').style.display = 'flex';
         document.getElementById('route-dist').innerHTML = `<img src="icons/distance.png" style="width:14px;"> ${rt.distKm} km`;
@@ -2754,8 +2745,8 @@ async function calculateRoute(start, end) {
         // Activate route state FIRST so _applyMainRouteTraffic has a valid state to work with
         _activateMainRoute(rt.coords, rt);
         _activeRouteState.lastTraffic = traffic;
-        _activeRouteState.lastFetch = Date.now();
-        if (traffic) { _activeRouteState.lastSuccessfulFetch = Date.now(); _globalLsfRoute = Date.now(); }
+        _activeRouteState.lastFetch = _backendTrafficTs || Date.now();
+        if (traffic) { _activeRouteState.lastSuccessfulFetch = _backendTrafficTs || Date.now(); _globalLsfRoute = _backendTrafficTs || Date.now(); }
 
         // Keep routingControl as bounds helper (invisible)
         routingControl = L.polyline(rt.coords, { opacity: 0, weight: 0,
@@ -2839,7 +2830,7 @@ async function loadLiveIncidents(silent=false){
                 if (!inc.latitude || !inc.longitude) return;
                 try {
                     const rt = await chRoute(gw0ref.lat, gw0ref.lng, parseFloat(inc.latitude), parseFloat(inc.longitude));
-                    const traffic = await fetchTrafficOnRoute(rt.coords);
+                    const traffic = _backendTraffic || null;
                     _incRouteMap[inc.incident_id] = { coords: rt.coords, traffic, distKm: rt.distKm, timeMins: rt.timeMins };
                 } catch(e) {}
             }));
@@ -3361,14 +3352,13 @@ async function calculateDetailRoute(start, end) {
         _detailRouteGradientLayers.forEach(l => { try { l.remove(); } catch {} });
         _detailRouteGradientLayers = [];
 
-        // Fetch live traffic (TomTom)
-        const traffic = await fetchTrafficOnRoute(rt.coords);
+        const traffic = _backendTraffic || null;
 
         // Activate route state FIRST so _applyDetailRouteTraffic has valid state
         _activateDetailRoute(rt.coords, rt);
         _activeDetailRouteState.lastTraffic = traffic;
-        _activeDetailRouteState.lastFetch = Date.now();
-        if (traffic) { _activeDetailRouteState.lastSuccessfulFetch = Date.now(); _globalLsfDetail = Date.now(); }
+        _activeDetailRouteState.lastFetch = _backendTrafficTs || Date.now();
+        if (traffic) { _activeDetailRouteState.lastSuccessfulFetch = _backendTrafficTs || Date.now(); _globalLsfDetail = _backendTrafficTs || Date.now(); }
 
         // Invisible bounds helper
         _incDetailRouteLayer = L.polyline(rt.coords, { opacity: 0, weight: 0,
@@ -3433,40 +3423,22 @@ async function openIncidentDetailsModal(incidentId) {
         const _iLat = parseFloat(data.latitude), _iLng = parseFloat(data.longitude);
         console.log('[FLAMES] modal: calling chRoute from', _gw2.lat, _gw2.lng, 'to', _iLat, _iLng);
         chRoute(_gw2.lat, _gw2.lng, _iLat, _iLng).then(rt => {
-            console.log('[FLAMES] modal: chRoute resolved, coords length=', rt?.coords?.length);
             _activateDetailsModalTraffic(rt.coords);
-            // KEY FIX: skip TomTom fetch if incident card data is still fresh.
-            // Fetching here would set _globalLsfModal=now → age resets to "just now" on every open.
-            const _msSinceLast = _globalLsfCards ? (Date.now() - _globalLsfCards) : Infinity;
-            if (_msSinceLast < TRAFFIC_LIVE_INTERVAL) {
-                _patchDetailsModal(); // just patch display, no new fetch
-                return Promise.resolve(null);
+            const _t = _backendTraffic || null;
+            if (_activeDetailsModalTrafficState) {
+                _activeDetailsModalTrafficState.lastTraffic = _t;
+                _activeDetailsModalTrafficState.lastFetch = _backendTrafficTs || Date.now();
+                if (_t) _activeDetailsModalTrafficState.lastSuccessfulFetch = _backendTrafficTs || Date.now();
             }
-            return fetchTrafficOnRoute(rt.coords);
-        }).then(t => {
-            if (t && _activeDetailsModalTrafficState) {
-                _activeDetailsModalTrafficState.lastTraffic = t;
-                _activeDetailsModalTrafficState.lastFetch = Date.now();
-                _globalLsfModal = Date.now();
-                _patchDetailsModal();
-            }
-        }).catch((err) => {
-            console.log('[FLAMES] modal: chRoute FAILED, falling back to straight-line. Error:', err);
+            _globalLsfModal = _backendTrafficTs || _globalLsfCards || Date.now();
+            _patchDetailsModal();
+        }).catch(() => {
             const _sampleCoords = Array.from({length: 8}, (_, i) => {
                 const frac = i / 7;
                 return [_gw2.lat + (_iLat - _gw2.lat) * frac, _gw2.lng + (_iLng - _gw2.lng) * frac];
             });
             _activateDetailsModalTraffic(_sampleCoords);
-            const _msSinceLast2 = _globalLsfCards ? (Date.now() - _globalLsfCards) : Infinity;
-            if (_msSinceLast2 < TRAFFIC_LIVE_INTERVAL) { _patchDetailsModal(); return; }
-            fetchTrafficOnRoute(_sampleCoords).then(t => {
-                if (t && _activeDetailsModalTrafficState) {
-                    _activeDetailsModalTrafficState.lastTraffic = t;
-                    _activeDetailsModalTrafficState.lastFetch = Date.now();
-                    _globalLsfModal = Date.now();
-                    _patchDetailsModal();
-                }
-            }).catch(() => {});
+            _patchDetailsModal();
         });
     }
     body.innerHTML = `
