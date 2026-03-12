@@ -1525,6 +1525,7 @@ const TRAFFIC_LIVE_INTERVAL = 300_000; // TomTom flow data - UPDATE NG TRAFFIC I
 
 let _trafficTileLayer  = null;
 let _trafficLayerOn    = false;
+let _lastTrafficTileRefresh = 0;
 let _routeGradientLayers       = [];
 let _detailRouteGradientLayers = [];
 
@@ -1633,6 +1634,23 @@ function _startTrafficTicker() {
                     }
                     _patchIncidentCards();
                 } catch(e) {}
+            }
+        }
+        // Smooth tile overlay refresh — fade out → swap → fade in, every 5 mins
+        if (_trafficLayerOn && _trafficTileLayer) {
+            const tileAge = now - _lastTrafficTileRefresh;
+            if (tileAge >= TRAFFIC_LIVE_INTERVAL) {
+                _lastTrafficTileRefresh = now;
+                const _oldTile = _trafficTileLayer;
+                _oldTile.setOpacity(0);
+                setTimeout(() => {
+                    if (_trafficLayerOn) {
+                        map.removeLayer(_oldTile);
+                        _trafficTileLayer = L.tileLayer(TOMTOM_TILE_URL, {maxZoom:19, opacity:0, zIndex:500, className:'tomtom-traffic-tiles'}).addTo(map);
+                        _trafficTileLayer.bringToBack();
+                        setTimeout(() => { if (_trafficTileLayer) _trafficTileLayer.setOpacity(0.92); }, 100);
+                    }
+                }, 400);
             }
         }
         requestAnimationFrame(tick);
