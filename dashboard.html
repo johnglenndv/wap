@@ -3255,11 +3255,14 @@ setInterval(() => {
         elAlgo.textContent = label;
     }
     // Recalculate ETA with updated period speed + current traffic
+    // Use OSRM timeMins from active route state if available — straight-line only as fallback
     const gw = getPrimaryGateway();
     const inc = _currentOpenIncidentData;
-    const distKm = calcDistance(gw.lat, gw.lng, parseFloat(inc.latitude||0), parseFloat(inc.longitude||0));
-    const baseTime = Math.round((distKm * factor) / speed * 60);
     const traffic = _activeDetailRouteState?.lastTraffic || null;
+    const osrmTime = _activeDetailRouteState?.rt?.timeMins || 0;
+    const baseTime = osrmTime > 0
+        ? osrmTime
+        : Math.round((calcDistance(gw.lat, gw.lng, parseFloat(inc.latitude||0), parseFloat(inc.longitude||0)) * factor) / speed * 60);
     const rescueInfo = _incidentRescueMap[inc.incident_id];
     const vehicleType = rescueInfo?.vehicleType || _selectedVehicle;
     const etaMin = getVehicleETA(baseTime, traffic, vehicleType);
