@@ -1557,7 +1557,7 @@ function _startTrafficTicker() {
     if (_trafficTickerRunning) return;
     _trafficTickerRunning = true;
     async function tick() {
-        if (!_activeRouteState && !_activeDetailRouteState && !_activeDetailsModalTrafficState && !_activeIncidentCardTrafficState) {
+        if (!_activeRouteState && !_activeDetailRouteState && !_activeDetailsModalTrafficState) {
             _trafficTickerRunning = false;
             return;
         }
@@ -1598,44 +1598,8 @@ function _startTrafficTicker() {
                 } catch(e) {}
             }
         }
-        if (_activeIncidentCardTrafficState) {
-            const age = now - (_activeIncidentCardTrafficState.lastFetch || 0);
-            if (age >= TRAFFIC_LIVE_INTERVAL) {
-                _activeIncidentCardTrafficState.lastFetch = now;
-                try {
-                    const t = await fetchTrafficOnRoute(_activeIncidentCardTrafficState.coords);
-                    _activeIncidentCardTrafficState.lastTraffic = t;
-                    if (t) {
-                        // POST to backend — server sets fetchedAt authoritatively.
-                        // Use SERVER's fetchedAt for _globalLsfCards so all devices
-                        // and every refresh show the same age. Never use Date.now() here.
-                        try {
-                            const postRes = await fetch(`${API_BASE()}/traffic-state`, {
-                                method: 'POST',
-                                headers: {...authHeader(), 'Content-Type': 'application/json'},
-                                body: JSON.stringify({ cards: t })
-                            });
-                            if (postRes.ok) {
-                                // Re-read server state to get authoritative fetchedAt
-                                const stateRes = await fetch(`${API_BASE()}/traffic-state`, {headers: authHeader(), cache: 'no-cache'});
-                                if (stateRes.ok) {
-                                    const state = await stateRes.json();
-                                    if (state.cards && state.cards.fetchedAt) {
-                                        _globalLsfCards = state.cards.fetchedAt;
-                                        _activeIncidentCardTrafficState.lastSuccessfulFetch = _globalLsfCards;
-                                    }
-                                }
-                            }
-                        } catch(_pe) {
-                            // Fallback: use local now only if server unreachable
-                            _activeIncidentCardTrafficState.lastSuccessfulFetch = now;
-                            _globalLsfCards = now;
-                        }
-                    }
-                    _patchIncidentCards();
-                } catch(e) {}
-            }
-        }
+        // Incident card traffic — now fetched server-side every 5 mins via background task.
+        // Updates arrive via WebSocket traffic_update broadcast — handled in ws.onmessage.
         // Smooth tile overlay refresh — fade out → swap → fade in, every 5 mins
         if (_trafficLayerOn && _trafficTileLayer) {
             const tileAge = now - _lastTrafficTileRefresh;
