@@ -172,6 +172,10 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 .inc-map-zoom-group{position:absolute;bottom:24px;right:25px;z-index:1000;display:flex;flex-direction:column;background:white;border:2px solid var(--accent);border-radius:10px;overflow:hidden;box-shadow:0 2px 8px #00000055;}
 .inc-map-zoom-group:hover{outline:3px solid var(--accent);}
 [data-theme="light"] .inc-map-zoom-group{background:#fff8f5;box-shadow:0 2px 8px #00000033;}
+.inc-map-style-btn{position:absolute;bottom:90px;right:25px;z-index:1000;background:white;border:2px solid var(--accent);border-radius:50%;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px #00000055;transition:.2s;color:var(--accent);}
+.inc-map-style-btn:hover{background:#1a0500cc;outline:3px solid var(--accent);}
+[data-theme="light"] .inc-map-style-btn{background:#fff8f5;color:var(--accent);}
+[data-theme="light"] .inc-map-style-btn:hover{background:#ffe0d0;}
 .inc-zoom-btn{background:transparent;border:none;color:var(--accent);font-size:14px;font-weight:bold;padding:7px 0;width:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s;}
 .inc-zoom-btn:hover{background:#e14f0022;}
 .inc-zoom-div{height:1px;background:#e14f0044;}
@@ -1328,6 +1332,9 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
                 <div class="inc-map-map-inner">
                     <div id="incident-detail-map"></div>
                 </div>
+                <button class="inc-map-style-btn" id="inc-map-style-btn" title="Map: Standard → click to cycle">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+                </button>
                 <div class="inc-map-zoom-group">
                     <button class="inc-zoom-btn" id="inc-zoom-in">+</button>
                     <div class="inc-zoom-div"></div>
@@ -3465,7 +3472,7 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
         const incLat = parseFloat(inc.latitude), incLng = parseFloat(inc.longitude);
         _incDetailMap = L.map('incident-detail-map',{zoomControl:false,attributionControl:false}).setView([incLat,incLng],15);
         const _isLightInc=document.documentElement.getAttribute('data-theme')==='light';
-        L.tileLayer(
+        window._incDetailBaseTile=L.tileLayer(
             _isLightInc
                 ?'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
                 :'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
@@ -3475,6 +3482,35 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
         const _incZoomIn=document.getElementById('inc-zoom-in'),_incZoomOut=document.getElementById('inc-zoom-out');
         if(_incZoomIn){_incZoomIn.onclick=()=>_incDetailMap.zoomIn();}
         if(_incZoomOut){_incZoomOut.onclick=()=>_incDetailMap.zoomOut();}
+        // Wire map style cycle button
+        window._incMapStyleIdx = window._incMapStyleIdx||0;
+        const _incStyleBtn=document.getElementById('inc-map-style-btn');
+        if(_incStyleBtn){
+            _incStyleBtn.onclick=()=>{
+                window._incMapStyleIdx=(window._incMapStyleIdx+1)%MAP_STYLES.length;
+                const s=MAP_STYLES[window._incMapStyleIdx];
+                if(window._incDetailBaseTile) _incDetailMap.removeLayer(window._incDetailBaseTile);
+                window._incDetailBaseTile=L.tileLayer(s.url,s.opts).addTo(_incDetailMap);
+                window._incDetailBaseTile.bringToBack();
+                _incStyleBtn.title='Map: '+s.label+' \u2192 click to cycle';
+                // toast
+                let t=document.getElementById('inc-map-style-toast');
+                if(!t){
+                    t=document.createElement('div');
+                    t.id='inc-map-style-toast';
+                    t.style.cssText='position:absolute;bottom:90px;left:50%;transform:translateX(-50%);z-index:9999;background:#1a0805ee;border:1px solid var(--accent);color:#f0d0b8;font-size:11px;font-weight:700;letter-spacing:1px;padding:5px 14px;border-radius:20px;pointer-events:none;opacity:0;transition:opacity .3s;white-space:nowrap;';
+                    document.querySelector('.inc-map-map-wrap').appendChild(t);
+                }
+                t.textContent=s.label.toUpperCase();
+                t.style.opacity='1';
+                clearTimeout(t._to);
+                t._to=setTimeout(()=>t.style.opacity='0',1600);
+            };
+        }
+        // Store initial tile ref for style switching
+        window._incDetailBaseTile=null;
+        // Re-init style idx on each open
+        window._incMapStyleIdx=0;
         const fireMarker = L.marker([incLat, incLng], { icon: makeFireNodeIcon(false) }).addTo(_incDetailMap);
         fireMarker.bindPopup(`<div style="font-weight:700;color:#ff9055;">Incident Location</div><div style="font-size:11px;color:#9a6a5a;">${inc.location_name || `Node ${inc.node_id}`}</div>`).openPopup();
         _incDetailMarkers.push(fireMarker);
