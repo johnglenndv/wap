@@ -3006,9 +3006,11 @@ function _patchDetailsModal() {
     const inc = _liveIncidentsCache.find(i => i.incident_id == _detailsModalIncidentId);
     if (!inc) return;
     const gw = getPrimaryGateway();
-    const distKm = calcDistance(gw.lat, gw.lng, parseFloat(inc.latitude||0), parseFloat(inc.longitude||0));
     const { speed, factor, label: peakLabel } = getFiretruckSpeed();
-    const baseTime = Math.round((distKm * factor) / speed * 60);
+    const osrmTime = _activeDetailRouteState?.rt?.timeMins || 0;
+    const baseTime = osrmTime > 0
+        ? osrmTime
+        : Math.round((calcDistance(gw.lat, gw.lng, parseFloat(inc.latitude||0), parseFloat(inc.longitude||0)) * factor) / speed * 60);
     const traffic = _activeDetailsModalTrafficState?.lastTraffic || _activeDetailRouteState?.lastTraffic || _activeRouteState?.lastTraffic || null;
     // Use dispatched vehicle type, not selected vehicle
     const rescueInfo = _incidentRescueMap[_detailsModalIncidentId];
@@ -3506,9 +3508,12 @@ async function openIncidentDetailsModal(incidentId) {
     const isEnRoute = rescueInfo && rescueInfo.status === 'en_route';
     const isAlreadyResolved = data.status === 'resolved';
     const _gw = getPrimaryGateway();
-    const _distKm = calcDistance(_gw.lat, _gw.lng, parseFloat(data.latitude||0), parseFloat(data.longitude||0));
+
     const { speed: _spd, factor: _fac, label: _peakLabel } = getFiretruckSpeed();
-    const _baseTime = Math.round((_distKm * _fac) / _spd * 60);
+    const _osrmTime = _activeDetailRouteState?.rt?.timeMins || 0;
+    const _baseTime = _osrmTime > 0
+        ? _osrmTime
+        : Math.round((calcDistance(_gw.lat, _gw.lng, parseFloat(data.latitude||0), parseFloat(data.longitude||0)) * _fac) / _spd * 60);
     const _traffic = _activeDetailsModalTrafficState?.lastTraffic || _activeDetailRouteState?.lastTraffic || _activeRouteState?.lastTraffic || null;
     // Use dispatched vehicle if available, otherwise selected vehicle
     const _vehicleType = rescueInfo?.vehicleType || _selectedVehicle;
