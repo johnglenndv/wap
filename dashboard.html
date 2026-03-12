@@ -765,10 +765,13 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 [data-theme="light"] .ai-unknown{background:#fff8e0;color:#8a6400;border-color:#c89400;}
 
 /* ===================== LEAFLET POPUP ===================== */
-.leaflet-popup-content-wrapper{background:#1e0a08f5!important;color:white!important;border-radius:12px!important;border:2px solid var(--accent)!important;}
-.leaflet-popup-tip{background:#1e0a08!important;}
-[data-theme="light"] .leaflet-popup-content-wrapper{background:#fff8f5f8!important;color:#1e0e06!important;}
+.leaflet-popup-content-wrapper{background:#1a0805f5!important;color:#f0d0b8!important;border-radius:12px!important;border:2px solid var(--accent)!important;box-shadow:0 4px 24px #00000088,0 0 12px #e14f0033!important;}
+.leaflet-popup-tip{background:#1a0805!important;}
+.leaflet-popup-close-button{color:#e14f00!important;}
+.leaflet-popup-close-button:hover{color:#ff7033!important;}
+[data-theme="light"] .leaflet-popup-content-wrapper{background:#fff8f5f8!important;color:#1e0e06!important;box-shadow:0 4px 16px #00000022!important;}
 [data-theme="light"] .leaflet-popup-tip{background:#fff8f5!important;}
+[data-theme="light"] .leaflet-popup-close-button{color:#c43d00!important;}
 .popup-title{font-family:Arial,sans-serif;font-size:13px;margin-bottom:8px;color:#ff9055;}
 [data-theme="light"] .popup-title{color:#b83000;}
 .popup-coords{font-size:11px;color:#7a4a3a;margin-bottom:10px;}
@@ -1175,6 +1178,10 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
             <!-- TOMTOM traffic code — live traffic overlay toggle button -->
             <button class="map-btn" id="traffic-toggle-btn" title="Toggle Live Traffic Overlay">
                 <img src="icons/TrafficChecker.png" alt="Traffic" style="filter:hue-rotate(200deg) saturate(1.5);">
+            </button>
+            <!-- Map style toggle button -->
+            <button class="map-btn" id="map-style-btn" title="Toggle Map Style" style="bottom:90px;top:auto; right: 12px;">
+                <svg id="map-style-icon" width="18" height="18"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent)"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
             </button>
             <div class="zoom-group">
                 <button class="zoom-btn" id="zoom-in">+</button>
@@ -2137,7 +2144,43 @@ function adminToast(msg,type='info'){
 const MAP_CENTER=[16.0435,120.3351];
 const map=L.map('flames-map',{zoomControl:false,attributionControl:false}).setView(MAP_CENTER,14);
 window._flames_map = map;
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+// ── Map style cycling ──
+const MAP_STYLES=[
+    {id:'dark',   label:'Dark',     url:'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',  opts:{maxZoom:19,subdomains:'abcd'}},
+    {id:'light',  label:'Light',    url:'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', opts:{maxZoom:19,subdomains:'abcd'}},
+    {id:'street', label:'Standard', url:'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',             opts:{maxZoom:19}},
+];
+let _mapStyleIdx= 2; // start on Standard style of Map
+window._baseTileLayer=L.tileLayer(MAP_STYLES[2].url,MAP_STYLES[2].opts).addTo(map);
+
+function _setMapStyle(idx){
+    _mapStyleIdx=((idx%MAP_STYLES.length)+MAP_STYLES.length)%MAP_STYLES.length;
+    const s=MAP_STYLES[_mapStyleIdx];
+    if(window._baseTileLayer)map.removeLayer(window._baseTileLayer);
+    window._baseTileLayer=L.tileLayer(s.url,s.opts).addTo(map);
+    window._baseTileLayer.bringToBack();
+    // update tooltip
+    const btn=document.getElementById('map-style-btn');
+    if(btn) btn.title='Map: '+s.label+' → click to cycle';
+    // show brief toast
+    _mapStyleToast(s.label);
+}
+
+function _mapStyleToast(label){
+    let t=document.getElementById('map-style-toast');
+    if(!t){
+        t=document.createElement('div');
+        t.id='map-style-toast';
+        t.style.cssText='position:absolute;bottom:90px;left:50%;transform:translateX(-50%);z-index:9999;background:#1a0805ee;border:1px solid var(--accent);color:#f0d0b8;font-size:11px;font-weight:700;letter-spacing:1px;padding:5px 14px;border-radius:20px;pointer-events:none;opacity:0;transition:opacity .3s;white-space:nowrap;';
+        document.querySelector('.flames-map-wrap').appendChild(t);
+    }
+    t.textContent=label.toUpperCase();
+    t.style.opacity='1';
+    clearTimeout(t._to);
+    t._to=setTimeout(()=>t.style.opacity='0',1600);
+}
+
+document.getElementById('map-style-btn').addEventListener('click',()=>_setMapStyle(_mapStyleIdx+1));
 document.getElementById('home-btn').addEventListener('click',()=>map.flyTo(MAP_CENTER,14));
 document.getElementById('locate-btn').addEventListener('click',()=>navigator.geolocation.getCurrentPosition(p=>map.flyTo([p.coords.latitude,p.coords.longitude],16),()=>alert('Location access denied.')));
 document.getElementById('zoom-in').addEventListener('click',()=>map.zoomIn());
@@ -3421,7 +3464,13 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
         if (_incDetailRouteLayer) { try{ _incDetailRouteLayer.remove(); } catch{} _incDetailRouteLayer = null; }
         const incLat = parseFloat(inc.latitude), incLng = parseFloat(inc.longitude);
         _incDetailMap = L.map('incident-detail-map',{zoomControl:false,attributionControl:false}).setView([incLat,incLng],15);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:''}).addTo(_incDetailMap);
+        const _isLightInc=document.documentElement.getAttribute('data-theme')==='light';
+        L.tileLayer(
+            _isLightInc
+                ?'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+                :'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+            {maxZoom:19,subdomains:'abcd'}
+        ).addTo(_incDetailMap);
         // Wire custom zoom buttons
         const _incZoomIn=document.getElementById('inc-zoom-in'),_incZoomOut=document.getElementById('inc-zoom-out');
         if(_incZoomIn){_incZoomIn.onclick=()=>_incDetailMap.zoomIn();}
