@@ -1736,11 +1736,11 @@ function _applyDetailRouteTraffic(traffic, rt) {
         const adjustedJam = traffic.avgJam * vt.trafficMult;
         const tj = _jamLabel(adjustedJam);
         const col = tj.cls==='free'?'#2ecc71':tj.cls==='moderate'?'#f1c40f':tj.cls==='heavy'?'#ff6b35':'#ff4757';
-        if (elEtaLbl) elEtaLbl.innerHTML = `ETA · ${vt.label} <span style="color:${col};font-size:8px;margin-left:2px;">${tj.text}</span>`;
+        if (elEtaLbl) elEtaLbl.textContent = 'ETA';
         if (elSpeed)  elSpeed.textContent = Math.round(traffic.avgSpeed * vt.speedMult) + ' km/h';
         if (elTraf)  { elTraf.textContent = tj.text; elTraf.className = `inc-traffic-badge ${tj.cls}`; }
     } else {
-        if (elEtaLbl) elEtaLbl.textContent = `ETA · ${vt.label}`;
+        if (elEtaLbl) elEtaLbl.textContent = 'ETA';
         if (elSpeed)  elSpeed.textContent  = '— km/h';
         if (elTraf)  { elTraf.textContent  = '⏳ No live data'; elTraf.className = 'inc-traffic-badge free'; }
     }
