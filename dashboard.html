@@ -2947,8 +2947,8 @@ async function loadLiveIncidents(silent=false){
                         <span style="color:#9a6a5a;font-size:9px;" data-field="card-peak">${({ label } = getFiretruckSpeed(), label)}</span>
                     </div>`:''}
                     <div class="incident-btn-row1">
-                        <button class="btn-show-map" onclick="openIncidentMapModal(${JSON.stringify(inc).replace(/"/g,'&quot;')})">🗺 Show Map &amp; Route</button>
-                        <button class="btn-details" onclick="openIncidentDetailsModal(${inc.incident_id})">📋 Details</button>
+                        <button class="btn-show-map" onclick="openIncidentMapModal(${JSON.stringify(inc).replace(/"/g,'&quot;')})">Show Map & Route</button>
+                        <button class="btn-details" onclick="openIncidentDetailsModal(${inc.incident_id})">Details</button>
                     </div>
                 </div>`;
             });
