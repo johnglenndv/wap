@@ -1360,11 +1360,12 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 <div id="rescue-modal">
     <div class="rescue-box">
         <div style="font-size:32px;text-align:center;margin-bottom:8px;">🚒</div>
-        <div class="rescue-box-title">DISPATCH RESCUE</div>
+        <div class="rescue-box-title" id="rescue-modal-title">DISPATCH RESCUE</div>
         <div class="rescue-box-sub" id="rescue-modal-sub">Dispatching rescue to: —</div>
         <div style="margin:6px 0 10px;text-align:center;font-size:11px;color:#6db8ff;">
             🏢 Dispatching as: <strong id="rescue-modal-org">—</strong>
         </div>
+        <div id="rescue-dispatch-hint" style="display:none;text-align:center;font-size:10px;color:#9a6a5a;margin-bottom:6px;"></div>
         <!-- Vehicle type selector -->
         <div style="margin:8px 0 4px;">
             <div style="font-size:9px;color:#9a6a5a;letter-spacing:1px;text-align:center;text-transform:uppercase;margin-bottom:5px;">Vehicle Type</div>
@@ -1374,7 +1375,7 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
                 <button class="inc-vehicle-btn" id="rescue-vbtn-big" onclick="selectRescueVehicle('big')">🚛<br>Big Truck</button>
             </div>
         </div>
-        <button class="rescue-confirm-btn" onclick="confirmRescueDispatch()">🚒 CONFIRM DISPATCH</button>
+        <button class="rescue-confirm-btn" id="rescue-confirm-btn" onclick="confirmRescueDispatch()">🚒 CONFIRM DISPATCH</button>
         <button class="rescue-cancel-btn" onclick="closeRescueModal()">Cancel</button>
     </div>
 </div>
@@ -1503,6 +1504,21 @@ function formatTimestamp(raw) {
         const h12 = h % 12 || 12;
         return `${mon} ${dy}, ${yr} ${h12}:${mm} ${ampm}`;
     } catch (e) { return raw; }
+}
+
+// Convert any timestamp/time string to short AM/PM format: "1:46 PM"
+function toAmPm(raw) {
+    if (!raw) return '—';
+    // Already looks like AM/PM
+    if (/[AP]M$/i.test(String(raw).trim())) return String(raw).trim();
+    // Try to parse as full timestamp
+    try {
+        const d = parseLocalTimestamp(raw);
+        if (d) {
+            return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12:true});
+        }
+    } catch {}
+    return raw;
 }
 
 function parseLocalTimestamp(raw) {
@@ -2963,6 +2979,26 @@ async function loadLiveIncidents(silent=false){
         if(!res.ok)throw new Error(`HTTP ${res.status}`);
         const incidents=await res.json();
         _liveIncidentsCache = incidents;
+        // ── Hydrate rescue map from DB for any already-dispatched incidents ──
+        // This ensures devices that weren't online during dispatch still see rescue info
+        let rescueMapDirty = false;
+        incidents.forEach(inc => {
+            if (inc.assigned_team && !_incidentRescueMap[inc.incident_id]) {
+                _incidentRescueMap[inc.incident_id] = {
+                    orgId:        null,
+                    orgName:      inc.assigned_team,
+                    status:       inc.status === 'resolved' ? 'rescued' : 'en_route',
+                    dispatchTime: inc.dispatch_time || null,
+                    rescuedTime:  inc.resolved_at   || null,
+                    nodeId:       inc.node_id,
+                    locationName: inc.location_name,
+                    vehicleType:  inc.vehicle_type  || null,
+                    vehicleLabel: inc.vehicle_type ? (VEHICLE_TYPES[inc.vehicle_type]?.label || inc.vehicle_type) : null,
+                };
+                rescueMapDirty = true;
+            }
+        });
+        if (rescueMapDirty) _saveRescueMap(_incidentRescueMap);
         const listEl=document.getElementById('incident-list');
 
         // Check if same incidents as before — if so, patch only (no blink)
@@ -2995,7 +3031,7 @@ async function loadLiveIncidents(silent=false){
                 if (rescueRow) {
                     if (rescueInfo) {
                         rescueRow.style.display = '';
-                        rescueRow.innerHTML = `🏢 ${rescueInfo.orgName}${rescueInfo.vehicleLabel?' · '+rescueInfo.vehicleLabel:''}${rescueInfo.dispatchTime?' · Dispatched: '+rescueInfo.dispatchTime:''}`;
+                        rescueRow.innerHTML = `🏢 ${rescueInfo.orgName}${rescueInfo.vehicleLabel?' · '+rescueInfo.vehicleLabel:''}${rescueInfo.dispatchTime?' · Dispatched: '+toAmPm(rescueInfo.dispatchTime):''}`;
                     } else {
                         rescueRow.style.display = 'none';
                     }
@@ -3080,7 +3116,7 @@ async function loadLiveIncidents(silent=false){
                     <div class="incident-meta">AI: <strong>${predLabel}</strong> <span style="color:${confColor};font-weight:600;">(${inc.confidence_pct}%)</span></div>
                     <div class="incident-meta">Started: <span style="color:var(--text);">${formatTimestamp(inc.started_at)}</span></div>
                     <div class="incident-meta">Elapsed: <span id="card-elapsed-${inc.incident_id}" style="color:#ff904f;font-weight:600;">—</span></div>
-                    ${rescueInfo?`<div class="incident-meta rescue-info-row" style="color:#6db8ff;font-size:10px;">🏢 ${rescueInfo.orgName}${rescueInfo.vehicleLabel?' · '+rescueInfo.vehicleLabel:''}${rescueInfo.dispatchTime?' · Dispatched: '+rescueInfo.dispatchTime:''}</div>`:''}
+                    ${rescueInfo?`<div class="incident-meta rescue-info-row" style="color:#6db8ff;font-size:10px;">🏢 ${rescueInfo.orgName}${rescueInfo.vehicleLabel?' · '+rescueInfo.vehicleLabel:''}${rescueInfo.dispatchTime?' · Dispatched: '+toAmPm(rescueInfo.dispatchTime):''}</div>`:''}
                     ${rescueInfo?`<div class="incident-meta" style="display:flex;gap:10px;margin-top:2px;align-items:center;flex-wrap:wrap;">
                         <span style="color:#aaa;font-size:10px;" data-field="card-vehicle">${vt0.label}</span>
                         <span style="color:var(--yellow);font-size:10px;">⏱ ETA: <strong data-field="card-eta">~${cardEta} min</strong></span>
@@ -3278,7 +3314,7 @@ async function loadResolvedIncidents() {
                 </div>
                 <div class="resolved-card-meta">
                     🏢 <span style="color:#6db8ff;">${info.orgName}</span><br>
-                    ⏱ Dispatched: ${info.dispatchTime||'—'} · ✓ ${info.rescuedTime||'—'}
+                    ⏱ Dispatched: ${toAmPm(info.dispatchTime)} · ✓ ${toAmPm(info.rescuedTime)}
                 </div>
             </div>`;
         });
@@ -3300,18 +3336,32 @@ let _availableOrganizations = [];
 
 async function openRescueModal(incidentId, nodeId, locationName) {
     _pendingRescueIncidentId = incidentId;
-    document.getElementById('rescue-modal-sub').textContent = `Dispatching rescue to: ${locationName}`;
+    const existingRescue = _incidentRescueMap[incidentId];
+    const isEdit = !!(existingRescue && existingRescue.status === 'en_route');
+    // Set title and subtitle based on mode
+    document.getElementById('rescue-modal-title').textContent = isEdit ? 'EDIT DISPATCH' : 'DISPATCH RESCUE';
+    document.getElementById('rescue-modal-sub').textContent = isEdit
+        ? `Edit vehicle for: ${locationName}`
+        : `Dispatching rescue to: ${locationName}`;
     // Show the signed-in user's org — no need to pick one
     const me = window._flamesCurrentUser;
     const orgName = me?.organization_name || localStorage.getItem('flames_username') || '—';
     document.getElementById('rescue-modal-org').textContent = orgName;
-    // Sync rescue vehicle to current selected vehicle
-    _rescueVehicleType = _selectedVehicle;
+    // Pre-select existing vehicle if editing, otherwise use currently selected vehicle
+    _rescueVehicleType = isEdit ? (existingRescue.vehicleType || _selectedVehicle) : _selectedVehicle;
     ['motor','small','big'].forEach(v => {
         const b = document.getElementById(`rescue-vbtn-${v}`);
         if (b) b.classList.toggle('active', v === _rescueVehicleType);
     });
+    // Show dispatch time if editing
+    const dispatchHint = document.getElementById('rescue-dispatch-hint');
+    if (dispatchHint) {
+        dispatchHint.style.display = isEdit ? '' : 'none';
+        dispatchHint.textContent = isEdit ? `Originally dispatched: ${toAmPm(existingRescue.dispatchTime) || '—'}` : '';
+    }
     document.getElementById('rescue-modal').classList.add('open');
+    const confirmBtn = document.getElementById('rescue-confirm-btn');
+    if (confirmBtn) confirmBtn.textContent = isEdit ? '✏️ UPDATE VEHICLE' : '🚒 CONFIRM DISPATCH';
 }
 
 function closeRescueModal() {
@@ -3335,13 +3385,26 @@ async function confirmRescueDispatch() {
     const incidentId = _pendingRescueIncidentId;
     if (!incidentId) return;
     const inc = _liveIncidentsCache.find(i => i.incident_id == incidentId);
-    const now = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',hour12:true});
-    const nowSql = new Date().toLocaleString('sv-SE', {timeZone:'Asia/Manila'}).replace('T',' ').slice(0,19);
+    const existing = _incidentRescueMap[incidentId];
+    const isEdit = !!(existing && existing.status === 'en_route');
+    // Preserve original dispatch time if editing; only generate new time for fresh dispatches
+    const now    = isEdit ? existing.dispatchTime : new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',hour12:true});
+    const nowSql = isEdit ? null : new Date().toLocaleString('sv-SE', {timeZone:'Asia/Manila'}).replace('T',' ').slice(0,19);
     const vt = VEHICLE_TYPES[_rescueVehicleType];
-    _incidentRescueMap[incidentId] = {orgId,orgName,status:'en_route',dispatchTime:now,rescuedTime:null,nodeId:inc?.node_id,locationName:inc?.location_name||`Incident #${incidentId}`,vehicleType:_rescueVehicleType,vehicleLabel:vt.label};
+    _incidentRescueMap[incidentId] = {
+        orgId, orgName, status:'en_route',
+        dispatchTime: now,
+        rescuedTime: existing?.rescuedTime || null,
+        nodeId: inc?.node_id,
+        locationName: inc?.location_name || `Incident #${incidentId}`,
+        vehicleType: _rescueVehicleType,
+        vehicleLabel: vt.label
+    };
     _saveRescueMap(_incidentRescueMap);
     try {
-        await fetch(`${API_BASE()}/incidents/${incidentId}/respond`, {method:'PATCH',headers:{...authHeader(),'Content-Type':'application/json'},body:JSON.stringify({organization_id:parseInt(orgId),organization_name:orgName,dispatch_time:nowSql,vehicle_type:_rescueVehicleType})});
+        const payload = {organization_id:parseInt(orgId), organization_name:orgName, vehicle_type:_rescueVehicleType};
+        if (nowSql) payload.dispatch_time = nowSql; // only send dispatch_time on fresh dispatch
+        await fetch(`${API_BASE()}/incidents/${incidentId}/respond`, {method:'PATCH',headers:{...authHeader(),'Content-Type':'application/json'},body:JSON.stringify(payload)});
     } catch {}
     closeRescueModal();
     document.getElementById('respond-node-label').textContent = `Incident on ${inc?.node_id||incidentId}`;
@@ -3542,14 +3605,14 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
                 <div class="inc-rescue-status-label">Responding Unit</div>
                 <div class="inc-rescue-org-name">🏢 ${rescueInfo.orgName}</div>
                 ${rescueInfo.vehicleLabel?`<div class="inc-rescue-time" style="color:#ff9055;">${rescueInfo.vehicleLabel}</div>`:''}
-                <div class="inc-rescue-time">Dispatched: ${rescueInfo.dispatchTime||'—'}</div>
+                <div class="inc-rescue-time">Dispatched: ${toAmPm(rescueInfo.dispatchTime)}</div>
                 <div class="inc-rescue-status-badge ${rescueInfo.status==='rescued'?'rescued':'en-route'}">${rescueInfo.status==='rescued'?'✓ RESOLVED':'🚒 EN ROUTE'}</div>
             </div>
         </div>`:''}
 
         <!-- Action Buttons -->
         <div style="display:flex;flex-direction:column;gap:6px;margin-top:auto;padding-top:4px;">
-            <button class="inc-map-rescue-btn" onclick="closeIncidentMapModal();openRescueModal(${inc.incident_id},'${inc.node_id}','${(inc.location_name||'Node '+inc.node_id).replace(/'/g,"\\'")}')">🚒 DISPATCH RESCUE</button>
+            <button class="inc-map-rescue-btn" onclick="closeIncidentMapModal();openRescueModal(${inc.incident_id},'${inc.node_id}','${(inc.location_name||'Node '+inc.node_id).replace(/'/g,"\\'")}')">🚒 ${rescueInfo ? 'EDIT DISPATCH' : 'DISPATCH RESCUE'}</button>
             <button class="inc-map-resolve-btn" id="inc-map-resolve-${inc.incident_id}" onclick="resolveIncident(${inc.incident_id},'${inc.node_id}')" ${isRescued?'disabled':''}>✓ MARK RESOLVED</button>
         </div>`;
 
@@ -3771,9 +3834,9 @@ async function openIncidentDetailsModal(incidentId) {
             <div class="inc-response-timeline">
                 <div class="inc-timeline-item incident"><div class="inc-timeline-dot incident">🔥</div><div class="inc-timeline-content"><div class="inc-timeline-action">Fire Detected</div><div class="inc-timeline-time">${formatTimestamp(data.started_at)||'—'}</div></div></div>
                 ${rescueInfo?`
-                <div class="inc-timeline-item dispatched-step"><div class="inc-timeline-dot dispatched">🚨</div><div class="inc-timeline-content"><div class="inc-timeline-action">Rescue Dispatched</div><div class="inc-timeline-time">${rescueInfo.dispatchTime||'—'}</div><div class="inc-timeline-org">${rescueInfo.orgName}</div></div></div>
-                <div class="inc-timeline-item en-route-step"><div class="inc-timeline-dot en-route">🚒</div><div class="inc-timeline-content"><div class="inc-timeline-action">En Route to Scene</div><div class="inc-timeline-time">${rescueInfo.dispatchTime||'—'}</div><div class="inc-timeline-org">${rescueInfo.orgName}</div></div></div>
-                ${rescueInfo.status==='rescued'?`<div class="inc-timeline-item"><div class="inc-timeline-dot rescued">✓</div><div class="inc-timeline-content"><div class="inc-timeline-action">Incident Resolved</div><div class="inc-timeline-time">${rescueInfo.rescuedTime||'—'}</div><div class="inc-timeline-org">${rescueInfo.orgName}</div></div></div>`:''}`
+                <div class="inc-timeline-item dispatched-step"><div class="inc-timeline-dot dispatched">🚨</div><div class="inc-timeline-content"><div class="inc-timeline-action">Rescue Dispatched</div><div class="inc-timeline-time">${toAmPm(rescueInfo.dispatchTime)}</div><div class="inc-timeline-org">${rescueInfo.orgName}</div></div></div>
+                <div class="inc-timeline-item en-route-step"><div class="inc-timeline-dot en-route">🚒</div><div class="inc-timeline-content"><div class="inc-timeline-action">En Route to Scene</div><div class="inc-timeline-time">${toAmPm(rescueInfo.dispatchTime)}</div><div class="inc-timeline-org">${rescueInfo.orgName}</div></div></div>
+                ${rescueInfo.status==='rescued'?`<div class="inc-timeline-item"><div class="inc-timeline-dot rescued">✓</div><div class="inc-timeline-content"><div class="inc-timeline-action">Incident Resolved</div><div class="inc-timeline-time">${toAmPm(rescueInfo.rescuedTime)}</div><div class="inc-timeline-org">${rescueInfo.orgName}</div></div></div>`:''}`
                 :'<div class="no-response-msg">No rescue dispatched yet</div>'}
             </div>
         </div>
