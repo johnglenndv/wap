@@ -2495,7 +2495,7 @@ function connectWebSocket(){
         dot.className='ws-dot error';label.textContent='Disconnected';
         setTimeout(connectWebSocket,5000);
     }
-    ws.onopen=()=>{dot.className='ws-dot connected';label.textContent='Live';};
+    ws.onopen=()=>{dot.className='ws-dot connected';label.textContent='Live';loadLiveIncidents(true);};
     ws.onclose=()=>_wsScheduleReconnect();
     ws.onerror=()=>{dot.className='ws-dot error';label.textContent='Error';_wsScheduleReconnect();};
     ws.onmessage=event=>{
@@ -3000,89 +3000,87 @@ async function loadLiveIncidents(silent=false){
         if(!res.ok)throw new Error(`HTTP ${res.status}`);
         const incidents=await res.json();
         _liveIncidentsCache = incidents;
-        // ── Hydrate rescue map from DB for any already-dispatched incidents ──
-        // This ensures devices that weren't online during dispatch still see rescue info
-        let rescueMapDirty = false;
+
+        // ── Sync rescue map FROM DB — DB is always source of truth ──
+        // Always overwrite so vehicle/org changes on any device sync to all devices.
+        // _incidentRescueMap is kept only for instant WS update on the dispatching device.
         incidents.forEach(inc => {
-            if (inc.assigned_team && !_incidentRescueMap[inc.incident_id]) {
+            if (inc.assigned_team) {
+                const existing = _incidentRescueMap[inc.incident_id];
                 _incidentRescueMap[inc.incident_id] = {
                     orgId:        null,
                     orgName:      inc.assigned_team,
-                    status:       inc.status === 'resolved' ? 'rescued' : 'en_route',
-                    dispatchTime: inc.dispatch_time || null,
-                    rescuedTime:  inc.resolved_at   || null,
+                    status:       'en_route',
+                    dispatchTime: inc.dispatch_time || existing?.dispatchTime || null,
+                    rescuedTime:  existing?.rescuedTime || null,
                     nodeId:       inc.node_id,
                     locationName: inc.location_name,
-                    vehicleType:  inc.vehicle_type  || null,
+                    vehicleType:  inc.vehicle_type || null,
                     vehicleLabel: inc.vehicle_type ? (VEHICLE_TYPES[inc.vehicle_type]?.label || inc.vehicle_type) : null,
                 };
-                rescueMapDirty = true;
             }
         });
-        if (rescueMapDirty) _saveRescueMap(_incidentRescueMap);
+        _saveRescueMap(_incidentRescueMap);
+
         const listEl=document.getElementById('incident-list');
 
-        // Check if same incidents as before — if so, patch only (no blink)
+        // ── Helper: build rescue display values directly from DB fields on inc ──
+        // No longer depends on _incidentRescueMap for rendering — DB fields are the truth.
+        function _getCardDispatch(inc) {
+            // DB fields take priority. Fall back to rescue map only for same-session WS instant update.
+            const orgName     = inc.assigned_team || _incidentRescueMap[inc.incident_id]?.orgName || null;
+            const vehicleType = inc.vehicle_type  || _incidentRescueMap[inc.incident_id]?.vehicleType || null;
+            const dispatchTime= inc.dispatch_time || _incidentRescueMap[inc.incident_id]?.dispatchTime || null;
+            const vehicleLabel= vehicleType ? (VEHICLE_TYPES[vehicleType]?.label || vehicleType) : null;
+            return { orgName, vehicleType, vehicleLabel, dispatchTime, hasDispatch: !!orgName };
+        }
+
+        // ── Silent patch path — same incident set, just update fields in-place ──
         const existingIds = [...listEl.querySelectorAll('.incident-card')].map(c => c.id.replace('incident-card-',''));
         const newIds = incidents.map(i => String(i.incident_id));
         const sameSet = existingIds.length === newIds.length && newIds.every(id => existingIds.includes(id));
 
         if(silent && sameSet && incidents.length){
-            // Silent patch — update only changed fields, no re-render, no blink
             incidents.forEach(inc => {
                 const card = document.getElementById(`incident-card-${inc.incident_id}`);
                 if (!card) return;
-                const rescueInfo = _incidentRescueMap[inc.incident_id];
-                const isEnRoute = rescueInfo?.status === 'en_route';
-                const isRescued = rescueInfo?.status === 'rescued';
+                const dispatch = _getCardDispatch(inc);
+                const isEnRoute = dispatch.hasDispatch;
+                const isRescued = _incidentRescueMap[inc.incident_id]?.status === 'rescued';
                 const pred = (inc.ai_prediction||'').toLowerCase();
                 const isFire = pred === 'fire';
                 const confColor = inc.confidence_pct>=70?'var(--green)':inc.confidence_pct>=40?'var(--yellow)':'var(--orange)';
-                // Patch status line
                 const metaEls = card.querySelectorAll('.incident-meta');
-                if (metaEls[0]) metaEls[0].innerHTML = `Status: <span class="${inc.status_class}">${inc.status}</span>${isEnRoute?` · <span style="color:#f1c40f;font-weight:600;">🚒 En Route</span>`:isRescued?` · <span style="color:#2ecc71;font-weight:600;">✓ Rescued</span>`:''}`;
+                if (metaEls[0]) metaEls[0].innerHTML = `Status: <span class="${inc.status_class}">${inc.status}</span>${isEnRoute&&!isRescued?` · <span style="color:#f1c40f;font-weight:600;">🚒 En Route</span>`:isRescued?` · <span style="color:#2ecc71;font-weight:600;">✓ Rescued</span>`:''}`;
                 if (metaEls[1]) metaEls[1].innerHTML = `AI: <strong>${isFire?'🔥 FIRE':'⚠ POSSIBLE'}</strong> <span style="color:${confColor};font-weight:600;">(${inc.confidence_pct}%)</span>`;
-                // Patch rescue info rows (dispatch org, vehicle, ETA)
                 const rescueRow = card.querySelector('.rescue-info-row');
-                const rescueEtaRow = card.querySelector('.rescue-eta-row');
-                if (rescueInfo && !rescueRow) {
-                    // Rescue info didn't exist before — force a full re-render so it appears
-                    return; // will be caught by the sameSet check below being overridden
+                if (dispatch.hasDispatch && !rescueRow) {
+                    // Dispatch appeared — need full re-render so row is added
+                    listEl.innerHTML = '';
+                    return;
                 }
                 if (rescueRow) {
-                    if (rescueInfo) {
+                    if (dispatch.hasDispatch) {
                         rescueRow.style.display = '';
-                        rescueRow.innerHTML = `🏢 ${rescueInfo.orgName}${rescueInfo.vehicleLabel?' · '+rescueInfo.vehicleLabel:''}${rescueInfo.dispatchTime?' · Dispatched: '+toAmPm(rescueInfo.dispatchTime):''}`;
+                        rescueRow.innerHTML = `🏢 ${dispatch.orgName}${dispatch.vehicleLabel?' · '+dispatch.vehicleLabel:''}${dispatch.dispatchTime?' · Dispatched: '+toAmPm(dispatch.dispatchTime):''}`;
                     } else {
                         rescueRow.style.display = 'none';
                     }
                 }
             });
-            // If any card is missing its rescue row but now has rescueInfo, do a full re-render
-            const needsFullRender = incidents.some(inc => {
-                const card = document.getElementById(`incident-card-${inc.incident_id}`);
-                const rescueInfo = _incidentRescueMap[inc.incident_id];
-                return rescueInfo && card && !card.querySelector('.rescue-info-row');
-            });
-            if (needsFullRender) {
-                // Fall through to full re-render by clearing sameSet condition
-                listEl.innerHTML = '';
-            } else {
+            if (listEl.innerHTML !== '') {
                 _patchIncidentCards();
                 document.getElementById('incidents-last-update').textContent=`Updated: ${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:true})}`;
                 return;
             }
         }
 
-        // Full re-render — only when incident list changes
+        // ── Full re-render ──
         listEl.innerHTML='';
         if(!incidents.length){
             listEl.innerHTML='<div class="node-placeholder">No active incidents right now</div>';
             _deactivateIncidentCardTraffic();
         } else {
-            // Get OSRM route geometry only — NO TomTom fetch here.
-            // Traffic age ("just now / X mins ago") must ONLY use the server-authoritative
-            // fetchedAt from /traffic-state. Never reset with Date.now() on page load/refresh.
             const gw0ref = getPrimaryGateway();
             const _incRouteMap = {};
             await Promise.allSettled(incidents.map(async inc => {
@@ -3095,19 +3093,14 @@ async function loadLiveIncidents(silent=false){
             const firstInc = incidents[0];
             if (firstInc && _incRouteMap[firstInc.incident_id]) {
                 const _sharedCoords = _incRouteMap[firstInc.incident_id].coords;
-                // Reuse existing traffic — do NOT overwrite _globalLsfCards with Date.now()
                 const _existingTraffic = _activeIncidentCardTrafficState?.lastTraffic || null;
-                console.log('[FLAMES] loadLiveIncidents: _globalLsfCards=', _globalLsfCards ? new Date(_globalLsfCards).toLocaleTimeString() : 'NOT SET');
                 if (_activeIncidentCardTrafficState) {
                     _activeIncidentCardTrafficState.coords = _sharedCoords;
-                    // Preserve lastFetch so RAF ticker knows when it last fetched
-                    // Set to 0 only if truly never fetched (forces first-time TomTom fetch)
                     if (!_activeIncidentCardTrafficState.lastFetch) _activeIncidentCardTrafficState.lastFetch = 0;
                 } else {
                     _activateIncidentCardTraffic(_sharedCoords);
                     if (_activeIncidentCardTrafficState) {
                         if (_existingTraffic) _activeIncidentCardTrafficState.lastTraffic = _existingTraffic;
-                        // lastFetch=0 → RAF ticker fires TomTom fetch; fetchedAt will come from server
                         _activeIncidentCardTrafficState.lastFetch = 0;
                     }
                 }
@@ -3117,16 +3110,17 @@ async function loadLiveIncidents(silent=false){
                 const isFire=pred==='fire';
                 const confColor=inc.confidence_pct>=70?'var(--green)':inc.confidence_pct>=40?'var(--yellow)':'var(--orange)';
                 const predLabel=isFire?'🔥 FIRE':'⚠ POSSIBLE';
-                const rescueInfo=_incidentRescueMap[inc.incident_id];
-                const isRescued=rescueInfo&&rescueInfo.status==='rescued';
-                const isEnRoute=rescueInfo&&rescueInfo.status==='en_route';
+                // ── All dispatch data comes directly from DB fields on inc ──
+                const dispatch = _getCardDispatch(inc);
+                const isRescued = _incidentRescueMap[inc.incident_id]?.status === 'rescued';
+                const isEnRoute = dispatch.hasDispatch && !isRescued;
                 const gw0 = getPrimaryGateway();
                 const _incRoute = _incRouteMap[inc.incident_id];
                 const distKm0 = _incRoute?.distKm ?? calcDistance(gw0.lat, gw0.lng, parseFloat(inc.latitude||0), parseFloat(inc.longitude||0));
                 const { speed: spd0, factor: fac0 } = getFiretruckSpeed();
                 const baseTime0 = _incRoute?.timeMins ?? Math.round((distKm0 * fac0) / spd0 * 60);
                 const traffic0 = _incRoute?.traffic || _activeIncidentCardTrafficState?.lastTraffic || null;
-                const dispatchedVehicle = rescueInfo?.vehicleType || _selectedVehicle;
+                const dispatchedVehicle = dispatch.vehicleType || _selectedVehicle;
                 const vt0 = VEHICLE_TYPES[dispatchedVehicle];
                 const cardEta = getVehicleETA(baseTime0, traffic0, dispatchedVehicle);
                 const cardSpeed = traffic0 ? Math.round(traffic0.avgSpeed * vt0.speedMult) : Math.round(spd0 * vt0.speedMult);
@@ -3137,8 +3131,8 @@ async function loadLiveIncidents(silent=false){
                     <div class="incident-meta">AI: <strong>${predLabel}</strong> <span style="color:${confColor};font-weight:600;">(${inc.confidence_pct}%)</span></div>
                     <div class="incident-meta">Started: <span style="color:var(--text);">${formatTimestamp(inc.started_at)}</span></div>
                     <div class="incident-meta">Elapsed: <span id="card-elapsed-${inc.incident_id}" style="color:#ff904f;font-weight:600;">—</span></div>
-                    ${rescueInfo?`<div class="incident-meta rescue-info-row" style="color:#6db8ff;font-size:10px;">🏢 ${rescueInfo.orgName}${rescueInfo.vehicleLabel?' · '+rescueInfo.vehicleLabel:''}${rescueInfo.dispatchTime?' · Dispatched: '+toAmPm(rescueInfo.dispatchTime):''}</div>`:''}
-                    ${rescueInfo?`<div class="incident-meta" style="display:flex;gap:10px;margin-top:2px;align-items:center;flex-wrap:wrap;">
+                    ${dispatch.hasDispatch?`<div class="incident-meta rescue-info-row" style="color:#6db8ff;font-size:10px;">🏢 ${dispatch.orgName}${dispatch.vehicleLabel?' · '+dispatch.vehicleLabel:''}${dispatch.dispatchTime?' · Dispatched: '+toAmPm(dispatch.dispatchTime):''}</div>`:''}
+                    ${dispatch.hasDispatch?`<div class="incident-meta" style="display:flex;gap:10px;margin-top:2px;align-items:center;flex-wrap:wrap;">
                         <span style="color:#aaa;font-size:10px;" data-field="card-vehicle">${vt0.label}</span>
                         <span style="color:var(--yellow);font-size:10px;">⏱ ETA: <strong data-field="card-eta">~${cardEta} min</strong></span>
                         <span style="color:#4da8ff;font-size:10px;">🚗 <strong data-field="card-speed">${cardSpeed} km/h</strong></span>
@@ -3158,7 +3152,6 @@ async function loadLiveIncidents(silent=false){
             ? new Date(latestTs.replace(' ','T')).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:true})
             : new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:true});
         document.getElementById('incidents-last-update').textContent=`Updated: ${updatedStr}`;
-        // Start per-card elapsed tickers
         _startCardElapsedTickers(incidents);
     }catch(err){
         if(!silent)document.getElementById('incident-list').innerHTML='<div class="node-placeholder">Error loading incidents</div>';
