@@ -1663,18 +1663,11 @@ function _startTrafficTicker() {
                 } catch(e) {}
             }
         }
-        if (_activeDetailRouteState && _incDetailMap) {
-            const age = now - (_activeDetailRouteState.lastFetch || 0);
-            if (age >= TRAFFIC_LIVE_INTERVAL) {
-                _activeDetailRouteState.lastFetch = now;
-                try {
-                    const t = await fetchTrafficOnRoute(_activeDetailRouteState.coords);
-                    _activeDetailRouteState.lastTraffic = t;
-                    if (t) { _activeDetailRouteState.lastSuccessfulFetch = now; _globalLsfDetail = now; }
-                    _applyDetailRouteTraffic(t, _activeDetailRouteState.rt);
-                } catch(e) {}
-            }
-        }
+        // _activeDetailRouteState — NO frontend TomTom fetch here.
+        // Backend _traffic_background_task fetches per-incident every 5 mins and
+        // broadcasts via WebSocket traffic_update. The ws.onmessage handler live-patches
+        // the modal when this incident's data arrives — keeping each incident's
+        // "Updated" age fully independent (A stays "3 mins ago", B shows "just now").
         if (_activeDetailsModalTrafficState) {
             const age = now - (_activeDetailsModalTrafficState.lastFetch || 0);
             if (age >= TRAFFIC_LIVE_INTERVAL) {
