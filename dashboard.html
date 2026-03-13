@@ -1623,6 +1623,7 @@ let _activeRouteState       = null; // { coords, rt, lastFetch, lastTraffic }
 let _activeDetailRouteState = null; // { coords, rt, lastFetch, lastTraffic }
 let _activeDetailsModalTrafficState = null; // { coords, lastFetch, lastTraffic } — Full Details modal (no map)
 let _incidentTrafficMap = {}; // per-incident traffic: { incident_id: { traffic, lastFetch, lastSuccessfulFetch } }
+let _incidentOsrmCache = {}; // per-incident OSRM route: { incident_id: { distKm, timeMins, coords } }
 // Persistent fetch timestamps — survive modal close/reopen
 let _globalLsfRoute      = 0; // lastSuccessfulFetch for main route
 let _globalLsfDetail     = 0; // lastSuccessfulFetch for incident map modal
@@ -3118,6 +3119,7 @@ async function loadLiveIncidents(silent=false){
                 try {
                     const rt = await chRoute(gw0ref.lat, gw0ref.lng, parseFloat(inc.latitude), parseFloat(inc.longitude));
                     _incRouteMap[inc.incident_id] = { coords: rt.coords, distKm: rt.distKm, timeMins: rt.timeMins };
+                    _incidentOsrmCache[inc.incident_id] = { coords: rt.coords, distKm: rt.distKm, timeMins: rt.timeMins };
                 } catch(e) {}
             }));
             // Per-incident traffic — backend handles fetch timing per incident_id.
@@ -3738,6 +3740,9 @@ async function calculateDetailRoute(start, end) {
 
         _incDetailMap.fitBounds(L.polyline(rt.coords).getBounds(), {padding:[20,20]});
 
+        // Save OSRM result to persistent cache so details modal can use it
+        if (incId) _incidentOsrmCache[incId] = { coords: rt.coords, distKm: rt.distKm, timeMins: rt.timeMins };
+
         // Update distance (not handled by _applyDetailRouteTraffic)
         const elDist = document.getElementById('imd-dist');
         if (elDist) elDist.textContent = rt.distKm + ' km';
@@ -3823,13 +3828,15 @@ async function openIncidentDetailsModal(incidentId) {
     const _gw = getPrimaryGateway();
 
     const { speed: _spd, factor: _fac, label: _peakLabel } = getFiretruckSpeed();
-    const _osrmTime = _activeDetailRouteState?.rt?.timeMins || 0;
-    const _distKm = _activeDetailRouteState?.rt?.distKm
-        ?? calcDistance(_gw.lat, _gw.lng, parseFloat(data.latitude||0), parseFloat(data.longitude||0));
+    // Use persistent OSRM cache first (populated by card render or map modal), then active route state, then straight-line fallback
+    const _cachedRoute = _incidentOsrmCache[String(incidentId)] || _incidentOsrmCache[String(data.incident_id)] || null;
+    const _osrmTime = _cachedRoute?.timeMins || _activeDetailRouteState?.rt?.timeMins || 0;
+    const _straightDist = calcDistance(_gw.lat, _gw.lng, parseFloat(data.latitude||0), parseFloat(data.longitude||0));
+    const _distKm = _cachedRoute?.distKm ?? _activeDetailRouteState?.rt?.distKm ?? _straightDist;
     const _baseTime = _osrmTime > 0
         ? _osrmTime
-        : Math.round((calcDistance(_gw.lat, _gw.lng, parseFloat(data.latitude||0), parseFloat(data.longitude||0)) * _fac) / _spd * 60);
-    const _traffic = _activeDetailsModalTrafficState?.lastTraffic || _activeDetailRouteState?.lastTraffic || _activeRouteState?.lastTraffic || null;
+        : Math.round((_straightDist * _fac) / _spd * 60);
+    const _traffic = _activeDetailsModalTrafficState?.lastTraffic || _activeDetailRouteState?.lastTraffic || _incidentTrafficMap[String(incidentId)]?.traffic || _activeRouteState?.lastTraffic || null;
     // Use dispatched vehicle if available, otherwise selected vehicle
     const _vehicleType = rescueInfo?.vehicleType || _selectedVehicle;
     const _vt = VEHICLE_TYPES[_vehicleType];
@@ -3891,7 +3898,7 @@ async function openIncidentDetailsModal(incidentId) {
             <div class="inc-details-row"><span class="inc-details-row-label">Status</span><span class="inc-details-row-val">${(isRescued||isAlreadyResolved)?'<span style="color:#2ecc71;">Resolved</span>':isEnRoute?'<span style="color:#f1c40f;">🚒 En Route</span>':'<span style="color:#ff4757;">Active</span>'}</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Started</span><span class="inc-details-row-val" style="font-size:10px;">${formatTimestamp(data.started_at)||'—'}</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Elapsed</span><span class="inc-details-row-val" id="inc-elapsed-val" style="font-size:11px;color:${isAlreadyResolved?'#2ecc71':'#ff904f'};font-weight:600;">—</span></div>
-            <div class="inc-details-row"><span class="inc-details-row-label">${(isAlreadyResolved||isRescued)?'Resolved At':'Last Updated'}</span><span class="inc-details-row-val" style="font-size:10px;color:${(isAlreadyResolved||isRescued)?'#2ecc71':'inherit'};">${(isAlreadyResolved||isRescued)?formatTimestamp(data.resolved_at)||'—':'Ongoing'}</span></div>
+            <div class="inc-details-row"><span class="inc-details-row-label">${(isAlreadyResolved||isRescued)?'Resolved At':'Last Updated'}</span><span class="inc-details-row-val" style="font-size:10px;color:${(isAlreadyResolved||isRescued)?'#2ecc71':'inherit'};">${(isAlreadyResolved||isRescued)?formatTimestamp(data.resolved_at)||'—':formatTimestamp(data.timestamp)||'Ongoing'}</span></div>
         </div>
         ${(isAlreadyResolved||isRescued)&&(data.temperature!=null||data.humidity!=null||data.smoke!=null||data.flame!=null) ? `
         <div class="inc-details-section">
@@ -3913,7 +3920,7 @@ async function openIncidentDetailsModal(incidentId) {
         <div class="inc-details-section">
             <div class="inc-details-section-title">Routing Information</div>
             <div class="inc-details-row"><span class="inc-details-row-label">Vehicle</span><span class="inc-details-row-val" data-field="details-vehicle">${_vt.label}</span></div>
-            <div class="inc-details-row"><span class="inc-details-row-label">Distance</span><span class="inc-details-row-val" style="color:var(--green);">${_distKm.toFixed(1)} km (est.)</span></div>
+            <div class="inc-details-row"><span class="inc-details-row-label">Distance</span><span class="inc-details-row-val" style="color:var(--green);">${_distKm.toFixed(1)} km${(_cachedRoute||_activeDetailRouteState)?'':'  (est.)'}</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">ETA</span><span class="inc-details-row-val" data-field="details-eta" style="color:var(--yellow);">~${_etaMin} min</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Peak Period</span><span class="inc-details-row-val" data-field="details-peak">${_peakLabel}</span></div>
 
