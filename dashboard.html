@@ -3453,7 +3453,14 @@ async function confirmRescueDispatch() {
 // ====================== RESOLVE INCIDENT ======================
 async function resolveIncident(incidentId, nodeId) {
     try {
-        const res = await fetch(`${API_BASE()}/incidents/${incidentId}/resolve`, {method:'PATCH',headers:{...authHeader(),'Content-Type':'application/json'},body:JSON.stringify({notes:'Resolved via dashboard'})});
+        // Capture current routing values from DOM — these get frozen in DB via Option A
+        const _resolveEtaEl   = document.querySelector('#inc-details-body [data-field="details-eta"]');
+        const _resolvePeakEl  = document.querySelector('#inc-details-body [data-field="details-peak"]');
+        const _resolveDistEl  = document.querySelector('#inc-details-body [data-field="details-dist"]');
+        const _resolveEtaRaw  = _resolveEtaEl ? parseInt(_resolveEtaEl.textContent.replace(/\D/g,'')) || null : null;
+        const _resolvePeakRaw = _resolvePeakEl ? _resolvePeakEl.textContent.trim() || null : null;
+        const _resolveDistRaw = _resolveDistEl ? parseFloat(_resolveDistEl.textContent) || null : null;
+        const res = await fetch(`${API_BASE()}/incidents/${incidentId}/resolve`, {method:'PATCH',headers:{...authHeader(),'Content-Type':'application/json'},body:JSON.stringify({notes:'Resolved via dashboard', resolved_dist_km: _resolveDistRaw, resolved_eta_min: _resolveEtaRaw, resolved_peak: _resolvePeakRaw})});
         if (!res.ok) throw new Error((await res.json()).detail||'Failed');
         const now = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',hour12:true});
         if (_incidentRescueMap[incidentId]) {
@@ -3822,9 +3829,9 @@ async function openIncidentDetailsModal(incidentId) {
     const isAlreadyResolved = data.status === 'resolved';
     const _gw = getPrimaryGateway();
 
-    const { speed: _spd, factor: _fac, label: _peakLabel } = getFiretruckSpeed();
+    const { speed: _spd, factor: _fac, label: _peakLabelLive } = getFiretruckSpeed();
     const _osrmTime = _activeDetailRouteState?.rt?.timeMins || 0;
-    const _distKm = _activeDetailRouteState?.rt?.distKm
+    const _distKmCalc = _activeDetailRouteState?.rt?.distKm
         ?? calcDistance(_gw.lat, _gw.lng, parseFloat(data.latitude||0), parseFloat(data.longitude||0));
     const _baseTime = _osrmTime > 0
         ? _osrmTime
@@ -3833,8 +3840,13 @@ async function openIncidentDetailsModal(incidentId) {
     // Use dispatched vehicle if available, otherwise selected vehicle
     const _vehicleType = rescueInfo?.vehicleType || _selectedVehicle;
     const _vt = VEHICLE_TYPES[_vehicleType];
-    const _etaMin = getVehicleETA(_baseTime, _traffic, _vehicleType);
+    const _etaMinCalc = getVehicleETA(_baseTime, _traffic, _vehicleType);
     const _liveSpeed = _traffic ? Math.round(_traffic.avgSpeed * _vt.speedMult) : Math.round(_spd * _vt.speedMult);
+    // For resolved incidents — use frozen DB values if available, else fall back to computed
+    const _isResolved = isAlreadyResolved || isRescued;
+    const _distKm    = (_isResolved && data.resolved_dist_km != null) ? data.resolved_dist_km : _distKmCalc;
+    const _etaMin    = (_isResolved && data.resolved_eta_min != null) ? data.resolved_eta_min : _etaMinCalc;
+    const _peakLabel = (_isResolved && data.resolved_peak)            ? data.resolved_peak    : _peakLabelLive;
     // Start own traffic ticker using actual OSRM route coords (not straight-line)
     if (data.latitude && data.longitude) {
         const _gw2 = getPrimaryGateway();
@@ -3913,7 +3925,7 @@ async function openIncidentDetailsModal(incidentId) {
         <div class="inc-details-section">
             <div class="inc-details-section-title">Routing Information</div>
             <div class="inc-details-row"><span class="inc-details-row-label">Vehicle</span><span class="inc-details-row-val" data-field="details-vehicle">${_vt.label}</span></div>
-            <div class="inc-details-row"><span class="inc-details-row-label">Distance</span><span class="inc-details-row-val" style="color:var(--green);">${_distKm.toFixed(1)} km (est.)</span></div>
+            <div class="inc-details-row"><span class="inc-details-row-label">Distance</span><span class="inc-details-row-val" data-field="details-dist" style="color:var(--green);">${_distKm.toFixed(1)} km (est.)</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">ETA</span><span class="inc-details-row-val" data-field="details-eta" style="color:var(--yellow);">~${_etaMin} min</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Peak Period</span><span class="inc-details-row-val" data-field="details-peak">${_peakLabel}</span></div>
 
