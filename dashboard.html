@@ -3163,7 +3163,15 @@ async function loadResolvedIncidents() {
 }
 
 // ====================== RESCUE / RESPOND SYSTEM ======================
-let _incidentRescueMap = {};
+// ── Persist rescue/dispatch info across page refreshes ──────────
+const RESCUE_MAP_KEY = 'flames_rescue_map';
+function _loadRescueMap() {
+    try { const raw = localStorage.getItem(RESCUE_MAP_KEY); return raw ? JSON.parse(raw) : {}; } catch { return {}; }
+}
+function _saveRescueMap(map) {
+    try { localStorage.setItem(RESCUE_MAP_KEY, JSON.stringify(map)); } catch {}
+}
+let _incidentRescueMap = _loadRescueMap();
 let _pendingRescueIncidentId = null;
 let _availableOrganizations = [];
 
@@ -3222,8 +3230,9 @@ async function confirmRescueDispatch() {
     const now = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',hour12:true});
     const vt = VEHICLE_TYPES[_rescueVehicleType];
     _incidentRescueMap[incidentId] = {orgId,orgName,status:'en_route',dispatchTime:now,rescuedTime:null,nodeId:inc?.node_id,locationName:inc?.location_name||`Incident #${incidentId}`,vehicleType:_rescueVehicleType,vehicleLabel:vt.label};
+    _saveRescueMap(_incidentRescueMap);
     try {
-        await fetch(`${API_BASE()}/incidents/${incidentId}/respond`, {method:'PATCH',headers:{...authHeader(),'Content-Type':'application/json'},body:JSON.stringify({organization_id:parseInt(orgId),organization_name:orgName})});
+        await fetch(`${API_BASE()}/incidents/${incidentId}/respond`, {method:'PATCH',headers:{...authHeader(),'Content-Type':'application/json'},body:JSON.stringify({organization_id:parseInt(orgId),organization_name:orgName,dispatch_time:now,vehicle_type:_rescueVehicleType})});
     } catch {}
     closeRescueModal();
     document.getElementById('respond-node-label').textContent = `Incident on ${inc?.node_id||incidentId}`;
@@ -3250,6 +3259,7 @@ async function resolveIncident(incidentId, nodeId) {
             const inc = _liveIncidentsCache.find(i => i.incident_id == incidentId);
             _incidentRescueMap[incidentId] = {orgId:null,orgName:'Manual Resolve',status:'rescued',dispatchTime:null,rescuedTime:now,nodeId,locationName:inc?.location_name};
         }
+        _saveRescueMap(_incidentRescueMap);
         clearFireAnimationForNode(nodeId);
         closeIncidentDetailsModal();
         closeIncidentMapModal();
@@ -3545,10 +3555,26 @@ async function openIncidentDetailsModal(incidentId) {
     const body = document.getElementById('inc-details-body');
     body.innerHTML = '<div style="text-align:center;padding:24px;color:#5a3a2a;">Loading…</div>';
     const inc = _liveIncidentsCache.find(i => i.incident_id == incidentId);
-    const rescueInfo = _incidentRescueMap[incidentId];
     let resolvedData = null;
     try { const res = await fetch(`${API_BASE()}/incidents/${incidentId}`,{headers:authHeader()}); if(res.ok) resolvedData=await res.json(); } catch {}
     const data = resolvedData || inc || {};
+    // ── Hydrate rescue map from DB if not already in memory (e.g. after refresh) ──
+    if (!_incidentRescueMap[incidentId] && data.assigned_team) {
+        _incidentRescueMap[incidentId] = {
+            orgId:        null,
+            orgName:      data.assigned_team,
+            status:       data.status === 'resolved' ? 'rescued' : 'en_route',
+            dispatchTime: data.dispatch_time || null,
+            rescuedTime:  data.resolved_at   || null,
+            nodeId:       data.node_id,
+            locationName: data.location_name,
+            vehicleType:  data.vehicle_type  || null,
+            vehicleLabel: data.vehicle_type ? (VEHICLE_TYPES[data.vehicle_type]?.label || data.vehicle_type) : null,
+        };
+        _saveRescueMap(_incidentRescueMap);
+    }
+    // Read rescueInfo AFTER hydration so it's always up to date
+    const rescueInfo = _incidentRescueMap[incidentId];
     const pred = (data.ai_prediction||'').toLowerCase();
     const isFire = pred === 'fire';
     const isRescued = rescueInfo && rescueInfo.status === 'rescued';
@@ -3558,6 +3584,8 @@ async function openIncidentDetailsModal(incidentId) {
 
     const { speed: _spd, factor: _fac, label: _peakLabel } = getFiretruckSpeed();
     const _osrmTime = _activeDetailRouteState?.rt?.timeMins || 0;
+    const _distKm = _activeDetailRouteState?.rt?.distKm
+        ?? calcDistance(_gw.lat, _gw.lng, parseFloat(data.latitude||0), parseFloat(data.longitude||0));
     const _baseTime = _osrmTime > 0
         ? _osrmTime
         : Math.round((calcDistance(_gw.lat, _gw.lng, parseFloat(data.latitude||0), parseFloat(data.longitude||0)) * _fac) / _spd * 60);
