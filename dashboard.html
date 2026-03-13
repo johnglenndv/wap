@@ -3151,7 +3151,6 @@ async function loadLiveIncidents(silent=false){
                     <div class="incident-meta">Elapsed: <span id="card-elapsed-${inc.incident_id}" style="color:#ff904f;font-weight:600;">—</span></div>
                     ${dispatch.hasDispatch?`<div class="incident-meta rescue-info-row" style="color:#6db8ff;font-size:10px;">🏢 ${dispatch.orgName}${dispatch.vehicleLabel?' · '+dispatch.vehicleLabel:''}${dispatch.dispatchTime?' · Dispatched: '+toAmPm(dispatch.dispatchTime):''}</div>`:''}
                     ${dispatch.hasDispatch?`<div class="incident-meta" style="display:flex;gap:10px;margin-top:2px;align-items:center;flex-wrap:wrap;">
-                        <span style="color:#aaa;font-size:10px;" data-field="card-vehicle">${vt0.label}</span>
                         <span style="color:var(--yellow);font-size:10px;">⏱ ETA: <strong data-field="card-eta">~${cardEta} min</strong></span>
                         <span style="color:#4da8ff;font-size:10px;">🚗 <strong data-field="card-speed">${cardSpeed} km/h</strong></span>
                         <span class="traffic-age" data-field="card-speed-age"></span>
