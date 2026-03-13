@@ -2533,7 +2533,8 @@ function connectWebSocket(){
             if(msg.type==='sensor_data'||msg.type==='new_reading'){
                 loadAndPlaceNodes(true);
                 if(_hm_node&&(!msg.node_id||msg.node_id===_hm_node))fetchHistory();
-                // Auto-refresh incident map modal sensor readings if node matches
+                // Patch sensor tile values in-place — do NOT call openIncidentMapModal which
+                // re-renders the whole sidebar and wipes the traffic display.
                 if(_currentOpenIncidentData && msg.node_id === _currentOpenIncidentData.node_id
                    && document.getElementById('incident-map-modal').classList.contains('open')){
                     if(msg.temperature != null) _currentOpenIncidentData.temperature = msg.temperature;
@@ -2542,20 +2543,20 @@ function connectWebSocket(){
                     if(msg.flame       != null) _currentOpenIncidentData.flame       = msg.flame;
                     if(msg.ai_prediction)       _currentOpenIncidentData.ai_prediction = msg.ai_prediction;
                     if(msg.confidence  != null) _currentOpenIncidentData.confidence_pct = Math.round(msg.confidence * 100);
-                    openIncidentMapModal(_currentOpenIncidentData, true);
+                    _patchIncidentMapSidebarSensors(_currentOpenIncidentData);
                 }
             }
             if(msg.type==='node_update'){
                 loadAndPlaceNodes(true);
                 if(_hm_node&&(!msg.node_id||msg.node_id===_hm_node))fetchHistory();
-                // Same — refresh modal sidebar if same node
+                // Same — patch sensor tiles in-place, do NOT full re-render
                 if(_currentOpenIncidentData && msg.node_id === _currentOpenIncidentData.node_id
                    && document.getElementById('incident-map-modal').classList.contains('open')){
                     if(msg.temperature != null) _currentOpenIncidentData.temperature = msg.temperature;
                     if(msg.humidity    != null) _currentOpenIncidentData.humidity    = msg.humidity;
                     if(msg.smoke       != null) _currentOpenIncidentData.smoke       = msg.smoke;
                     if(msg.flame       != null) _currentOpenIncidentData.flame       = msg.flame;
-                    openIncidentMapModal(_currentOpenIncidentData, true);
+                    _patchIncidentMapSidebarSensors(_currentOpenIncidentData);
                 }
             }
             if(msg.type==='incident_update'){
@@ -2627,26 +2628,41 @@ function connectWebSocket(){
                 }
                 if(msg.action !== 'responded') loadLiveIncidents(true);
                 if(_currentIncidentTab==='resolved') loadResolvedIncidents();
-                // Auto-refresh incident details modal if open
+                // Auto-refresh incident details modal ONLY if it's the same incident that changed —
+                // calling openIncidentDetailsModal for a *different* incident re-triggers TomTom fetch
+                // and resets the traffic age display to "just now".
                 if(document.getElementById('incident-details-modal').classList.contains('open') && _detailsModalIncidentId){
-                    openIncidentDetailsModal(_detailsModalIncidentId);
+                    if(msg.incident_id == _detailsModalIncidentId){
+                        openIncidentDetailsModal(_detailsModalIncidentId);
+                    }
                 }
-                // Auto-refresh incident map modal sidebar if open and same incident
+                // Auto-refresh incident map modal sidebar if open.
+                // FIX: do NOT call openIncidentMapModal(freshInc, true) for unrelated incident_update
+                // events — that re-renders the entire sidebar HTML which wipes the traffic display
+                // and resets imd-traffic-badge to "Loading…". Instead, patch sensor fields in-place
+                // so ongoing traffic data (fetchedAt, age ticker, badge) is never interrupted.
                 if(_currentOpenIncidentData && document.getElementById('incident-map-modal').classList.contains('open')){
-                    // Merge latest sensor data into the cached incident object
                     const freshInc = _liveIncidentsCache.find(i => i.incident_id == _currentOpenIncidentData.incident_id);
                     if(freshInc){
                         _currentOpenIncidentData = freshInc;
-                        openIncidentMapModal(freshInc, true); // sidebar only, no map re-init
-                    } else if(msg.node_id && msg.node_id === _currentOpenIncidentData.node_id){
-                        // Patch sensor fields directly from WS message
+                    }
+                    // Patch sensor fields from WS message regardless of which incident triggered this
+                    if(msg.node_id && msg.node_id === _currentOpenIncidentData.node_id){
                         if(msg.temperature != null) _currentOpenIncidentData.temperature = msg.temperature;
                         if(msg.humidity    != null) _currentOpenIncidentData.humidity    = msg.humidity;
                         if(msg.smoke       != null) _currentOpenIncidentData.smoke       = msg.smoke;
                         if(msg.flame       != null) _currentOpenIncidentData.flame       = msg.flame;
                         if(msg.ai_prediction)       _currentOpenIncidentData.ai_prediction = msg.ai_prediction;
                         if(msg.confidence  != null) _currentOpenIncidentData.confidence_pct = Math.round(msg.confidence * 100);
+                    }
+                    // Only do a full sidebar re-render if THIS incident was the one that changed
+                    // (e.g. resolved, rescue dispatched). For new/unrelated incidents, skip the
+                    // re-render entirely so traffic state is never wiped.
+                    if(msg.incident_id == _currentOpenIncidentData.incident_id){
                         openIncidentMapModal(_currentOpenIncidentData, true);
+                    } else {
+                        // Different incident changed — just patch the sensor tile values in-place
+                        _patchIncidentMapSidebarSensors(_currentOpenIncidentData);
                     }
                 }
             }
@@ -3716,6 +3732,31 @@ async function calculateDetailRoute(start, end) {
         _applyDetailRouteTraffic(traffic, rt);
 
     } catch(e) { console.warn('CH detail route failed:', e.message); }
+}
+
+// Patch only the sensor tile values inside the open incident map modal sidebar —
+// without re-rendering the whole sidebar (which would wipe traffic state).
+function _patchIncidentMapSidebarSensors(inc) {
+    const sidebar = document.getElementById('inc-map-sidebar');
+    if (!sidebar) return;
+    const tiles = sidebar.querySelectorAll('.inc-sensor-tile');
+    tiles.forEach(tile => {
+        const label = (tile.querySelector('.inc-sensor-tile-label')?.textContent || '').toUpperCase();
+        const valEl = tile.querySelector('.inc-sensor-tile-val');
+        if (!valEl) return;
+        if (label === 'TEMP'     && inc.temperature != null) valEl.textContent = inc.temperature + '°C';
+        if (label === 'HUMIDITY' && inc.humidity    != null) valEl.textContent = inc.humidity + '%';
+        if (label === 'SMOKE PPM'&& inc.smoke       != null) valEl.textContent = inc.smoke;
+        if (label === 'FLAME'    && inc.flame       != null) valEl.textContent = inc.flame;
+    });
+    // Patch status banner
+    const statusVal = sidebar.querySelector('.inc-status-val');
+    if (statusVal) {
+        const pred = (inc.ai_prediction || '').toLowerCase();
+        const isRescued = _incidentRescueMap[inc.incident_id]?.status === 'rescued';
+        statusVal.textContent = isRescued ? 'RESOLVED' : pred === 'fire' ? 'ACTIVE FIRE' : 'POSSIBLE FIRE';
+        statusVal.className = 'inc-status-val ' + (isRescued ? 'resolved' : 'fire');
+    }
 }
 
 function closeIncidentMapModal() {
