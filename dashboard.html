@@ -3831,10 +3831,20 @@ async function openIncidentDetailsModal(incidentId) {
     const _gw = getPrimaryGateway();
 
     const { speed: _spd, factor: _fac, label: _peakLabel } = getFiretruckSpeed();
-    // Use persistent OSRM cache first (populated by card render or map modal), then active route state, then straight-line fallback
+    const _straightDist = calcDistance(_gw.lat, _gw.lng, parseFloat(data.latitude||0), parseFloat(data.longitude||0));
+    // Guarantee OSRM data: fetch now if not yet cached
+    if (data.latitude && data.longitude && !_incidentOsrmCache[String(incidentId)]) {
+        try {
+            const _gwF = getPrimaryGateway();
+            const _rt = await chRoute(_gwF.lat, _gwF.lng, parseFloat(data.latitude), parseFloat(data.longitude));
+            if (_rt && _rt.distKm) {
+                _incidentOsrmCache[String(incidentId)] = { coords: _rt.coords, distKm: _rt.distKm, timeMins: _rt.timeMins };
+            }
+        } catch(e) { /* fall through to straight-line */ }
+    }
+    // Use persistent OSRM cache first, then active route state, then straight-line fallback
     const _cachedRoute = _incidentOsrmCache[String(incidentId)] || _incidentOsrmCache[String(data.incident_id)] || null;
     const _osrmTime = _cachedRoute?.timeMins || _activeDetailRouteState?.rt?.timeMins || 0;
-    const _straightDist = calcDistance(_gw.lat, _gw.lng, parseFloat(data.latitude||0), parseFloat(data.longitude||0));
     const _distKm = parseFloat(_cachedRoute?.distKm ?? _activeDetailRouteState?.rt?.distKm ?? _straightDist);
     const _baseTime = _osrmTime > 0
         ? _osrmTime
