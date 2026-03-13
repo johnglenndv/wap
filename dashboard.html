@@ -3848,9 +3848,11 @@ async function openIncidentDetailsModal(incidentId) {
         chRoute(_gw2.lat, _gw2.lng, _iLat, _iLng).then(rt => {
             console.log('[FLAMES] modal: chRoute resolved, coords length=', rt?.coords?.length);
             _activateDetailsModalTraffic(rt.coords);
-            // KEY FIX: skip TomTom fetch if incident card data is still fresh.
-            // Fetching here would set _globalLsfModal=now → age resets to "just now" on every open.
-            const _msSinceLast = _globalLsfCards ? (Date.now() - _globalLsfCards) : Infinity;
+            // FIX: guard now checks THIS incident's own lastSuccessfulFetch — not _globalLsfCards
+            // (which is the latest fetch of ANY incident and could wrongly skip a fetch for this one).
+            const _incIdStr = String(incidentId);
+            const _lastFetchForInc = _incidentTrafficMap[_incIdStr]?.lastSuccessfulFetch || 0;
+            const _msSinceLast = _lastFetchForInc ? (Date.now() - _lastFetchForInc) : Infinity;
             if (_msSinceLast < TRAFFIC_LIVE_INTERVAL) {
                 _patchDetailsModal(); // just patch display, no new fetch
                 return Promise.resolve(null);
@@ -3870,7 +3872,9 @@ async function openIncidentDetailsModal(incidentId) {
                 return [_gw2.lat + (_iLat - _gw2.lat) * frac, _gw2.lng + (_iLng - _gw2.lng) * frac];
             });
             _activateDetailsModalTraffic(_sampleCoords);
-            const _msSinceLast2 = _globalLsfCards ? (Date.now() - _globalLsfCards) : Infinity;
+            const _incIdStr2 = String(incidentId);
+            const _lastFetchForInc2 = _incidentTrafficMap[_incIdStr2]?.lastSuccessfulFetch || 0;
+            const _msSinceLast2 = _lastFetchForInc2 ? (Date.now() - _lastFetchForInc2) : Infinity;
             if (_msSinceLast2 < TRAFFIC_LIVE_INTERVAL) { _patchDetailsModal(); return; }
             fetchTrafficOnRoute(_sampleCoords).then(t => {
                 if (t && _activeDetailsModalTrafficState) {
