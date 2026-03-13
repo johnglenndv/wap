@@ -1263,8 +1263,8 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
                         <div class="incident-badge"><img src="icons/FireIncident.png" alt="fire"><span id="incident-count">0</span></div>
                     </div>
                     <div class="incidents-tab-row">
-                        <button class="inc-tab-btn active" id="tab-live" onclick="switchIncidentTab('live')">🔥 LIVE</button>
-                        <button class="inc-tab-btn" id="tab-resolved" onclick="switchIncidentTab('resolved')">✓ RESOLVED</button>
+                        <button class="inc-tab-btn active" id="tab-live" onclick="switchIncidentTab('live')">LIVE</button>
+                        <button class="inc-tab-btn" id="tab-resolved" onclick="switchIncidentTab('resolved')">RESOLVED</button>
                     </div>
                     <div class="incident-list" id="incident-list"></div>
                     <div class="resolved-list" id="resolved-list" style="display:none;"></div>
@@ -3643,7 +3643,7 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
                 <div class="inc-rescue-org-name">🏢 ${rescueInfo.orgName}</div>
                 ${rescueInfo.vehicleLabel?`<div class="inc-rescue-time" style="color:#ff9055;">${rescueInfo.vehicleLabel}</div>`:''}
                 <div class="inc-rescue-time">Dispatched: ${toAmPm(rescueInfo.dispatchTime)}</div>
-                <div class="inc-rescue-status-badge ${rescueInfo.status==='rescued'?'rescued':'en-route'}">${rescueInfo.status==='rescued'?'✓ RESOLVED':'🚒 EN ROUTE'}</div>
+                <div class="inc-rescue-status-badge ${rescueInfo.status==='rescued'?'rescued':'en-route'}">${rescueInfo.status==='rescued'?'RESOLVED':'🚒 EN ROUTE'}</div>
             </div>
         </div>`:''}
 
@@ -3893,7 +3893,7 @@ async function openIncidentDetailsModal(incidentId) {
             <div class="inc-details-row"><span class="inc-details-row-label">Node ID</span><span class="inc-details-row-val" style="font-family:monospace;">${data.node_id||'—'}</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">AI Detection</span><span class="inc-details-row-val" style="color:${isFire?'var(--red)':'var(--yellow)'};">${isFire?'🔥 FIRE DETECTED':'⚠ Possible Fire'}</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Confidence</span><span class="inc-details-row-val">${data.confidence_pct??'—'}%</span></div>
-            <div class="inc-details-row"><span class="inc-details-row-label">Status</span><span class="inc-details-row-val">${(isRescued||isAlreadyResolved)?'<span style="color:#2ecc71;">✓ Resolved</span>':isEnRoute?'<span style="color:#f1c40f;">🚒 En Route</span>':'<span style="color:#ff4757;">Active</span>'}</span></div>
+            <div class="inc-details-row"><span class="inc-details-row-label">Status</span><span class="inc-details-row-val">${(isRescued||isAlreadyResolved)?'<span style="color:#2ecc71;">Resolved</span>':isEnRoute?'<span style="color:#f1c40f;">🚒 En Route</span>':'<span style="color:#ff4757;">Active</span>'}</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Started</span><span class="inc-details-row-val" style="font-size:10px;">${formatTimestamp(data.started_at)||'—'}</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Elapsed</span><span class="inc-details-row-val" id="inc-elapsed-val" style="font-size:11px;color:${isAlreadyResolved?'#2ecc71':'#ff904f'};font-weight:600;">—</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Last Updated</span><span class="inc-details-row-val" style="font-size:10px;">${formatTimestamp(data.timestamp)||'—'}</span></div>
@@ -3928,7 +3928,6 @@ async function openIncidentDetailsModal(incidentId) {
             <div class="inc-details-row"><span class="inc-details-row-label">Dispatched By</span><span class="inc-details-row-val" style="color:#6db8ff;">${rescueInfo.orgName||'—'}</span></div>
             ${rescueInfo.vehicleLabel?`<div class="inc-details-row"><span class="inc-details-row-label">Unit</span><span class="inc-details-row-val" style="color:#ff9055;">${rescueInfo.vehicleLabel}</span></div>`:''}
             <div class="inc-details-row"><span class="inc-details-row-label">Dispatch Time</span><span class="inc-details-row-val" style="font-size:10px;">${toAmPm(rescueInfo.dispatchTime)||'—'}</span></div>
-            <div class="inc-details-row"><span class="inc-details-row-label">Status</span><span class="inc-details-row-val"><span class="inc-rescue-status-badge ${rescueInfo.status==='rescued'?'rescued':'en-route'}">${rescueInfo.status==='rescued'?'✓ RESOLVED':'🚒 EN ROUTE'}</span></span></div>
         </div>` : ''}
         <div class="inc-details-section">
             <div class="inc-details-section-title">Response Timeline</div>
