@@ -3911,7 +3911,7 @@ async function openIncidentDetailsModal(incidentId) {
             <div class="inc-details-row"><span class="inc-details-row-label">Status</span><span class="inc-details-row-val">${(isRescued||isAlreadyResolved)?'<span style="color:#2ecc71;">Resolved</span>':isEnRoute?'<span style="color:#f1c40f;">🚒 En Route</span>':'<span style="color:#ff4757;">Active</span>'}</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Started</span><span class="inc-details-row-val" style="font-size:10px;">${formatTimestamp(data.started_at)||'—'}</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Elapsed</span><span class="inc-details-row-val" id="inc-elapsed-val" style="font-size:11px;color:${isAlreadyResolved?'#2ecc71':'#ff904f'};font-weight:600;">—</span></div>
-            <div class="inc-details-row"><span class="inc-details-row-label">${(isAlreadyResolved||isRescued)?'Resolved At':'Last Updated'}</span><span class="inc-details-row-val" style="font-size:10px;color:${(isAlreadyResolved||isRescued)?'#2ecc71':'inherit'};">${(isAlreadyResolved||isRescued)?formatTimestamp(data.resolved_at)||'—':formatTimestamp(data.timestamp)||'Ongoing'}</span></div>
+            <div class="inc-details-row"><span class="inc-details-row-label">${(isAlreadyResolved||isRescued)?'Resolved At':'Last Updated'}</span><span class="inc-details-row-val" style="font-size:10px;color:${(isAlreadyResolved||isRescued)?'#2ecc71':'inherit'};">${(isAlreadyResolved||isRescued)?formatTimestamp(data.resolved_at)||'—':'On Going'}</span></div>
         </div>
         ${(isAlreadyResolved||isRescued)&&(data.temperature!=null||data.humidity!=null||data.smoke!=null||data.flame!=null) ? `
         <div class="inc-details-section">
