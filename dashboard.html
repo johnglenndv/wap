@@ -4125,7 +4125,7 @@ function renderTable(rows){
                     :pred==='false'?'<span class="ai-badge ai-possible">⚠Possible</span>'
                     :pred==='normal'?'<span class="ai-badge ai-normal">Normal</span>'
                     :rp?`<span class="ai-badge ai-unknown">${rp}</span>`:'<span style="color:#5a3a2a">—</span>';
-                const ts=formatTimestamp(r.display_timestamp||r.local_timestamp);
+                const ts=formatTimestamp(r.local_timestamp||r.timestamp);
                 return`<tr>
                     <td class="c-num" style="color:#3a2a1a;font-size:9px;">${i+1}</td>
                     <td class="c-ts" style="color:#5a3a2a;font-size:9px;">${ts}</td>
