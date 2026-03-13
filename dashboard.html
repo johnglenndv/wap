@@ -3906,7 +3906,7 @@ async function openIncidentDetailsModal(incidentId) {
             <div class="inc-details-section-title">Incident Overview</div>
             <div class="inc-details-row"><span class="inc-details-row-label">Location</span><span class="inc-details-row-val">${data.location_name||`Node ${data.node_id}`}</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Node ID</span><span class="inc-details-row-val" style="font-family:monospace;">${data.node_id||'—'}</span></div>
-            <div class="inc-details-row"><span class="inc-details-row-label">AI Detection</span><span class="inc-details-row-val" style="color:${isFire?'var(--red)':'var(--yellow)'};">${isFire?'🔥 FIRE DETECTED':'⚠ Possible Fire'}</span></div>
+            <div class="inc-details-row"><span class="inc-details-row-label">AI Detection</span><span class="inc-details-row-val" style="color:${isFire?'var(--red)':'var(--yellow)'};">${isFire?'FIRE DETECTED':'⚠ Possible Fire'}</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Confidence</span><span class="inc-details-row-val">${data.confidence_pct??'—'}%</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Status</span><span class="inc-details-row-val">${(isRescued||isAlreadyResolved)?'<span style="color:#2ecc71;">Resolved</span>':isEnRoute?'<span style="color:#f1c40f;">🚒 En Route</span>':'<span style="color:#ff4757;">Active</span>'}</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Started</span><span class="inc-details-row-val" style="font-size:10px;">${formatTimestamp(data.started_at)||'—'}</span></div>
