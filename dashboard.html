@@ -2495,7 +2495,7 @@ function connectWebSocket(){
         dot.className='ws-dot error';label.textContent='Disconnected';
         setTimeout(connectWebSocket,5000);
     }
-    ws.onopen=()=>{dot.className='ws-dot connected';label.textContent='Live';loadLiveIncidents(true);};
+    ws.onopen=()=>{dot.className='ws-dot connected';label.textContent='Live';};
     ws.onclose=()=>_wsScheduleReconnect();
     ws.onerror=()=>{dot.className='ws-dot error';label.textContent='Error';_wsScheduleReconnect();};
     ws.onmessage=event=>{
@@ -2990,24 +2990,27 @@ function switchIncidentTab(tab) {
 
 // ====================== LIVE INCIDENTS ======================
 let _liveIncidentsCache = [];
+let _incidentRenderInProgress = false;
 async function loadLiveIncidents(silent=false){
+    if (_incidentRenderInProgress) return;
+    _incidentRenderInProgress = true;
     try{
         const res=await fetch(`${API_BASE()}/incidents/active`,{headers:authHeader(),cache:'no-cache'});
         if(res.status===401){window.location.href='login.html';return;}
         if(!res.ok)throw new Error(`HTTP ${res.status}`);
         const incidents=await res.json();
         _liveIncidentsCache = incidents;
-        // ── Hydrate rescue map from DB — always overwrite so vehicle/org changes sync on all devices ──
+        // ── Hydrate rescue map from DB for any already-dispatched incidents ──
+        // This ensures devices that weren't online during dispatch still see rescue info
         let rescueMapDirty = false;
         incidents.forEach(inc => {
-            if (inc.assigned_team) {
-                const existing = _incidentRescueMap[inc.incident_id];
+            if (inc.assigned_team && !_incidentRescueMap[inc.incident_id]) {
                 _incidentRescueMap[inc.incident_id] = {
                     orgId:        null,
                     orgName:      inc.assigned_team,
                     status:       inc.status === 'resolved' ? 'rescued' : 'en_route',
-                    dispatchTime: inc.dispatch_time || existing?.dispatchTime || null,
-                    rescuedTime:  inc.resolved_at   || existing?.rescuedTime  || null,
+                    dispatchTime: inc.dispatch_time || null,
+                    rescuedTime:  inc.resolved_at   || null,
                     nodeId:       inc.node_id,
                     locationName: inc.location_name,
                     vehicleType:  inc.vehicle_type  || null,
@@ -3159,6 +3162,8 @@ async function loadLiveIncidents(silent=false){
         _startCardElapsedTickers(incidents);
     }catch(err){
         if(!silent)document.getElementById('incident-list').innerHTML='<div class="node-placeholder">Error loading incidents</div>';
+    } finally {
+        _incidentRenderInProgress = false;
     }
 }
 // ── Realtime DOM patch helpers ────────────────────────────────────────────────
