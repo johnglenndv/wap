@@ -3801,7 +3801,10 @@ async function openIncidentDetailsModal(incidentId) {
     body.innerHTML = '<div style="text-align:center;padding:24px;color:#5a3a2a;">Loading…</div>';
     const inc = _liveIncidentsCache.find(i => i.incident_id == incidentId);
     let resolvedData = null;
-    try { const res = await fetch(`${API_BASE()}/incidents/${incidentId}`,{headers:authHeader()}); if(res.ok) resolvedData=await res.json(); } catch {}
+    // Only fetch from API if not already in live cache (e.g. resolved incidents not in cache)
+    if (!inc) {
+        try { const res = await fetch(`${API_BASE()}/incidents/${incidentId}`,{headers:authHeader()}); if(res.ok) resolvedData=await res.json(); } catch {}
+    }
     const data = resolvedData || inc || {};
     // ── Hydrate rescue map from DB if not already in memory (e.g. after refresh) ──
     if (!_incidentRescueMap[incidentId] && data.assigned_team) {
