@@ -3835,7 +3835,7 @@ async function openIncidentDetailsModal(incidentId) {
     const _cachedRoute = _incidentOsrmCache[String(incidentId)] || _incidentOsrmCache[String(data.incident_id)] || null;
     const _osrmTime = _cachedRoute?.timeMins || _activeDetailRouteState?.rt?.timeMins || 0;
     const _straightDist = calcDistance(_gw.lat, _gw.lng, parseFloat(data.latitude||0), parseFloat(data.longitude||0));
-    const _distKm = _cachedRoute?.distKm ?? _activeDetailRouteState?.rt?.distKm ?? _straightDist;
+    const _distKm = parseFloat(_cachedRoute?.distKm ?? _activeDetailRouteState?.rt?.distKm ?? _straightDist);
     const _baseTime = _osrmTime > 0
         ? _osrmTime
         : Math.round((_straightDist * _fac) / _spd * 60);
@@ -3891,7 +3891,7 @@ async function openIncidentDetailsModal(incidentId) {
             }).catch(() => {});
         });
     }
-    body.innerHTML = `
+    try { body.innerHTML = `
         <div class="inc-details-section">
             <div class="inc-details-section-title">Incident Overview</div>
             <div class="inc-details-row"><span class="inc-details-row-label">Location</span><span class="inc-details-row-val">${data.location_name||`Node ${data.node_id}`}</span></div>
@@ -3947,6 +3947,11 @@ async function openIncidentDetailsModal(incidentId) {
         </div>
         ${isAlreadyResolved||isRescued?`
         <div style="margin-top:16px;padding:10px;background:#0a1a0a55;border:1px solid #2ecc7144;border-radius:9px;text-align:center;color:#2ecc71;font-size:12px;font-weight:600;">✓ This incident has been resolved</div>`:''}`;
+    } catch(err) {
+        console.error('[FLAMES] openIncidentDetailsModal render error:', err);
+        body.innerHTML = `<div style="text-align:center;padding:24px;color:#ff4757;">⚠ Failed to load details.<br><span style="font-size:10px;color:#5a3a2a;">${err.message}</span></div>`;
+        return;
+    }
     // Start elapsed time ticker
     const _startDate  = parseLocalTimestamp(data.started_at);
     const _resolvedDate = isAlreadyResolved ? parseLocalTimestamp(data.resolved_at || data.timestamp) : null;
