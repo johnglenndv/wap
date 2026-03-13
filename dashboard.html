@@ -3218,6 +3218,10 @@ function _patchDetailsModal() {
     if (!document.getElementById('incident-details-modal').classList.contains('open')) return;
     const inc = _liveIncidentsCache.find(i => i.incident_id == _detailsModalIncidentId);
     if (!inc) return;
+    // Resolved incidents: routing values are frozen at render time — never live-update them
+    const _rescInfoPatch = _incidentRescueMap[_detailsModalIncidentId];
+    const _isResolvedPatch = inc.status === 'resolved' || inc.status === 'Resolved' || (_rescInfoPatch && _rescInfoPatch.status === 'rescued');
+    if (_isResolvedPatch) return;
     const gw = getPrimaryGateway();
     const { speed, factor, label: peakLabel } = getFiretruckSpeed();
     const osrmTime = _activeDetailRouteState?.rt?.timeMins || 0;
@@ -3240,11 +3244,7 @@ function _patchDetailsModal() {
     if (elSpeed)   elSpeed.textContent   = liveSpeed !== null ? `${liveSpeed} km/h` : '— km/h';
     if (elPeak)    elPeak.textContent    = peakLabel;
     if (elVehicle) elVehicle.textContent = vt.label;
-    // Age indicator
-    // _globalLsfCards = actual last TomTom fetch time (incident card ticker always runs in background)
-    const lsfM = _incidentTrafficMap[String(_detailsModalIncidentId)]?.lastSuccessfulFetch || _globalLsfCards || _globalLsfModal || 0;
-    const _ageEl = document.querySelector('#inc-details-body [data-field="details-speed-age"]');
-    if (_ageEl && lsfM) _applyAgeEl(_ageEl, lsfM);
+
 }
 
 // RAF ticker handles _patchIncidentCards and _patchDetailsModal every 30s — no duplicate setInterval needed
@@ -3271,12 +3271,7 @@ setInterval(() => {
         const lsfPerCard = _incidentTrafficMap[incId]?.lastSuccessfulFetch || 0;
         if (lsfPerCard) _applyAgeEl(ageEl, lsfPerCard);
     });
-    // Details modal — uses that specific incident's traffic age
-    const _dm = document.querySelector('#inc-details-body [data-field="details-speed-age"]');
-    if (_dm && _detailsModalIncidentId) {
-        const lsfDm = _incidentTrafficMap[String(_detailsModalIncidentId)]?.lastSuccessfulFetch || _globalLsfCards || 0;
-        if (lsfDm) _applyAgeEl(_dm, lsfDm);
-    }
+
 }, 10000);
 
 // On page load: fetch shared traffic state from backend.
@@ -3921,7 +3916,7 @@ async function openIncidentDetailsModal(incidentId) {
             <div class="inc-details-row"><span class="inc-details-row-label">Distance</span><span class="inc-details-row-val" style="color:var(--green);">${_distKm.toFixed(1)} km (est.)</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">ETA</span><span class="inc-details-row-val" data-field="details-eta" style="color:var(--yellow);">~${_etaMin} min</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Peak Period</span><span class="inc-details-row-val" data-field="details-peak">${_peakLabel}</span></div>
-            ${(isAlreadyResolved||isRescued)?`<div class="inc-details-row"><span class="inc-details-row-label">Routing Last Update</span><span class="traffic-age" data-field="details-speed-age" style="font-size:11px;font-weight:600;color:var(--text-dim);"></span></div>`:''}
+
         </div>
         <div class="inc-details-section">
             <div class="inc-details-section-title">Organization</div>
@@ -3941,13 +3936,7 @@ async function openIncidentDetailsModal(incidentId) {
             </div>
         </div>
         ${isAlreadyResolved||isRescued?`
-        <div style="margin-top:16px;padding:10px;background:#0a1a0a55;border:1px solid #2ecc7144;border-radius:9px;text-align:center;color:#2ecc71;font-size:12px;font-weight:600;">✓ This incident has been resolved</div>`:''}`
-    // Apply age RIGHT NOW after DOM renders — don't wait for 10s interval tick
-    const _nowLsf = _globalLsfCards || _globalLsfModal || 0;
-    if (_nowLsf) {
-        const _ageNow = document.querySelector('#inc-details-body [data-field="details-speed-age"]');
-        if (_ageNow) _applyAgeEl(_ageNow, _nowLsf);
-    }
+        <div style="margin-top:16px;padding:10px;background:#0a1a0a55;border:1px solid #2ecc7144;border-radius:9px;text-align:center;color:#2ecc71;font-size:12px;font-weight:600;">✓ This incident has been resolved</div>`:''}`;
     // Start elapsed time ticker
     const _startDate  = parseLocalTimestamp(data.started_at);
     const _resolvedDate = isAlreadyResolved ? parseLocalTimestamp(data.resolved_at || data.timestamp) : null;
