@@ -3116,41 +3116,16 @@ async function loadLiveIncidents(silent=false){
                     <div class="incident-meta">AI: <strong>${predLabel}</strong> <span style="color:${confColor};font-weight:600;">(${inc.confidence_pct}%)</span></div>
                     <div class="incident-meta">Started: <span style="color:var(--text);">${formatTimestamp(inc.started_at)}</span></div>
                     <div class="incident-meta">Elapsed: <span id="card-elapsed-${inc.incident_id}" style="color:#ff904f;font-weight:600;">—</span></div>
-                    <div style="display:flex;gap:6px;margin:6px 0 4px;flex-wrap:wrap;">
-                        <div style="flex:1;min-width:60px;background:#1a0a0555;border:1px solid #3a1a0a44;border-radius:7px;padding:5px 6px;text-align:center;">
-                            <div style="font-size:11px;font-weight:700;color:var(--green);" data-field="card-dist">${distKm0.toFixed(2)} km</div>
-                            <div style="font-size:8px;color:#7a4a3a;letter-spacing:.5px;">DISTANCE</div>
-                        </div>
-                        <div style="flex:1;min-width:60px;background:#1a0a0555;border:1px solid #3a1a0a44;border-radius:7px;padding:5px 6px;text-align:center;">
-                            <div style="font-size:11px;font-weight:700;color:var(--yellow);">~<span data-field="card-eta">${cardEta}</span> min</div>
-                            <div style="font-size:8px;color:#7a4a3a;letter-spacing:.5px;">ETA</div>
-                        </div>
-                        <div style="flex:1;min-width:60px;background:#1a0a0555;border:1px solid #3a1a0a44;border-radius:7px;padding:5px 6px;text-align:center;">
-                            <div style="font-size:11px;font-weight:700;color:#4da8ff;"><span data-field="card-speed">${cardSpeed}</span> km/h</div>
-                            <div style="font-size:8px;color:#7a4a3a;letter-spacing:.5px;">LIVE SPEED</div>
-                        </div>
-                    </div>
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-                        <span style="color:#7a4a3a;font-size:9px;letter-spacing:.5px;text-transform:uppercase;">Traffic</span>
-                        <span data-field="card-traffic-badge" style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:5px;border:1px solid #ff475744;background:#1a0a0555;color:#ff4757;">${traffic0?(traffic0.congestion>0.6?'🔴 HEAVY':traffic0.congestion>0.3?'🟡 MODERATE':'🟢 LIGHT'):'— N/A'}</span>
-                        <span class="traffic-age" data-field="card-speed-age" style="font-size:9px;"></span>
-                    </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:4px 0 6px;">
-                        ${inc.temperature!=null?`<div style="background:#1a0a0533;border-radius:6px;padding:4px 8px;"><div style="font-size:11px;color:#ff904f;font-weight:700;">${inc.temperature}°C</div><div style="font-size:8px;color:#7a4a3a;">TEMP</div></div>`:''}
-                        ${inc.humidity!=null?`<div style="background:#1a0a0533;border-radius:6px;padding:4px 8px;"><div style="font-size:11px;color:#6db8ff;font-weight:700;">${inc.humidity}%</div><div style="font-size:8px;color:#7a4a3a;">HUMIDITY</div></div>`:''}
-                        ${inc.smoke!=null?`<div style="background:#1a0a0533;border-radius:6px;padding:4px 8px;"><div style="font-size:11px;color:var(--text);font-weight:700;">${inc.smoke} ppm</div><div style="font-size:8px;color:#7a4a3a;">SMOKE</div></div>`:''}
-                        ${inc.flame!=null?`<div style="background:#1a0a0533;border-radius:6px;padding:4px 8px;"><div style="font-size:11px;color:${inc.flame?'var(--red)':'var(--green)'};font-weight:700;">${inc.flame}</div><div style="font-size:8px;color:#7a4a3a;">FLAME</div></div>`:''}
-                    </div>
-                    ${rescueInfo?`<div class="rescue-info-row" style="background:#0a1a2a88;border:1px solid #3d9cff33;border-radius:8px;padding:7px 10px;margin-bottom:5px;">
-                        <div style="font-size:9px;color:#3d9cff;letter-spacing:1px;margin-bottom:2px;">RESPONDING UNIT</div>
-                        <div style="font-size:12px;font-weight:700;color:var(--text);">🏢 ${rescueInfo.orgName}</div>
-                        ${rescueInfo.vehicleLabel?`<div style="font-size:10px;color:#ff9055;">${rescueInfo.vehicleLabel}</div>`:''}
-                        ${rescueInfo.dispatchTime?`<div style="font-size:10px;color:#9a6a5a;">Dispatched: ${toAmPm(rescueInfo.dispatchTime)}</div>`:''}
-                        <div style="margin-top:3px;display:inline-block;font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;background:#1a2a4a;border:1px solid #3d9cff55;color:#3d9cff;">🚒 EN ROUTE</div>
-                    </div>`:`<div class="rescue-info-row" style="display:none;"></div>`}
-                    <div style="font-size:9px;color:#7a4a3a;margin-bottom:4px;" data-field="card-peak">${({ label } = getFiretruckSpeed(), label)}</div>
+                    ${rescueInfo?`<div class="incident-meta rescue-info-row" style="color:#6db8ff;font-size:10px;">🏢 ${rescueInfo.orgName}${rescueInfo.vehicleLabel?' · '+rescueInfo.vehicleLabel:''}${rescueInfo.dispatchTime?' · Dispatched: '+toAmPm(rescueInfo.dispatchTime):''}</div>`:''}
+                    ${rescueInfo?`<div class="incident-meta" style="display:flex;gap:10px;margin-top:2px;align-items:center;flex-wrap:wrap;">
+                        <span style="color:#aaa;font-size:10px;" data-field="card-vehicle">${vt0.label}</span>
+                        <span style="color:var(--yellow);font-size:10px;">⏱ ETA: <strong data-field="card-eta">~${cardEta} min</strong></span>
+                        <span style="color:#4da8ff;font-size:10px;">🚗 <strong data-field="card-speed">${cardSpeed} km/h</strong></span>
+                        <span class="traffic-age" data-field="card-speed-age"></span>
+                        <span style="color:#9a6a5a;font-size:9px;" data-field="card-peak">${({ label } = getFiretruckSpeed(), label)}</span>
+                    </div>`:''}
                     <div class="incident-btn-row1">
-                        <button class="btn-show-map" onclick="openIncidentMapModal(${JSON.stringify(inc).replace(/\"/g,'&quot;')})">Show Map & Route</button>
+                        <button class="btn-show-map" onclick="openIncidentMapModal(${JSON.stringify(inc).replace(/"/g,'&quot;')})">Show Map & Route</button>
                         <button class="btn-details" onclick="openIncidentDetailsModal(${inc.incident_id})">Details</button>
                     </div>
                 </div>`;
@@ -3176,7 +3151,10 @@ function _patchIncidentCards() {
     const { speed, factor, label: peakLabel } = getFiretruckSpeed();
     const traffic = _activeIncidentCardTrafficState?.lastTraffic || _activeDetailRouteState?.lastTraffic || _activeRouteState?.lastTraffic || null;
     cards.forEach(card => {
+        // Only patch cards that have dispatched rescue (ETA row is present)
         const elEta = card.querySelector('[data-field="card-eta"]');
+        if (!elEta) return;
+        // Use OSRM timeMins stored in data-timemins — fallback to straight-line if missing
         const storedTime = parseFloat(card.dataset.timemins || 0);
         const lat = parseFloat(card.dataset.lat || 0);
         const lng = parseFloat(card.dataset.lng || 0);
@@ -3190,14 +3168,12 @@ function _patchIncidentCards() {
         const etaMin = getVehicleETA(baseTime, traffic, vehicleType);
         const liveSpeed = traffic ? Math.round(traffic.avgSpeed * vt.speedMult) : null;
         const elSpeed   = card.querySelector('[data-field="card-speed"]');
+        const elVehicle = card.querySelector('[data-field="card-vehicle"]');
         const elPeak    = card.querySelector('[data-field="card-peak"]');
-        const elTrafficBadge = card.querySelector('[data-field="card-traffic-badge"]');
-        if (elEta)   elEta.textContent = `~${etaMin}`;
-        if (elSpeed) elSpeed.textContent = liveSpeed !== null ? `${liveSpeed}` : '—';
-        if (elPeak)  elPeak.textContent  = peakLabel;
-        if (elTrafficBadge && traffic) {
-            elTrafficBadge.textContent = traffic.congestion > 0.6 ? '🔴 HEAVY' : traffic.congestion > 0.3 ? '🟡 MODERATE' : '🟢 LIGHT';
-        }
+        elEta.textContent = `~${etaMin} min`;
+        if (elSpeed)   elSpeed.textContent   = liveSpeed !== null ? `${liveSpeed} km/h` : '— km/h';
+        if (elVehicle) elVehicle.textContent = vt.label;
+        if (elPeak)    elPeak.textContent    = peakLabel;
         // Age indicator
         const lsfC = _activeIncidentCardTrafficState?.lastSuccessfulFetch || _activeDetailRouteState?.lastSuccessfulFetch || _activeRouteState?.lastSuccessfulFetch || 0;
         _applyAgeEl(card.querySelector('[data-field="card-speed-age"]'), lsfC);
