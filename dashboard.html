@@ -3093,17 +3093,16 @@ async function loadLiveIncidents(silent=false){
             const firstInc = incidents[0];
             if (firstInc && _incRouteMap[firstInc.incident_id]) {
                 const _sharedCoords = _incRouteMap[firstInc.incident_id].coords;
-                // Detect first incident appearance: state had no coords before (no incident was active)
-                const _isNewIncident = !_activeIncidentCardTrafficState?.coords;
+                const _existingTraffic = _activeIncidentCardTrafficState?.lastTraffic || null;
                 if (_activeIncidentCardTrafficState) {
                     _activeIncidentCardTrafficState.coords = _sharedCoords;
-                    if (_isNewIncident) {
-                        // First incident just appeared — force immediate TomTom fetch → "just now"
-                        _activeIncidentCardTrafficState.lastFetch = 0;
-                    }
+                    if (!_activeIncidentCardTrafficState.lastFetch) _activeIncidentCardTrafficState.lastFetch = 0;
                 } else {
                     _activateIncidentCardTraffic(_sharedCoords);
-                    // _activateIncidentCardTraffic already sets lastFetch=0 → fires immediately
+                    if (_activeIncidentCardTrafficState) {
+                        if (_existingTraffic) _activeIncidentCardTrafficState.lastTraffic = _existingTraffic;
+                        _activeIncidentCardTrafficState.lastFetch = 0;
+                    }
                 }
             }
             incidents.forEach(inc=>{
@@ -3260,24 +3259,21 @@ async function _initSharedTrafficState() {
         const state = await res.json();
         if (state.cards && state.cards.fetchedAt) {
             const serverFetchedAt = state.cards.fetchedAt; // ms epoch from server — authoritative
-            // Set _globalLsfCards so age badge shows correct time on every device/refresh.
+            // Set _globalLsfCards from server so age badge is correct on every device/refresh.
+            // This is the ONLY place _globalLsfCards should be initialized from server time.
             _globalLsfCards = serverFetchedAt;
-            // Store lastTraffic data for reuse — but do NOT seed lastFetch here.
-            // lastFetch stays 0 so that when the first incident appears, the RAF ticker
-            // fires a fresh TomTom fetch immediately (→ "just now") regardless of server fetch age.
+            // Seed traffic state with server data so RAF ticker skips immediate re-fetch
+            // (lastFetch = serverFetchedAt means it won't re-fetch until TRAFFIC_LIVE_INTERVAL passes)
             if (!_activeIncidentCardTrafficState) {
                 _activeIncidentCardTrafficState = {
                     coords: null,
-                    lastFetch: 0,
+                    lastFetch: serverFetchedAt,
                     lastTraffic: state.cards,
                     lastSuccessfulFetch: serverFetchedAt
                 };
             } else {
                 _activeIncidentCardTrafficState.lastTraffic = state.cards;
-                // Only reset lastFetch to 0 if no incidents are active yet
-                if (!_activeIncidentCardTrafficState.coords) {
-                    _activeIncidentCardTrafficState.lastFetch = 0;
-                }
+                _activeIncidentCardTrafficState.lastFetch = serverFetchedAt;
                 _activeIncidentCardTrafficState.lastSuccessfulFetch = serverFetchedAt;
             }
             console.log('[FLAMES] _initSharedTrafficState: fetchedAt=', new Date(serverFetchedAt).toLocaleTimeString(), '→ age=', Math.round((Date.now()-serverFetchedAt)/60000), 'mins ago');
