@@ -1622,7 +1622,7 @@ let _detailRouteGradientLayers = [];
 let _activeRouteState       = null; // { coords, rt, lastFetch, lastTraffic }
 let _activeDetailRouteState = null; // { coords, rt, lastFetch, lastTraffic }
 let _activeDetailsModalTrafficState = null; // { coords, lastFetch, lastTraffic } — Full Details modal (no map)
-let _activeIncidentCardTrafficState = null; // { coords, lastFetch, lastTraffic } — Incident sidebar cards
+let _incidentTrafficMap = {}; // per-incident traffic: { incident_id: { traffic, lastFetch, lastSuccessfulFetch } }
 // Persistent fetch timestamps — survive modal close/reopen
 let _globalLsfRoute      = 0; // lastSuccessfulFetch for main route
 let _globalLsfDetail     = 0; // lastSuccessfulFetch for incident map modal
@@ -1719,7 +1719,9 @@ function _deactivateMainRoute() { _activeRouteState = null; }
 function _activateDetailRoute(coords, rt) {
     // Inherit lastFetch so RAF ticker doesn't immediately re-fetch on modal open -> 'just now'
     const _inh = _globalLsfCards || _globalLsfDetail || 0;
-    _activeDetailRouteState = { coords, rt, lastFetch: _inh, lastTraffic: _activeIncidentCardTrafficState?.lastTraffic || null, lastSuccessfulFetch: _inh };
+    // Inherit traffic from first active incident if available
+    const _firstIncTraffic = Object.values(_incidentTrafficMap)[0]?.traffic || null;
+    _activeDetailRouteState = { coords, rt, lastFetch: _inh, lastTraffic: _firstIncTraffic, lastSuccessfulFetch: _inh };
     _startTrafficTicker();
 }
 function _deactivateDetailRoute() { _activeDetailRouteState = null; }
@@ -1730,17 +1732,17 @@ function _activateDetailsModalTraffic(coords) {
     _activeDetailsModalTrafficState = {
         coords,
         lastFetch: _inherited,
-        lastTraffic: _activeIncidentCardTrafficState?.lastTraffic || null,
+        lastTraffic: Object.values(_incidentTrafficMap)[0]?.traffic || null,
         lastSuccessfulFetch: _inherited
     };
     _startTrafficTicker();
 }
 function _deactivateDetailsModalTraffic() { _activeDetailsModalTrafficState = null; }
 function _activateIncidentCardTraffic(coords) {
-    _activeIncidentCardTrafficState = { coords, lastFetch: 0, lastTraffic: null, lastSuccessfulFetch: 0 };
+    // Per-incident map — no-op here, entries added per incident via WS traffic_update
     _startTrafficTicker();
 }
-function _deactivateIncidentCardTraffic() { _activeIncidentCardTrafficState = null; }
+function _deactivateIncidentCardTraffic() { _incidentTrafficMap = {}; }
 
 // Apply traffic to main map route
 // ── Traffic age indicator helpers ─────────────────────────────────────────────
@@ -2505,21 +2507,27 @@ function connectWebSocket(){
             if(msg.type==='ping')return;
             // Server broadcast: another device just fetched fresh traffic data
             if(msg.type==='traffic_update' && msg.state) {
-                if(msg.state.cards && msg.state.cards.fetchedAt) {
-                    const t = msg.state.cards.fetchedAt;
-                    if(t > _globalLsfCards) {
-                        _globalLsfCards = t;
-                        if(_activeIncidentCardTrafficState) {
-                            _activeIncidentCardTrafficState.lastTraffic = msg.state.cards;
-                            _activeIncidentCardTrafficState.lastFetch = t;
-                            _activeIncidentCardTrafficState.lastSuccessfulFetch = t;
-                        }
-                        _patchIncidentCards();
+                // Per-incident traffic update — each incident has its own key: incident_{id}
+                let anyUpdated = false;
+                Object.entries(msg.state).forEach(([key, data]) => {
+                    if (!key.startsWith('incident_') || !data || !data.fetchedAt) return;
+                    const incId = key.replace('incident_', '');
+                    const t = data.fetchedAt;
+                    const existing = _incidentTrafficMap[incId];
+                    if (!existing || t > (existing.lastFetch || 0)) {
+                        _incidentTrafficMap[incId] = { traffic: data, lastFetch: t, lastSuccessfulFetch: t };
+                        if (t > (_globalLsfCards || 0)) _globalLsfCards = t;
+                        anyUpdated = true;
                     }
+                });
+                // Remove incidents no longer in server state (resolved)
+                Object.keys(_incidentTrafficMap).forEach(incId => {
+                    if (!msg.state[`incident_${incId}`]) delete _incidentTrafficMap[incId];
+                });
+                if (msg.state.detail && msg.state.detail.fetchedAt) {
+                    if (msg.state.detail.fetchedAt > _globalLsfDetail) _globalLsfDetail = msg.state.detail.fetchedAt;
                 }
-                if(msg.state.detail && msg.state.detail.fetchedAt) {
-                    if(msg.state.detail.fetchedAt > _globalLsfDetail) _globalLsfDetail = msg.state.detail.fetchedAt;
-                }
+                if (anyUpdated) _patchIncidentCards();
                 return;
             }
             if(msg.type==='sensor_data'||msg.type==='new_reading'){
@@ -3090,21 +3098,9 @@ async function loadLiveIncidents(silent=false){
                     _incRouteMap[inc.incident_id] = { coords: rt.coords, distKm: rt.distKm, timeMins: rt.timeMins };
                 } catch(e) {}
             }));
-            const firstInc = incidents[0];
-            if (firstInc && _incRouteMap[firstInc.incident_id]) {
-                const _sharedCoords = _incRouteMap[firstInc.incident_id].coords;
-                const _existingTraffic = _activeIncidentCardTrafficState?.lastTraffic || null;
-                if (_activeIncidentCardTrafficState) {
-                    _activeIncidentCardTrafficState.coords = _sharedCoords;
-                    if (!_activeIncidentCardTrafficState.lastFetch) _activeIncidentCardTrafficState.lastFetch = 0;
-                } else {
-                    _activateIncidentCardTraffic(_sharedCoords);
-                    if (_activeIncidentCardTrafficState) {
-                        if (_existingTraffic) _activeIncidentCardTrafficState.lastTraffic = _existingTraffic;
-                        _activeIncidentCardTrafficState.lastFetch = 0;
-                    }
-                }
-            }
+            // Per-incident traffic — backend handles fetch timing per incident_id.
+            // Just ensure RAF ticker is running so age badges update.
+            _activateIncidentCardTraffic(null);
             incidents.forEach(inc=>{
                 const pred=(inc.ai_prediction||'').toLowerCase();
                 const isFire=pred==='fire';
@@ -3119,7 +3115,7 @@ async function loadLiveIncidents(silent=false){
                 const distKm0 = _incRoute?.distKm ?? calcDistance(gw0.lat, gw0.lng, parseFloat(inc.latitude||0), parseFloat(inc.longitude||0));
                 const { speed: spd0, factor: fac0 } = getFiretruckSpeed();
                 const baseTime0 = _incRoute?.timeMins ?? Math.round((distKm0 * fac0) / spd0 * 60);
-                const traffic0 = _incRoute?.traffic || _activeIncidentCardTrafficState?.lastTraffic || null;
+                const traffic0 = _incRoute?.traffic || _incidentTrafficMap[inc.incident_id]?.traffic || null;
                 const dispatchedVehicle = dispatch.vehicleType || _selectedVehicle;
                 const vt0 = VEHICLE_TYPES[dispatchedVehicle];
                 const cardEta = getVehicleETA(baseTime0, traffic0, dispatchedVehicle);
@@ -3165,12 +3161,10 @@ function _patchIncidentCards() {
     if (!cards.length) return;
     const gw = getPrimaryGateway();
     const { speed, factor, label: peakLabel } = getFiretruckSpeed();
-    const traffic = _activeIncidentCardTrafficState?.lastTraffic || _activeDetailRouteState?.lastTraffic || _activeRouteState?.lastTraffic || null;
     cards.forEach(card => {
         // Only patch cards that have dispatched rescue (ETA row is present)
         const elEta = card.querySelector('[data-field="card-eta"]');
         if (!elEta) return;
-        // Use OSRM timeMins stored in data-timemins — fallback to straight-line if missing
         const storedTime = parseFloat(card.dataset.timemins || 0);
         const lat = parseFloat(card.dataset.lat || 0);
         const lng = parseFloat(card.dataset.lng || 0);
@@ -3178,6 +3172,10 @@ function _patchIncidentCards() {
             ? storedTime
             : Math.round((calcDistance(gw.lat, gw.lng, lat, lng) * factor) / speed * 60);
         const incId = card.id.replace('incident-card-', '');
+        // Per-incident traffic — each incident uses its own TomTom data
+        const incTrafficEntry = _incidentTrafficMap[incId];
+        const traffic = incTrafficEntry?.traffic || null;
+        const lsfC = incTrafficEntry?.lastSuccessfulFetch || 0;
         const rescueInfo = _incidentRescueMap[incId];
         const vehicleType = rescueInfo?.vehicleType || _selectedVehicle;
         const vt = VEHICLE_TYPES[vehicleType];
@@ -3190,8 +3188,6 @@ function _patchIncidentCards() {
         if (elSpeed)   elSpeed.textContent   = liveSpeed !== null ? `${liveSpeed} km/h` : '— km/h';
         if (elVehicle) elVehicle.textContent = vt.label;
         if (elPeak)    elPeak.textContent    = peakLabel;
-        // Age indicator
-        const lsfC = _activeIncidentCardTrafficState?.lastSuccessfulFetch || _activeDetailRouteState?.lastSuccessfulFetch || _activeRouteState?.lastSuccessfulFetch || 0;
         _applyAgeEl(card.querySelector('[data-field="card-speed-age"]'), lsfC);
     });
 }
@@ -3207,7 +3203,8 @@ function _patchDetailsModal() {
     const baseTime = osrmTime > 0
         ? osrmTime
         : Math.round((calcDistance(gw.lat, gw.lng, parseFloat(inc.latitude||0), parseFloat(inc.longitude||0)) * factor) / speed * 60);
-    const traffic = _activeDetailsModalTrafficState?.lastTraffic || _activeDetailRouteState?.lastTraffic || _activeRouteState?.lastTraffic || null;
+    const _detailsIncId = String(_detailsModalIncidentId);
+    const traffic = _activeDetailsModalTrafficState?.lastTraffic || _incidentTrafficMap[_detailsIncId]?.traffic || _activeDetailRouteState?.lastTraffic || _activeRouteState?.lastTraffic || null;
     // Use dispatched vehicle type, not selected vehicle
     const rescueInfo = _incidentRescueMap[_detailsModalIncidentId];
     const vehicleType = rescueInfo?.vehicleType || _selectedVehicle;
@@ -3224,7 +3221,7 @@ function _patchDetailsModal() {
     if (elVehicle) elVehicle.textContent = vt.label;
     // Age indicator
     // _globalLsfCards = actual last TomTom fetch time (incident card ticker always runs in background)
-    const lsfM = _globalLsfCards || _globalLsfModal || 0;
+    const lsfM = _incidentTrafficMap[String(_detailsModalIncidentId)]?.lastSuccessfulFetch || _globalLsfCards || _globalLsfModal || 0;
     const _ageEl = document.querySelector('#inc-details-body [data-field="details-speed-age"]');
     if (_ageEl && lsfM) _applyAgeEl(_ageEl, lsfM);
 }
@@ -3257,26 +3254,18 @@ async function _initSharedTrafficState() {
         const res = await fetch(`${API_BASE()}/traffic-state`, {headers: authHeader(), cache: 'no-cache'});
         if (!res.ok) return;
         const state = await res.json();
-        if (state.cards && state.cards.fetchedAt) {
-            const serverFetchedAt = state.cards.fetchedAt; // ms epoch from server — authoritative
-            // Set _globalLsfCards from server so age badge is correct on every device/refresh.
-            // This is the ONLY place _globalLsfCards should be initialized from server time.
-            _globalLsfCards = serverFetchedAt;
-            // Seed traffic state with server data so RAF ticker skips immediate re-fetch
-            // (lastFetch = serverFetchedAt means it won't re-fetch until TRAFFIC_LIVE_INTERVAL passes)
-            if (!_activeIncidentCardTrafficState) {
-                _activeIncidentCardTrafficState = {
-                    coords: null,
-                    lastFetch: serverFetchedAt,
-                    lastTraffic: state.cards,
-                    lastSuccessfulFetch: serverFetchedAt
-                };
-            } else {
-                _activeIncidentCardTrafficState.lastTraffic = state.cards;
-                _activeIncidentCardTrafficState.lastFetch = serverFetchedAt;
-                _activeIncidentCardTrafficState.lastSuccessfulFetch = serverFetchedAt;
-            }
-            console.log('[FLAMES] _initSharedTrafficState: fetchedAt=', new Date(serverFetchedAt).toLocaleTimeString(), '→ age=', Math.round((Date.now()-serverFetchedAt)/60000), 'mins ago');
+        // Seed per-incident traffic map from server state on page load
+        // So existing incidents show correct traffic immediately without waiting for next WS broadcast
+        let latestFetchedAt = 0;
+        Object.entries(state).forEach(([key, data]) => {
+            if (!key.startsWith('incident_') || !data || !data.fetchedAt) return;
+            const incId = key.replace('incident_', '');
+            _incidentTrafficMap[incId] = { traffic: data, lastFetch: data.fetchedAt, lastSuccessfulFetch: data.fetchedAt };
+            if (data.fetchedAt > latestFetchedAt) latestFetchedAt = data.fetchedAt;
+        });
+        if (latestFetchedAt) {
+            _globalLsfCards = latestFetchedAt;
+            console.log('[FLAMES] _initSharedTrafficState: seeded', Object.keys(_incidentTrafficMap).length, 'incidents, latest fetchedAt=', new Date(latestFetchedAt).toLocaleTimeString());
         }
         if (state.detail && state.detail.fetchedAt) {
             _globalLsfDetail = state.detail.fetchedAt;
