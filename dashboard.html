@@ -3231,10 +3231,13 @@ function _patchDetailsModal() {
     const vehicleType = rescueInfo?.vehicleType || _selectedVehicle;
     const vt = VEHICLE_TYPES[vehicleType];
     const etaMin = getVehicleETA(baseTime, traffic, vehicleType);
+    const liveSpeed = traffic ? Math.round(traffic.avgSpeed * vt.speedMult) : null;
     const elEta     = document.querySelector('#inc-details-body [data-field="details-eta"]');
+    const elSpeed   = document.querySelector('#inc-details-body [data-field="details-speed"]');
     const elPeak    = document.querySelector('#inc-details-body [data-field="details-peak"]');
     const elVehicle = document.querySelector('#inc-details-body [data-field="details-vehicle"]');
     if (elEta)     elEta.textContent     = `~${etaMin} min`;
+    if (elSpeed)   elSpeed.textContent   = liveSpeed !== null ? `${liveSpeed} km/h` : '— km/h';
     if (elPeak)    elPeak.textContent    = peakLabel;
     if (elVehicle) elVehicle.textContent = vt.label;
     // Age indicator
@@ -3895,13 +3898,37 @@ async function openIncidentDetailsModal(incidentId) {
             <div class="inc-details-row"><span class="inc-details-row-label">Elapsed</span><span class="inc-details-row-val" id="inc-elapsed-val" style="font-size:11px;color:${isAlreadyResolved?'#2ecc71':'#ff904f'};font-weight:600;">—</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Last Updated</span><span class="inc-details-row-val" style="font-size:10px;">${formatTimestamp(data.timestamp)||'—'}</span></div>
         </div>
+        ${(isAlreadyResolved||isRescued)&&(data.temperature!=null||data.humidity!=null||data.smoke!=null||data.flame!=null) ? `
+        <div class="inc-details-section">
+            <div class="inc-details-section-title">Sensor Last Update</div>
+            <div class="inc-details-row"><span class="inc-details-row-label">Recorded At</span><span class="inc-details-row-val" style="font-size:10px;">${data.sensor_at||data.timestamp||'—'}</span></div>
+            ${data.temperature!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Temperature</span><span class="inc-details-row-val" style="color:#ff904f;">${data.temperature}°C</span></div>`:''}
+            ${data.humidity!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Humidity</span><span class="inc-details-row-val" style="color:#6db8ff;">${data.humidity}%</span></div>`:''}
+            ${data.smoke!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Smoke</span><span class="inc-details-row-val">${data.smoke} ppm</span></div>`:''}
+            ${data.flame!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Flame Sensor</span><span class="inc-details-row-val">${data.flame}</span></div>`:''}
+        </div>` : (!(isAlreadyResolved||isRescued)&&(data.temperature!=null||data.humidity!=null||data.smoke!=null||data.flame!=null)) ? `
+        <div class="inc-details-section">
+            <div class="inc-details-section-title">Sensor Readings at Incident</div>
+            ${data.temperature!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Temperature</span><span class="inc-details-row-val" style="color:#ff904f;">${data.temperature}°C</span></div>`:''}
+            ${data.humidity!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Humidity</span><span class="inc-details-row-val" style="color:#6db8ff;">${data.humidity}%</span></div>`:''}
+            ${data.smoke!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Smoke</span><span class="inc-details-row-val">${data.smoke} ppm</span></div>`:''}
+            ${data.flame!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Flame Sensor</span><span class="inc-details-row-val">${data.flame}</span></div>`:''}
+        </div>` : ''}
         ${rescueInfo ? `
         <div class="inc-details-section">
-            <div class="inc-details-section-title">Routing · <span data-field="details-vehicle">${_vt.label}</span></div>
+            <div class="inc-details-section-title">Routing Information</div>
+            <div class="inc-details-row"><span class="inc-details-row-label">Vehicle</span><span class="inc-details-row-val" data-field="details-vehicle">${_vt.label}</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Distance</span><span class="inc-details-row-val" style="color:var(--green);">${_distKm.toFixed(1)} km (est.)</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">ETA</span><span class="inc-details-row-val" data-field="details-eta" style="color:var(--yellow);">~${_etaMin} min</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Peak Period</span><span class="inc-details-row-val" data-field="details-peak">${_peakLabel}</span></div>
-            <div class="inc-details-row"><span class="inc-details-row-label">Routing Last Update</span><span class="traffic-age" data-field="details-speed-age" style="font-size:11px;font-weight:600;color:var(--text-dim);"></span></div>
+            ${(isAlreadyResolved||isRescued)?`<div class="inc-details-row"><span class="inc-details-row-label">Routing Last Update</span><span class="traffic-age" data-field="details-speed-age" style="font-size:11px;font-weight:600;color:var(--text-dim);"></span></div>`:''}
+        </div>
+        <div class="inc-details-section">
+            <div class="inc-details-section-title">Organization</div>
+            <div class="inc-details-row"><span class="inc-details-row-label">Dispatched By</span><span class="inc-details-row-val" style="color:#6db8ff;">${rescueInfo.orgName||'—'}</span></div>
+            ${rescueInfo.vehicleLabel?`<div class="inc-details-row"><span class="inc-details-row-label">Unit</span><span class="inc-details-row-val" style="color:#ff9055;">${rescueInfo.vehicleLabel}</span></div>`:''}
+            <div class="inc-details-row"><span class="inc-details-row-label">Dispatch Time</span><span class="inc-details-row-val" style="font-size:10px;">${toAmPm(rescueInfo.dispatchTime)||'—'}</span></div>
+            <div class="inc-details-row"><span class="inc-details-row-label">Status</span><span class="inc-details-row-val"><span class="inc-rescue-status-badge ${rescueInfo.status==='rescued'?'rescued':'en-route'}">${rescueInfo.status==='rescued'?'✓ RESOLVED':'🚒 EN ROUTE'}</span></span></div>
         </div>` : ''}
         <div class="inc-details-section">
             <div class="inc-details-section-title">Response Timeline</div>
@@ -3914,18 +3941,10 @@ async function openIncidentDetailsModal(incidentId) {
                 :'<div class="no-response-msg">No rescue dispatched yet</div>'}
             </div>
         </div>
-        ${(data.temperature!=null||data.humidity!=null||data.smoke!=null||data.flame!=null)?`
-        <div class="inc-details-section">
-            <div class="inc-details-section-title">Sensor Readings at Incident</div>
-            ${data.temperature!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Temperature</span><span class="inc-details-row-val" style="color:#ff904f;">${data.temperature}°C</span></div>`:''}
-            ${data.humidity!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Humidity</span><span class="inc-details-row-val" style="color:#6db8ff;">${data.humidity}%</span></div>`:''}
-            ${data.smoke!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Smoke</span><span class="inc-details-row-val">${data.smoke} ppm</span></div>`:''}
-            ${data.flame!=null?`<div class="inc-details-row"><span class="inc-details-row-label">Flame Sensor</span><span class="inc-details-row-val">${data.flame}</span></div>`:''}
-        </div>`:''}
         ${isAlreadyResolved||isRescued?`
         <div style="margin-top:16px;padding:10px;background:#0a1a0a55;border:1px solid #2ecc7144;border-radius:9px;text-align:center;color:#2ecc71;font-size:12px;font-weight:600;">✓ This incident has been resolved</div>`:''}`
-    // Apply age RIGHT NOW after DOM renders — use THIS incident's own lastSuccessfulFetch
-    const _nowLsf = _incidentTrafficMap[String(incidentId)]?.lastSuccessfulFetch || _globalLsfCards || _globalLsfModal || 0;
+    // Apply age RIGHT NOW after DOM renders — don't wait for 10s interval tick
+    const _nowLsf = _globalLsfCards || _globalLsfModal || 0;
     if (_nowLsf) {
         const _ageNow = document.querySelector('#inc-details-body [data-field="details-speed-age"]');
         if (_ageNow) _applyAgeEl(_ageNow, _nowLsf);
