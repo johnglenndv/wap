@@ -1584,7 +1584,7 @@ const CH_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 // TOMTOM_KEY and TOMTOM_FLOW_BASE removed — API key is now kept server-side only.
 // Frontend proxies all TomTom flow calls through /api/traffic-flow.
 let TOMTOM_TILE_URL = ''; // set after fetching key from server
-(async () => {
+async function _initTomTomTileKey() {
     try {
         const _kr = await fetch(`${API_BASE()}/api/tomtom-tile-key`, {headers: authHeader()});
         if (_kr.ok) {
@@ -1592,7 +1592,7 @@ let TOMTOM_TILE_URL = ''; // set after fetching key from server
             TOMTOM_TILE_URL = `https://api.tomtom.com/traffic/map/4/tile/flow/relative0/{z}/{x}/{y}.png?key=${_kd.key}&tileSize=256&style=2`;
         }
     } catch(_e) { console.warn('[FLAMES] Could not fetch TomTom tile key:', _e); }
-})();
+}
 
 const TRAFFIC_LIVE_INTERVAL = 300_000; // TomTom flow data - UPDATE NG TRAFFIC INTERVAL UPDATE KADA ORAS ( 5 MINUTES)
 
@@ -1895,7 +1895,7 @@ function toggleTrafficLayer() {
         if (_trafficTileLayer) { map.removeLayer(_trafficTileLayer); _trafficTileLayer=null; }
         _trafficLayerOn=false; if (btn) btn.classList.remove('traffic-btn-active');
     } else {
-        if (!TOMTOM_TILE_URL) { alert('Traffic tile key not loaded yet. Please try again in a moment.'); return; }
+        if (!TOMTOM_TILE_URL) { console.warn('[FLAMES] Traffic tile key not loaded yet, skipping traffic layer.'); return; }
         _trafficTileLayer=L.tileLayer(TOMTOM_TILE_URL,{maxZoom:19,opacity:0.92,zIndex:500,className:'tomtom-traffic-tiles'}).addTo(map);
         _trafficLayerOn=true; if (btn) btn.classList.add('traffic-btn-active');
     }
@@ -2016,6 +2016,7 @@ const API_BASE = () => localStorage.getItem('flames_api') || 'https://flamesapp.
 const TOKEN    = () => localStorage.getItem('flames_token');
 const authHeader = () => ({ 'Authorization': `Bearer ${TOKEN()}` });
 if (!TOKEN()) window.location.href = 'login.html';
+_initTomTomTileKey(); // safe to call now that API_BASE and authHeader are defined
 
 (async () => {
     try {
