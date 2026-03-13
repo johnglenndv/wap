@@ -2495,7 +2495,7 @@ function connectWebSocket(){
         dot.className='ws-dot error';label.textContent='Disconnected';
         setTimeout(connectWebSocket,5000);
     }
-    ws.onopen=()=>{dot.className='ws-dot connected';label.textContent='Live';loadLiveIncidents(true);};
+    ws.onopen=()=>{dot.className='ws-dot connected';label.textContent='Live';};
     ws.onclose=()=>_wsScheduleReconnect();
     ws.onerror=()=>{dot.className='ws-dot error';label.textContent='Error';_wsScheduleReconnect();};
     ws.onmessage=event=>{
