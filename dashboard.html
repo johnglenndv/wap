@@ -1717,11 +1717,13 @@ function _activateMainRoute(coords, rt) {
 }
 function _deactivateMainRoute() { _activeRouteState = null; }
 function _activateDetailRoute(coords, rt) {
-    // Inherit lastFetch so RAF ticker doesn't immediately re-fetch on modal open -> 'just now'
-    const _inh = _globalLsfCards || _globalLsfDetail || 0;
-    // Inherit traffic from first active incident if available
-    const _firstIncTraffic = Object.values(_incidentTrafficMap)[0]?.traffic || null;
-    _activeDetailRouteState = { coords, rt, lastFetch: _inh, lastTraffic: _firstIncTraffic, lastSuccessfulFetch: _inh };
+    // Inherit lastFetch and traffic from the specific open incident's traffic entry.
+    // This preserves per-incident independent age display (A stays "3 mins ago", B shows "just now").
+    const incId = String(_currentOpenIncidentData?.incident_id || '');
+    const _perIncEntry = _incidentTrafficMap[incId];
+    const _inh = _perIncEntry?.lastSuccessfulFetch || _globalLsfDetail || 0;
+    const _inheritedTraffic = _perIncEntry?.traffic || null;
+    _activeDetailRouteState = { coords, rt, lastFetch: _inh, lastTraffic: _inheritedTraffic, lastSuccessfulFetch: _inh };
     _startTrafficTicker();
 }
 function _deactivateDetailRoute() { _activeDetailRouteState = null; }
@@ -1801,8 +1803,6 @@ function _applyMainRouteTraffic(traffic, rt) {
 // Apply traffic to incident modal route
 function _applyDetailRouteTraffic(traffic, rt) {
     if (!_incDetailMap || !_activeDetailRouteState) return;
-    // Sync _globalLsfDetail with _globalLsfCards so age indicator is consistent
-    if (_globalLsfCards && _globalLsfCards > (_globalLsfDetail || 0)) _globalLsfDetail = _globalLsfCards;
     // Declare vehicle type FIRST before any usage
     const _detailRescueInfo = _incidentRescueMap[_currentOpenIncidentData?.incident_id];
     const _detailVehicleType = _detailRescueInfo?.vehicleType || _selectedVehicle;
@@ -1831,8 +1831,9 @@ function _applyDetailRouteTraffic(traffic, rt) {
         if (elSpeed)  elSpeed.textContent  = '— km/h';
         if (elTraf)  { elTraf.textContent  = 'No live data'; elTraf.className = 'inc-traffic-badge free'; }
     }
-    // Age indicator
-    const lsfD = _globalLsfCards || _globalLsfDetail || _activeDetailRouteState?.lastSuccessfulFetch || 0;
+    // Age indicator — use per-incident lastSuccessfulFetch so each incident shows its own age independently
+    const incId = String(_currentOpenIncidentData?.incident_id || '');
+    const lsfD = _incidentTrafficMap[incId]?.lastSuccessfulFetch || _activeDetailRouteState?.lastSuccessfulFetch || 0;
     _applyAgeEl(document.getElementById('imd-traffic-age'), lsfD);
     _applyAgeBadge(document.getElementById('imd-traffic-badge'), lsfD);
 }
@@ -2518,6 +2519,18 @@ function connectWebSocket(){
                         _incidentTrafficMap[incId] = { traffic: data, lastFetch: t, lastSuccessfulFetch: t };
                         if (t > (_globalLsfCards || 0)) _globalLsfCards = t;
                         anyUpdated = true;
+                        // Live-update the open incident map modal if it's showing this incident
+                        if (_currentOpenIncidentData && String(_currentOpenIncidentData.incident_id) === incId
+                            && document.getElementById('incident-map-modal').classList.contains('open')) {
+                            _applyAgeEl(document.getElementById('imd-traffic-age'), t);
+                            _applyAgeBadge(document.getElementById('imd-traffic-badge'), t);
+                            // Update traffic badge and speed with fresh data
+                            if (_activeDetailRouteState) {
+                                _activeDetailRouteState.lastTraffic = data;
+                                _activeDetailRouteState.lastSuccessfulFetch = t;
+                                _applyDetailRouteTraffic(data, _activeDetailRouteState.rt);
+                            }
+                        }
                     }
                 });
                 // Remove incidents no longer in server state (resolved)
@@ -3249,7 +3262,10 @@ setInterval(() => {
         _applyAgeEl(document.getElementById('route-traffic-age'), _globalLsfRoute);
         _applyAgeBadge(document.getElementById('route-traffic-badge'), _globalLsfRoute);
     }
-    const _lsfImd = _globalLsfCards || _globalLsfDetail || 0;
+    // Incident map modal (imd) — use per-incident traffic age, not global
+    const _lsfImd = _currentOpenIncidentData
+        ? (_incidentTrafficMap[String(_currentOpenIncidentData.incident_id)]?.lastSuccessfulFetch || _globalLsfDetail || 0)
+        : (_globalLsfCards || _globalLsfDetail || 0);
     if (_lsfImd) {
         _applyAgeEl(document.getElementById('imd-traffic-age'), _lsfImd);
         _applyAgeBadge(document.getElementById('imd-traffic-badge'), _lsfImd);
@@ -3699,7 +3715,9 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
 }
 
 // ── CH Route on incident detail map ──────────────────────────────────────
-// TOMTOM traffic code — incident map modal route also uses gradient orange→red + live traffic
+// TOMTOM traffic code — incident map modal route uses server-managed per-incident traffic.
+// We do NOT fetch TomTom here — the backend _traffic_background_task handles it per incident_id.
+// This preserves the independent "Updated: just now / X mins ago" per incident.
 async function calculateDetailRoute(start, end) {
     try {
         const rt = await chRoute(start.lat, start.lng, end.lat, end.lng);
@@ -3708,15 +3726,24 @@ async function calculateDetailRoute(start, end) {
         _detailRouteGradientLayers.forEach(l => { try { l.remove(); } catch {} });
         _detailRouteGradientLayers = [];
 
-        // Fetch live traffic (TomTom)
-        const traffic = await fetchTrafficOnRoute(rt.coords);
+        // Use server-managed per-incident traffic — do NOT fetch fresh TomTom data here.
+        // Each incident has its own fetch timestamp managed by the backend background task.
+        // Using _incidentTrafficMap[incId] means:
+        //   - Incident A keeps its own age ("3 mins ago") even after Incident B arrives ("just now")
+        //   - Fetching stops only when the incident is resolved (server removes it from state)
+        const incId = String(_currentOpenIncidentData?.incident_id || '');
+        const perIncTrafficEntry = _incidentTrafficMap[incId];
+        const traffic = perIncTrafficEntry?.traffic || null;
+        const lsfForInc = perIncTrafficEntry?.lastSuccessfulFetch || 0;
 
-        // Activate route state FIRST so _applyDetailRouteTraffic has valid state
+        // Activate route state with per-incident fetch timestamp (not Date.now())
         _activateDetailRoute(rt.coords, rt);
         _activeDetailRouteState.lastTraffic = traffic;
-        // FIX: only set lastFetch if traffic fetched - keeps lastFetch=0 on fresh load
-        // so RAF ticker fires immediately, same data on all devices/tabs
-        if (traffic) { _activeDetailRouteState.lastFetch = Date.now(); _activeDetailRouteState.lastSuccessfulFetch = Date.now(); _globalLsfDetail = Date.now(); }
+        if (lsfForInc) {
+            _activeDetailRouteState.lastFetch = lsfForInc;
+            _activeDetailRouteState.lastSuccessfulFetch = lsfForInc;
+            _globalLsfDetail = lsfForInc;
+        }
 
         // Invisible bounds helper
         _incDetailRouteLayer = L.polyline(rt.coords, { opacity: 0, weight: 0,
