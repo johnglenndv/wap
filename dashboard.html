@@ -2561,29 +2561,45 @@ function connectWebSocket(){
                     }
                     syncResolvedNodesFromAPI().then(()=> loadAndPlaceNodes(true));
                 } else if((msg.action==='responded' || msg.action==='dispatch_updated') && msg.incident_id) {
-                    // Always overwrite rescue map from DB — covers both fresh dispatches AND edits,
-                    // for ALL clients regardless of account or whether they were online before.
-                    fetch(`${API_BASE()}/incidents/${msg.incident_id}`, {headers:authHeader()})
-                        .then(r => r.ok ? r.json() : null)
-                        .then(data => {
-                            if (!data) return;
-                            if (data.assigned_team) {
-                                const existing = _incidentRescueMap[msg.incident_id];
-                                _incidentRescueMap[msg.incident_id] = {
-                                    orgId:        null,
-                                    orgName:      data.assigned_team,
-                                    status:       data.status === 'resolved' ? 'rescued' : 'en_route',
-                                    dispatchTime: data.dispatch_time || null,
-                                    rescuedTime:  data.resolved_at  || existing?.rescuedTime || null,
-                                    nodeId:       data.node_id,
-                                    locationName: data.location_name,
-                                    vehicleType:  data.vehicle_type || null,
-                                    vehicleLabel: data.vehicle_type ? (VEHICLE_TYPES[data.vehicle_type]?.label || data.vehicle_type) : null,
-                                };
-                                _saveRescueMap(_incidentRescueMap);
-                            }
-                            loadLiveIncidents(false); // full re-render so rescue row appears
-                        }).catch(() => loadLiveIncidents(false));
+                    // Always overwrite rescue map — covers both fresh dispatches AND edits,
+                    // for ALL clients regardless of login state or whether they were online before.
+                    const applyDispatch = (orgName, dispatchTime, vehicleType, nodeId, locationName, incStatus, resolvedAt) => {
+                        const vLabel = vehicleType ? (VEHICLE_TYPES[vehicleType]?.label || vehicleType) : null;
+                        const existing = _incidentRescueMap[msg.incident_id];
+                        _incidentRescueMap[msg.incident_id] = {
+                            orgId:        null,
+                            orgName:      orgName,
+                            status:       incStatus === 'resolved' ? 'rescued' : 'en_route',
+                            dispatchTime: dispatchTime || (existing?.dispatchTime) || null,
+                            rescuedTime:  resolvedAt   || (existing?.rescuedTime)  || null,
+                            nodeId:       nodeId,
+                            locationName: locationName,
+                            vehicleType:  vehicleType || null,
+                            vehicleLabel: vLabel,
+                        };
+                        _saveRescueMap(_incidentRescueMap);
+                    };
+
+                    // If WS message already carries full dispatch info, apply directly (no extra fetch needed)
+                    if (msg.org_name && msg.dispatch_time) {
+                        const inc = _liveIncidentsCache.find(i => i.incident_id == msg.incident_id);
+                        applyDispatch(msg.org_name, msg.dispatch_time, msg.vehicle_type,
+                            msg.node_id, inc?.location_name || `Incident #${msg.incident_id}`,
+                            'active', null);
+                        loadLiveIncidents(false);
+                    } else {
+                        // Fallback: fetch from DB (e.g. older server version or missing fields)
+                        fetch(`${API_BASE()}/incidents/${msg.incident_id}`, {headers:authHeader()})
+                            .then(r => r.ok ? r.json() : null)
+                            .then(data => {
+                                if (!data) return;
+                                if (data.assigned_team) {
+                                    applyDispatch(data.assigned_team, data.dispatch_time, data.vehicle_type,
+                                        data.node_id, data.location_name, data.status, data.resolved_at);
+                                }
+                                loadLiveIncidents(false);
+                            }).catch(() => loadLiveIncidents(false));
+                    }
                 } else {
                     const pred = (msg.ai_prediction||'').toLowerCase();
                     if ((pred === 'fire' || pred === 'false') && msg.node_id) {
@@ -2601,7 +2617,7 @@ function connectWebSocket(){
                     }
                     loadAndPlaceNodes(true);
                 }
-                if(msg.action !== 'responded' && msg.action !== 'dispatch_updated') loadLiveIncidents(true);
+                if(msg.action !== 'responded') loadLiveIncidents(true);
                 if(_currentIncidentTab==='resolved') loadResolvedIncidents();
                 // Auto-refresh incident details modal if open
                 if(document.getElementById('incident-details-modal').classList.contains('open') && _detailsModalIncidentId){
@@ -2981,33 +2997,23 @@ async function loadLiveIncidents(silent=false){
         if(!res.ok)throw new Error(`HTTP ${res.status}`);
         const incidents=await res.json();
         _liveIncidentsCache = incidents;
-        // ── Always sync rescue map from DB — DB is the single source of truth ──
-        // Overwrite local entries every load so ALL devices (any account, any tab)
-        // always show the same dispatch org, vehicle, and dispatch time.
+        // ── Hydrate rescue map from DB for any already-dispatched incidents ──
+        // This ensures devices that weren't online during dispatch still see rescue info
         let rescueMapDirty = false;
         incidents.forEach(inc => {
-            if (inc.assigned_team) {
-                const existing = _incidentRescueMap[inc.incident_id];
-                const dbOrg      = inc.assigned_team;
-                const dbVehicle  = inc.vehicle_type  || null;
-                const dbDispatch = inc.dispatch_time || null;
-                if (!existing ||
-                    existing.orgName      !== dbOrg     ||
-                    existing.vehicleType  !== dbVehicle ||
-                    existing.dispatchTime !== dbDispatch) {
-                    _incidentRescueMap[inc.incident_id] = {
-                        orgId:        null,
-                        orgName:      dbOrg,
-                        status:       'en_route',
-                        dispatchTime: dbDispatch,
-                        rescuedTime:  existing?.rescuedTime || null,
-                        nodeId:       inc.node_id,
-                        locationName: inc.location_name,
-                        vehicleType:  dbVehicle,
-                        vehicleLabel: dbVehicle ? (VEHICLE_TYPES[dbVehicle]?.label || dbVehicle) : null,
-                    };
-                    rescueMapDirty = true;
-                }
+            if (inc.assigned_team && !_incidentRescueMap[inc.incident_id]) {
+                _incidentRescueMap[inc.incident_id] = {
+                    orgId:        null,
+                    orgName:      inc.assigned_team,
+                    status:       inc.status === 'resolved' ? 'rescued' : 'en_route',
+                    dispatchTime: inc.dispatch_time || null,
+                    rescuedTime:  inc.resolved_at   || null,
+                    nodeId:       inc.node_id,
+                    locationName: inc.location_name,
+                    vehicleType:  inc.vehicle_type  || null,
+                    vehicleLabel: inc.vehicle_type ? (VEHICLE_TYPES[inc.vehicle_type]?.label || inc.vehicle_type) : null,
+                };
+                rescueMapDirty = true;
             }
         });
         if (rescueMapDirty) _saveRescueMap(_incidentRescueMap);
@@ -3742,15 +3748,14 @@ async function openIncidentDetailsModal(incidentId) {
     let resolvedData = null;
     try { const res = await fetch(`${API_BASE()}/incidents/${incidentId}`,{headers:authHeader()}); if(res.ok) resolvedData=await res.json(); } catch {}
     const data = resolvedData || inc || {};
-    // ── Always sync rescue map from DB — overwrite stale local data ──
-    if (data.assigned_team) {
-        const existing = _incidentRescueMap[incidentId];
+    // ── Hydrate rescue map from DB if not already in memory (e.g. after refresh) ──
+    if (!_incidentRescueMap[incidentId] && data.assigned_team) {
         _incidentRescueMap[incidentId] = {
             orgId:        null,
             orgName:      data.assigned_team,
             status:       data.status === 'resolved' ? 'rescued' : 'en_route',
             dispatchTime: data.dispatch_time || null,
-            rescuedTime:  data.resolved_at   || existing?.rescuedTime || null,
+            rescuedTime:  data.resolved_at   || null,
             nodeId:       data.node_id,
             locationName: data.location_name,
             vehicleType:  data.vehicle_type  || null,
