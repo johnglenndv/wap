@@ -3238,12 +3238,20 @@ setInterval(() => {
         _applyAgeEl(document.getElementById('imd-traffic-age'), _lsfImd);
         _applyAgeBadge(document.getElementById('imd-traffic-badge'), _lsfImd);
     }
-    const lsf4 = _globalLsfCards || _globalLsfDetail || _globalLsfRoute;
-    if (lsf4) {
-        document.querySelectorAll('[data-field="card-speed-age"]').forEach(el => _applyAgeEl(el, lsf4));
-        // Keep details modal age ticking while open
-        const _dm = document.querySelector('#inc-details-body [data-field="details-speed-age"]');
-        if (_dm) _applyAgeEl(_dm, lsf4);
+    // Per-card age ticker — each card uses its own incident's lastSuccessfulFetch
+    // so A shows "3 mins ago" and B shows "just now" independently
+    document.querySelectorAll('.incident-card').forEach(card => {
+        const ageEl = card.querySelector('[data-field="card-speed-age"]');
+        if (!ageEl) return;
+        const incId = card.id.replace('incident-card-', '');
+        const lsfPerCard = _incidentTrafficMap[incId]?.lastSuccessfulFetch || 0;
+        if (lsfPerCard) _applyAgeEl(ageEl, lsfPerCard);
+    });
+    // Details modal age — uses its own incident's traffic
+    const _dm = document.querySelector('#inc-details-body [data-field="details-speed-age"]');
+    if (_dm && _detailsModalIncidentId) {
+        const lsfDm = _incidentTrafficMap[String(_detailsModalIncidentId)]?.lastSuccessfulFetch || _globalLsfCards || 0;
+        if (lsfDm) _applyAgeEl(_dm, lsfDm);
     }
 }, 10000);
 
