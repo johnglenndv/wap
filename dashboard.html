@@ -2466,7 +2466,7 @@ async function loadAndPlaceNodes(silent=false){
                 nodeMarkers[nid].setPopupContent(popupContent);
                 const el = nodeMarkers[nid].getElement();
                 if(el){
-                    el.style.opacity = offline ? '0.45' : '1';
+                    el.style.opacity = offline ? '0.55' : '1';
                     el.classList.toggle('fire-node-active', hasAnyAlert);
                 }
             } else {
