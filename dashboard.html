@@ -2568,35 +2568,62 @@ function connectWebSocket(){
                     if(msg.ai_prediction)       _currentOpenIncidentData.ai_prediction = msg.ai_prediction;
                     if(msg.confidence  != null) _currentOpenIncidentData.confidence_pct = Math.round(msg.confidence * 100);
                     if(msg.trigger_source)      _currentOpenIncidentData.trigger_source = msg.trigger_source;
-                    // GPS fix transition: if the open incident had no GPS before but now has coords,
-                    // update coordinates and trigger a full re-route automatically.
-                    const _hadNoGps = !(_currentOpenIncidentData.latitude &&
-                        _currentOpenIncidentData.longitude &&
-                        !(parseFloat(_currentOpenIncidentData.latitude)===0 && parseFloat(_currentOpenIncidentData.longitude)===0));
-                    const _nowHasGps = !!(msg.latitude && msg.longitude &&
+                    // Track live GPS fix status separately from stored coordinates
+                    if(msg.gps_fixed !== undefined) _currentOpenIncidentData._liveGpsFix = msg.gps_fixed;
+                    // ── GPS state transition handler ──────────────────────────────────────
+                    // Handles all 3 cases: GPS lost, GPS regained, GPS coordinates jumped.
+                    // Backend (main.py) preserves last known coords in DB on GPS loss,
+                    // but ai_inference sends null lat/lon in the WS notify when no fix.
+                    const _prevLat = _currentOpenIncidentData.latitude;
+                    const _prevLng = _currentOpenIncidentData.longitude;
+                    const _hadValidGps = !!(_prevLat && _prevLng &&
+                        !(parseFloat(_prevLat)===0 && parseFloat(_prevLng)===0));
+                    const _msgHasGps = !!(msg.latitude && msg.longitude &&
                         !(parseFloat(msg.latitude)===0 && parseFloat(msg.longitude)===0));
-                    if(msg.latitude  != null) _currentOpenIncidentData.latitude  = msg.latitude;
-                    if(msg.longitude != null) _currentOpenIncidentData.longitude = msg.longitude;
-                    if(_hadNoGps && _nowHasGps && _incDetailMap) {
-                        // GPS just locked! Fire marker + route automatically
-                        console.log("[FLAMES] GPS fix acquired for open incident — auto-routing now");
+                    // Only update coords in memory if new message has valid GPS
+                    // (preserve last known good coords if GPS is temporarily lost)
+                    if(_msgHasGps) {
+                        _currentOpenIncidentData.latitude  = msg.latitude;
+                        _currentOpenIncidentData.longitude = msg.longitude;
+                    }
+                    // Detect GPS coordinate change requiring re-route:
+                    // Case A: no GPS → got GPS (first fix)
+                    // Case B: had GPS → GPS jumped to different location (>10m change)
+                    const _needsReroute = _msgHasGps && _incDetailMap && (() => {
+                        if (!_hadValidGps) return true; // Case A: GPS first fix
+                        const _dLat = Math.abs(parseFloat(msg.latitude)  - parseFloat(_prevLat));
+                        const _dLng = Math.abs(parseFloat(msg.longitude) - parseFloat(_prevLng));
+                        return (_dLat > 0.0001 || _dLng > 0.0001); // ~10m threshold
+                    })();
+                    // Detect GPS lost — show banner update (no reroute needed, backend preserves coords)
+                    const _gpsJustLost = _hadValidGps && !_msgHasGps;
+                    if(_needsReroute) {
+                        const _isFirstFix = !_hadValidGps;
+                        console.log("[FLAMES] GPS", _isFirstFix ? "first fix" : "coordinates jumped", "— auto-routing");
                         const _gpsGw = getPrimaryGateway();
                         const _gpsLat = parseFloat(msg.latitude), _gpsLng = parseFloat(msg.longitude);
-                        // Remove old no-GPS marker, place real fire marker
+                        // Rebuild markers
                         _incDetailMarkers.forEach(m => { try{ m.remove(); }catch{} });
                         _incDetailMarkers = [];
                         const _gpsFire = L.marker([_gpsLat, _gpsLng], {icon: makeFireNodeIcon(false)}).addTo(_incDetailMap);
                         _gpsFire.bindPopup(`<div style="font-weight:700;color:#ff9055;">Incident Location</div><div style="font-size:11px;color:#9a6a5a;">${_currentOpenIncidentData.location_name||'Node '+_currentOpenIncidentData.node_id}</div>`).openPopup();
                         _incDetailMarkers.push(_gpsFire);
                         const _gpsPin = L.icon({iconUrl:'icons/EndPoint.png',iconSize:[60,60],iconAnchor:[24,60],popupAnchor:[0,-55],zIndexOffset:100});
-                        const _gpsRedPin = L.marker([_gpsLat, _gpsLng], {icon:_gpsPin}).addTo(_incDetailMap);
-                        _incDetailMarkers.push(_gpsRedPin);
-                        const _gpsGwMarker = L.marker([_gpsGw.lat, _gpsGw.lng], {icon:greenIcon}).addTo(_incDetailMap);
-                        _gpsGwMarker.bindPopup('<div style="font-weight:700;color:#2ecc71;">🏠 Gateway / Start Point</div>');
-                        _incDetailMarkers.push(_gpsGwMarker);
-                        _incidentOsrmCache[String(_currentOpenIncidentData.incident_id)] = null; // clear stale cache
-                        _incDetailMap.flyTo([_gpsLat, _gpsLng], 15);
+                        _incDetailMarkers.push(L.marker([_gpsLat,_gpsLng],{icon:_gpsPin}).addTo(_incDetailMap));
+                        const _gpsGwM = L.marker([_gpsGw.lat,_gpsGw.lng],{icon:greenIcon}).addTo(_incDetailMap);
+                        _gpsGwM.bindPopup('<div style="font-weight:700;color:#2ecc71;">🏠 Gateway / Start Point</div>');
+                        _incDetailMarkers.push(_gpsGwM);
+                        _incidentOsrmCache[String(_currentOpenIncidentData.incident_id)] = null;
+                        if(_isFirstFix) _incDetailMap.flyTo([_gpsLat,_gpsLng], 15);
+                        else _incDetailMap.panTo([_gpsLat,_gpsLng]); // gentle pan for coord jump
                         calculateDetailRoute(_gpsGw, {lat:_gpsLat, lng:_gpsLng});
+                        // Re-render sidebar to remove No GPS banner / update GPS status row
+                        openIncidentMapModal(_currentOpenIncidentData, true);
+                    } else if(_gpsJustLost) {
+                        console.log("[FLAMES] GPS lost for open incident — keeping last known route");
+                        // Keep the existing route (backend preserved coords in DB).
+                        // Re-render sidebar so GPS status row updates to show warning.
+                        openIncidentMapModal(_currentOpenIncidentData, true);
                     } else {
                         _patchIncidentMapSidebarSensors(_currentOpenIncidentData);
                     }
@@ -3651,7 +3678,7 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
             </div>
             <div class="inc-info-row">
                 <span class="inc-info-label">Coordinates</span>
-                <span class="inc-info-val" style="font-family:monospace;font-size:9px;color:${_incHasGps?'#7a9abb':'#f1c40f'};">${_incHasGps ? parseFloat(inc.latitude).toFixed(5)+', '+parseFloat(inc.longitude).toFixed(5) : '📡 No GPS Fix'}</span>
+                <span class="inc-info-val" style="font-family:monospace;font-size:9px;color:${_incHasGps ? (inc._liveGpsFix===false ? '#f39c12' : '#7a9abb') : '#f1c40f'};">${_incHasGps ? parseFloat(inc.latitude).toFixed(5)+', '+parseFloat(inc.longitude).toFixed(5)+(inc._liveGpsFix===false?' ⚠️ last known':'') : '📡 No GPS Fix'}</span>
             </div>
             <div class="inc-info-row">
                 <span class="inc-info-label">Started</span>
@@ -3662,7 +3689,7 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
         <!-- Route Stats 2×2 grid — updated by calculateDetailRoute -->
         <div class="inc-sidebar-section">
             <div class="inc-sidebar-section-title">CH Routing · OSRM</div>
-            ${!_incHasGps ? `<div style="display:flex;align-items:center;gap:6px;margin:0 0 8px 0;padding:5px 9px;background:#2a1a0088;border:1px solid #f1c40f66;border-radius:7px;color:#f1c40f;font-size:10px;font-weight:700;">📡 No GPS Fix<span style="font-size:9px;font-weight:400;color:#a08020;margin-left:auto;">Showing gateway area</span></div>` : ''}
+            ${!_incHasGps ? `<div style="display:flex;align-items:center;gap:6px;margin:0 0 8px 0;padding:5px 9px;background:#2a1a0088;border:1px solid #f1c40f66;border-radius:7px;color:#f1c40f;font-size:10px;font-weight:700;">📡 No GPS Fix<span style="font-size:9px;font-weight:400;color:#a08020;margin-left:auto;">Showing gateway area</span></div>` : (inc._liveGpsFix === false ? `<div style="display:flex;align-items:center;gap:6px;margin:0 0 8px 0;padding:5px 9px;background:#1a1a0088;border:1px solid #f39c1266;border-radius:7px;color:#f39c12;font-size:10px;font-weight:700;">⚠️ GPS Signal Lost<span style="font-size:9px;font-weight:400;color:#805a10;margin-left:auto;">Showing last known location</span></div>` : '')}
             <!-- vehicle selector -->
             <div class="inc-vehicle-selector">
                 <button class="inc-vehicle-btn ${_selectedVehicle==='motor'?'active':''}" id="inc-vbtn-motor" onclick="selectVehicle('motor')">🏍<br>Motor</button>
