@@ -2289,6 +2289,41 @@ function makeOfflineNodeIcon(){
     });
 }
 
+async function _prewarmNodeGpsCache() {
+    // Fetch last known GPS for ALL nodes in one query via /nodes endpoint.
+    // /nodes already returns the latest reading per node including lat/lng.
+    // We scan them and cache any that have real coordinates.
+    // For nodes whose latest reading has no GPS, we fire individual
+    // /nodes/{id}/last-gps requests — but only for nodes missing coords.
+    try {
+        const res = await fetch(`${API_BASE()}/nodes`, {
+            headers: authHeader(), cache: 'no-cache'
+        });
+        if (!res.ok) return;
+        const nodes = await res.json();
+ 
+        // Nodes WITH coords — cache immediately, no extra request needed
+        const missing = [];
+        nodes.forEach(n => {
+            const la = parseFloat(n.latitude), lo = parseFloat(n.longitude);
+            if (!isNaN(la) && la !== 0 && !isNaN(lo) && lo !== 0) {
+                _persistNodeGpsToCache(n.node_id, la, lo);
+            } else {
+                missing.push(n.node_id);
+            }
+        });
+ 
+        // Nodes WITHOUT coords — fetch last known GPS from DB in parallel
+        if (missing.length) {
+            await Promise.allSettled(
+                missing.map(nodeId => _fetchAndCacheNodeGps(nodeId))
+            );
+        }
+    } catch(e) {
+        console.warn('[FLAMES] _prewarmNodeGpsCache failed:', e.message);
+    }
+}
+
 let gatewayMarkers={},gatewayData=[];
 async function loadGatewaysOnMap(silent=false){
     try{
@@ -2389,8 +2424,11 @@ function buildNodePopupContent(n, nid, lat, lng, offline) {
     const conf = n.confidence != null ? Number(n.confidence) : 0;
     const isFire  = pred === 'fire';
     const isFalse = pred === 'false';
-    const stColor = isFire ? '#ff4757' : isFalse ? '#f1c40f' : '#2ecc71';
-    const stLabel = isFire ? 'Active Fire' : isFalse ? '⚠ Possible Fire' : 'Normal';
+    
+    const isFireActive     = isFire  && !isResolved;
+    const isPossibleActive = isFalse && !isResolved;
+    const stColor = isFireActive ? '#ff4757' : isPossibleActive ? '#f1c40f' : '#2ecc71';
+    const stLabel = isFireActive ? 'Active Fire' : isPossibleActive ? '⚠ Possible Fire' : 'Normal';
 
     // Use local_timestamp for display (PH time), fall back to timestamp
     const lastStr = n.local_timestamp
@@ -2436,11 +2474,26 @@ async function loadAndPlaceNodes(silent=false){
         const gw=getPrimaryGateway();
         nodes.forEach(n=>{
             const nid=n.node_id;
+
             let lat=parseFloat(n.latitude),lng=parseFloat(n.longitude);
             const valid=!isNaN(lat)&&lat!==0&&!isNaN(lng)&&lng!==0;
             if(!valid){lat=nodeData[nid]?.latitude;lng=nodeData[nid]?.longitude;}
             let fallback=false;
-            if(lat==null||isNaN(lat)){const off=10+Math.random()*90,ang=Math.random()*2*Math.PI;lat=gw.lat+(off/111000)*Math.cos(ang);lng=gw.lng+(off/(111000*Math.cos(gw.lat*Math.PI/180)))*Math.sin(ang);fallback=true;}
+            if(lat==null||isNaN(lat)||lat===0){
+                // Prefer DB-cached GPS over random gateway offset
+                const _cached = _nodeGpsCache[nid];
+                if (_cached && _cached.lat) {
+                    lat = _cached.lat;
+                    lng = _cached.lng;
+                    fallback = false;  // real coords from DB — not a fallback
+                } else {
+                    // Truly no GPS ever — use random offset near gateway
+                    const off=10+Math.random()*90,ang=Math.random()*2*Math.PI;
+                    lat=gw.lat+(off/111000)*Math.cos(ang);
+                    lng=gw.lng+(off/(111000*Math.cos(gw.lat*Math.PI/180)))*Math.sin(ang);
+                    fallback=true;
+                }
+            }
 
             // Prefer local_timestamp (PH time) for offline detection — avoids UTC vs local confusion
             const utcTimestamp = n.local_timestamp || n.timestamp || n.updated_at || n.last_seen || new Date().toISOString();
@@ -2452,7 +2505,9 @@ async function loadAndPlaceNodes(silent=false){
 
             const lastTime = parseUtc(utcTimestamp);
             const minAgo = lastTime ? (Date.now() - lastTime.getTime()) / 60000 : 0;
-            const offline = (minAgo > OFFLINE_MIN) && !isFire && !isFalse;
+
+            const isResolved = resolvedNodeIds.has(nid);
+            const offline = (minAgo > OFFLINE_MIN) && (!isFire || resolvedNodeIds.has(nid)) && (!isFalse || resolvedNodeIds.has(nid));
 
             const isFireActive     = isFire  && !resolvedNodeIds.has(nid);
             const isPossibleActive = isFalse && !resolvedNodeIds.has(nid);
@@ -2493,7 +2548,12 @@ async function loadAndPlaceNodes(silent=false){
     }catch(err){console.error('Failed to load nodes:',err);if(!silent)alert('Could not load sensor nodes.');}
 }
 
-syncResolvedNodesFromAPI().then(() => loadAndPlaceNodes());
+syncResolvedNodesFromAPI().then(() => {
+    loadAndPlaceNodes();
+    // Delay prewarm so it doesn't compete with incidents/WS on startup
+    setTimeout(_prewarmNodeGpsCache, 3000);
+});
+
 setInterval(()=>loadAndPlaceNodes(true), 15000);
 setInterval(syncResolvedNodesFromAPI, 60000);
 
@@ -2503,23 +2563,40 @@ function connectWebSocket(){
     const ws=new WebSocket(wsUrl);
     const dot=document.getElementById('ws-dot'),label=document.getElementById('ws-label');
     let _wsReconnectScheduled=false;
+    let _reconnectDelay=2000; // start at 2s, back off to max 15s
+ 
     function _wsScheduleReconnect(){
         if(_wsReconnectScheduled)return;
         _wsReconnectScheduled=true;
-        dot.className='ws-dot error';label.textContent='Disconnected';
-        setTimeout(connectWebSocket,5000);
+        // Don't flash "Disconnected" immediately — wait 1.5s first
+        // so brief Railway keepalive drops don't show UI noise
+        const _showErrorAfter = setTimeout(()=>{
+            dot.className='ws-dot error';
+            label.textContent='Reconnecting…';
+        }, 1500);
+        setTimeout(()=>{
+            clearTimeout(_showErrorAfter);
+            connectWebSocket();
+        }, _reconnectDelay);
+        // Back off: 2s → 4s → 8s → 15s max
+        _reconnectDelay = Math.min(_reconnectDelay * 2, 15000);
     }
-    ws.onopen=()=>{dot.className='ws-dot connected';label.textContent='Live';loadLiveIncidents(true);};
+ 
+    ws.onopen=()=>{
+        dot.className='ws-dot connected';
+        label.textContent='Live';
+        _reconnectDelay=2000;
+        // Always reload on fresh connect — but silent (no spinner)
+        loadLiveIncidents(true);
+    };
+
     ws.onclose=()=>_wsScheduleReconnect();
     ws.onerror=()=>{dot.className='ws-dot error';label.textContent='Error';_wsScheduleReconnect();};
     ws.onmessage=event=>{
         try{
             const msg=JSON.parse(event.data);
-            // Ignore server keepalive pings
             if(msg.type==='ping')return;
-            // Server broadcast: another device just fetched fresh traffic data
             if(msg.type==='traffic_update' && msg.state) {
-                // Per-incident traffic update — each incident has its own key: incident_{id}
                 let anyUpdated = false;
                 Object.entries(msg.state).forEach(([key, data]) => {
                     if (!key.startsWith('incident_') || !data || !data.fetchedAt) return;
@@ -2530,12 +2607,10 @@ function connectWebSocket(){
                         _incidentTrafficMap[incId] = { traffic: data, lastFetch: t, lastSuccessfulFetch: t };
                         if (t > (_globalLsfCards || 0)) _globalLsfCards = t;
                         anyUpdated = true;
-                        // Live-update the open incident map modal if it's showing this incident
                         if (_currentOpenIncidentData && String(_currentOpenIncidentData.incident_id) === incId
                             && document.getElementById('incident-map-modal').classList.contains('open')) {
                             _applyAgeEl(document.getElementById('imd-traffic-age'), t);
                             _applyAgeBadge(document.getElementById('imd-traffic-badge'), t);
-                            // Update traffic badge and speed with fresh data
                             if (_activeDetailRouteState) {
                                 _activeDetailRouteState.lastTraffic = data;
                                 _activeDetailRouteState.lastSuccessfulFetch = t;
@@ -2544,7 +2619,6 @@ function connectWebSocket(){
                         }
                     }
                 });
-                // Remove incidents no longer in server state (resolved)
                 Object.keys(_incidentTrafficMap).forEach(incId => {
                     if (!msg.state[`incident_${incId}`]) delete _incidentTrafficMap[incId];
                 });
@@ -2557,8 +2631,6 @@ function connectWebSocket(){
             if(msg.type==='sensor_data'||msg.type==='new_reading'){
                 loadAndPlaceNodes(true);
                 if(_hm_node&&(!msg.node_id||msg.node_id===_hm_node))fetchHistory();
-                // Patch sensor tile values in-place — do NOT call openIncidentMapModal which
-                // re-renders the whole sidebar and wipes the traffic display.
                 if(_currentOpenIncidentData && msg.node_id === _currentOpenIncidentData.node_id
                    && document.getElementById('incident-map-modal').classList.contains('open')){
                     if(msg.temperature != null) _currentOpenIncidentData.temperature = msg.temperature;
@@ -2570,11 +2642,47 @@ function connectWebSocket(){
                     if(msg.trigger_source)      _currentOpenIncidentData.trigger_source = msg.trigger_source;
                     _patchIncidentMapSidebarSensors(_currentOpenIncidentData);
                 }
+                // ── Persist GPS to cache if this WS message carries real coordinates ─
+                if (msg.node_id && msg.latitude && parseFloat(msg.latitude) !== 0) {
+                    _persistNodeGpsToCache(msg.node_id, msg.latitude, msg.longitude);
+                }
+                // ── GPS retry: if modal was waiting for node coordinates, retry now ──
+                if (window._pendingDetailRouteIncId != null
+                    && _currentOpenIncidentData
+                    && msg.node_id === _currentOpenIncidentData.node_id
+                    && msg.latitude && msg.longitude
+                    && parseFloat(msg.latitude) !== 0) {
+                    _currentOpenIncidentData.latitude  = msg.latitude;
+                    _currentOpenIncidentData.longitude = msg.longitude;
+                    window._pendingDetailRouteIncId = null;
+                    _incDetailMarkers = _incDetailMarkers.filter(m => {
+                        if (m instanceof L.Polyline) { try { m.remove(); } catch {} return false; }
+                        return true;
+                    });
+                    const _newLL = [parseFloat(msg.latitude), parseFloat(msg.longitude)];
+                    _incDetailMarkers.forEach(m => { if (m instanceof L.Marker) m.setLatLng(_newLL); });
+                    const _gwRetry = getPrimaryGateway();
+                    calculateDetailRoute(_gwRetry, { lat: parseFloat(msg.latitude), lng: parseFloat(msg.longitude) });
+                    const _coordEl = document.getElementById('imd-coord-display');
+                    if (_coordEl) _coordEl.innerHTML = `${parseFloat(msg.latitude).toFixed(5)}, ${parseFloat(msg.longitude).toFixed(5)}`;
+                    const _gwR = getPrimaryGateway();
+                    const _d = calcDistance(_gwR.lat, _gwR.lng, parseFloat(msg.latitude), parseFloat(msg.longitude));
+                    const _distEl = document.getElementById('imd-dist');
+                    const _etaEl  = document.getElementById('imd-eta');
+                    if (_distEl) _distEl.textContent = _d.toFixed(1) + ' km';
+                    if (_etaEl) {
+                        const { speed: _sp, factor: _fa } = getFiretruckSpeed();
+                        const _bt = Math.round((_d * _fa) / _sp * 60);
+                        const _ri = _incidentRescueMap[_currentOpenIncidentData.incident_id];
+                        _etaEl.textContent = '~' + getVehicleETA(_bt, null, _ri?.vehicleType || _selectedVehicle) + ' min';
+                    }
+                    const _tbadge = document.getElementById('imd-traffic-badge');
+                    if (_tbadge && _tbadge.textContent === 'Waiting for GPS…') _tbadge.textContent = 'Loading…';
+                }
             }
             if(msg.type==='node_update'){
                 loadAndPlaceNodes(true);
                 if(_hm_node&&(!msg.node_id||msg.node_id===_hm_node))fetchHistory();
-                // Same — patch sensor tiles in-place, do NOT full re-render
                 if(_currentOpenIncidentData && msg.node_id === _currentOpenIncidentData.node_id
                    && document.getElementById('incident-map-modal').classList.contains('open')){
                     if(msg.temperature != null) _currentOpenIncidentData.temperature = msg.temperature;
@@ -2587,7 +2695,6 @@ function connectWebSocket(){
             if(msg.type==='incident_update'){
                 if(msg.action==='resolved' && msg.node_id){
                     clearFireAnimationForNode(msg.node_id);
-                    // Mark as rescued in rescue map on all devices
                     if(msg.incident_id && _incidentRescueMap[msg.incident_id]) {
                         _incidentRescueMap[msg.incident_id].status = 'rescued';
                         _incidentRescueMap[msg.incident_id].rescuedTime = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:true});
@@ -2595,8 +2702,6 @@ function connectWebSocket(){
                     }
                     syncResolvedNodesFromAPI().then(()=> loadAndPlaceNodes(true));
                 } else if((msg.action==='responded' || msg.action==='dispatch_updated') && msg.incident_id) {
-                    // Always overwrite rescue map — covers both fresh dispatches AND edits,
-                    // for ALL clients regardless of login state or whether they were online before.
                     const applyDispatch = (orgName, dispatchTime, vehicleType, nodeId, locationName, incStatus, resolvedAt) => {
                         const vLabel = vehicleType ? (VEHICLE_TYPES[vehicleType]?.label || vehicleType) : null;
                         const existing = _incidentRescueMap[msg.incident_id];
@@ -2613,8 +2718,6 @@ function connectWebSocket(){
                         };
                         _saveRescueMap(_incidentRescueMap);
                     };
-
-                    // If WS message already carries full dispatch info, apply directly (no extra fetch needed)
                     if (msg.org_name && msg.dispatch_time) {
                         const inc = _liveIncidentsCache.find(i => i.incident_id == msg.incident_id);
                         applyDispatch(msg.org_name, msg.dispatch_time, msg.vehicle_type,
@@ -2622,7 +2725,6 @@ function connectWebSocket(){
                             'active', null);
                         loadLiveIncidents(false);
                     } else {
-                        // Fallback: fetch from DB (e.g. older server version or missing fields)
                         fetch(`${API_BASE()}/incidents/${msg.incident_id}`, {headers:authHeader()})
                             .then(r => r.ok ? r.json() : null)
                             .then(data => {
@@ -2654,25 +2756,14 @@ function connectWebSocket(){
                 }
                 if(msg.action !== 'responded') loadLiveIncidents(true);
                 if(_currentIncidentTab==='resolved') loadResolvedIncidents();
-                // Auto-refresh incident details modal ONLY if it's the same incident that changed —
-                // calling openIncidentDetailsModal for a *different* incident re-triggers TomTom fetch
-                // and resets the traffic age display to "just now".
                 if(document.getElementById('incident-details-modal').classList.contains('open') && _detailsModalIncidentId){
                     if(msg.incident_id == _detailsModalIncidentId){
                         openIncidentDetailsModal(_detailsModalIncidentId);
                     }
                 }
-                // Auto-refresh incident map modal sidebar if open.
-                // FIX: do NOT call openIncidentMapModal(freshInc, true) for unrelated incident_update
-                // events — that re-renders the entire sidebar HTML which wipes the traffic display
-                // and resets imd-traffic-badge to "Loading…". Instead, patch sensor fields in-place
-                // so ongoing traffic data (fetchedAt, age ticker, badge) is never interrupted.
                 if(_currentOpenIncidentData && document.getElementById('incident-map-modal').classList.contains('open')){
                     const freshInc = _liveIncidentsCache.find(i => i.incident_id == _currentOpenIncidentData.incident_id);
-                    if(freshInc){
-                        _currentOpenIncidentData = freshInc;
-                    }
-                    // Patch sensor fields from WS message regardless of which incident triggered this
+                    if(freshInc){ _currentOpenIncidentData = freshInc; }
                     if(msg.node_id && msg.node_id === _currentOpenIncidentData.node_id){
                         if(msg.temperature != null) _currentOpenIncidentData.temperature = msg.temperature;
                         if(msg.humidity    != null) _currentOpenIncidentData.humidity    = msg.humidity;
@@ -2681,13 +2772,9 @@ function connectWebSocket(){
                         if(msg.ai_prediction)       _currentOpenIncidentData.ai_prediction = msg.ai_prediction;
                         if(msg.confidence  != null) _currentOpenIncidentData.confidence_pct = Math.round(msg.confidence * 100);
                     }
-                    // Only do a full sidebar re-render if THIS incident was the one that changed
-                    // (e.g. resolved, rescue dispatched). For new/unrelated incidents, skip the
-                    // re-render entirely so traffic state is never wiped.
                     if(msg.incident_id == _currentOpenIncidentData.incident_id){
                         openIncidentMapModal(_currentOpenIncidentData, true);
                     } else {
-                        // Different incident changed — just patch the sensor tile values in-place
                         _patchIncidentMapSidebarSensors(_currentOpenIncidentData);
                     }
                 }
@@ -3152,6 +3239,66 @@ async function loadLiveIncidents(silent=false){
         } else {
             const gw0ref = getPrimaryGateway();
             const _incRouteMap = {};
+            // ── Backfill missing incident coords from live nodeData ──────────
+            // Physical nodes often fire before GPS reaches fire_incidents table.
+            // nodeData is updated every 15s by loadAndPlaceNodes and is usually ahead.
+            incidents.forEach(inc => {
+                const hasCoords = inc.latitude && inc.longitude
+                    && parseFloat(inc.latitude) !== 0 && parseFloat(inc.longitude) !== 0;
+                if (!hasCoords && nodeData[inc.node_id]) {
+                    const nd = nodeData[inc.node_id];
+                    if (nd.latitude && parseFloat(nd.latitude) !== 0) {
+                        inc.latitude  = nd.latitude;
+                        inc.longitude = nd.longitude;
+                        inc._coordsBackfilled = true;
+                    }
+                }
+            });
+            // ── Backfill missing incident coords from live nodeData ──────────
+            // Physical nodes often fire before GPS reaches fire_incidents table.
+            // nodeData is updated every 15s by loadAndPlaceNodes and is usually ahead.
+            incidents.forEach(inc => {
+                const hasCoords = inc.latitude && inc.longitude
+                    && parseFloat(inc.latitude) !== 0 && parseFloat(inc.longitude) !== 0;
+                if (!hasCoords && nodeData[inc.node_id]) {
+                    const nd = nodeData[inc.node_id];
+                    if (nd.latitude && parseFloat(nd.latitude) !== 0) {
+                        inc.latitude  = nd.latitude;
+                        inc.longitude = nd.longitude;
+                        inc._coordsBackfilled = true;
+                    }
+                }
+                // Also try last-known GPS store for this node
+                if (!inc.latitude || parseFloat(inc.latitude) === 0) {
+                    const lastGps = _getLastNodeGps(inc.node_id);
+                    if (lastGps) {
+                        inc.latitude  = lastGps.lat;
+                        inc.longitude = lastGps.lng;
+                        inc._coordsBackfilled = true;
+                    }
+                }
+            });
+            incidents.forEach(inc => {
+                const hasCoords = inc.latitude && inc.longitude
+                    && parseFloat(inc.latitude) !== 0 && parseFloat(inc.longitude) !== 0;
+                if (!hasCoords && nodeData[inc.node_id]) {
+                    const nd = nodeData[inc.node_id];
+                    if (nd.latitude && parseFloat(nd.latitude) !== 0) {
+                        inc.latitude  = nd.latitude;
+                        inc.longitude = nd.longitude;
+                        inc._coordsBackfilled = true;
+                    }
+                }
+                // Also try in-memory GPS cache (populated from DB or live readings)
+                if (!inc.latitude || parseFloat(inc.latitude) === 0) {
+                    const cached = _nodeGpsCache[inc.node_id];
+                    if (cached) {
+                        inc.latitude  = cached.lat;
+                        inc.longitude = cached.lng;
+                        inc._coordsBackfilled = true;
+                    }
+                }
+            });
             await Promise.allSettled(incidents.map(async inc => {
                 if (!inc.latitude || !inc.longitude) return;
                 try {
@@ -3344,7 +3491,23 @@ async function _initSharedTrafficState() {
     } catch(e) { console.warn('[FLAMES] shared traffic init failed:', e.message); }
 }
 
-_initSharedTrafficState().then(() => loadLiveIncidents());
+loadLiveIncidents();
+// Also load after traffic state in case first call raced
+_initSharedTrafficState().then(() => {
+    if (!_liveIncidentsCache.length) loadLiveIncidents(true);
+});
+// Aggressive retries for Railway cold start (stops once incidents load)
+[1500, 3000, 6000, 10000].forEach(delay => {
+    setTimeout(() => {
+        if (!_liveIncidentsCache.length) loadLiveIncidents(true);
+    }, delay);
+});
+ 
+// Retry once after 4s in case the first attempt raced before WS connected
+setTimeout(() => {
+    if (!_liveIncidentsCache.length) loadLiveIncidents(true);
+}, 4000);
+
 setInterval(()=>loadLiveIncidents(true),20000);
 
 // ====================== RESOLVED INCIDENTS ======================
@@ -3575,27 +3738,203 @@ setInterval(() => {
     // Update fallback speed if no TomTom — removed, Live Speed shows — km/h until TomTom data arrives
 }, 60_000);
 ////////////////////////////////////////////////////////////////PEAK PERIOD END//////////////////////////////////////////////////////////////
+const _nodeGpsCache = {};
+ 
+// Fetch last known GPS from DB for a node and store in cache.
+// Called before openIncidentMapModal when incident has no coords.
+async function _fetchAndCacheNodeGps(nodeId) {
+    if (!nodeId) return null;
+    try {
+        const res = await fetch(
+            `${API_BASE()}/nodes/${encodeURIComponent(nodeId)}/last-gps`,
+            { headers: authHeader(), cache: 'no-cache' }
+        );
+        if (!res.ok) return null;
+        const data = await res.json();
+        if (data.found && data.latitude && data.longitude) {
+            _nodeGpsCache[nodeId] = {
+                lat:     parseFloat(data.latitude),
+                lng:     parseFloat(data.longitude),
+                savedAt: data.saved_at || null,
+            };
+            return _nodeGpsCache[nodeId];
+        }
+    } catch (e) {
+        console.warn('[FLAMES] _fetchAndCacheNodeGps failed:', e.message);
+    }
+    return null;
+}
+ 
+// Also persist to cache whenever loadAndPlaceNodes processes a node
+// with real coordinates — keeps the in-memory cache warm without extra fetches.
+function _persistNodeGpsToCache(nodeId, lat, lng) {
+    const la = parseFloat(lat), lo = parseFloat(lng);
+    if (!nodeId || isNaN(la) || la === 0 || isNaN(lo) || lo === 0) return;
+    _nodeGpsCache[nodeId] = { lat: la, lng: lo, savedAt: null };
+}
+ 
+function _resolveIncidentCoords(inc) {
+    // 1. Coords on the incident row itself (set when MQTT payload had GPS)
+    const incLat = parseFloat(inc.latitude);
+    const incLng = parseFloat(inc.longitude);
+    if (!isNaN(incLat) && incLat !== 0 && !isNaN(incLng) && incLng !== 0
+        && !inc._coordsBackfilled) {
+        return { lat: incLat, lng: incLng, source: 'incident' };
+    }
+ 
+    // 2. Live nodeData cache (updated every 15s by /nodes poll)
+    const nd = nodeData[inc.node_id];
+    if (nd) {
+        const ndLat = parseFloat(nd.latitude);
+        const ndLng = parseFloat(nd.longitude);
+        if (!isNaN(ndLat) && ndLat !== 0 && !isNaN(ndLng) && ndLng !== 0) {
+            _persistNodeGpsToCache(inc.node_id, ndLat, ndLng);
+            // nodeData is the latest reading — but it could be stale after restart.
+            // Check if it's recent (within last 5 mins) to decide if it's "live"
+            const lastUpdated = nd.local_timestamp || nd.timestamp;
+            const lastTime = parseUtc(lastUpdated);
+            const minsAgo = lastTime ? (Date.now() - lastTime.getTime()) / 60000 : 999;
+            const isRecent = minsAgo < 5;
+            return { lat: ndLat, lng: ndLng, source: isRecent ? 'node' : 'lastknown' };
+        }
+    }
+ 
+    // 3. Last known GPS from DB (fetched by _fetchAndCacheNodeGps before modal opens)
+    //    This is the real fix: uses actual historical DB coordinates, not localStorage.
+    const cached = _nodeGpsCache[inc.node_id];
+    if (cached && cached.lat && cached.lng) {
+        return { lat: cached.lat, lng: cached.lng, source: 'lastknown' };
+    }
+ 
+    // 4. Gateway fallback — node has truly never sent GPS to the DB
+    const gw = getPrimaryGateway();
+    return { lat: gw.lat, lng: gw.lng, source: 'gateway' };
+}
+
+
 function openIncidentMapModal(inc, sidebarOnly=false) {
     if (!_globalLsfCards && _globalLsfDetail) _globalLsfCards = _globalLsfDetail;
-    console.log('[FLAMES] openIncidentMapModal: _globalLsfCards=', _globalLsfCards ? new Date(_globalLsfCards).toLocaleTimeString() : 'NONE', '_globalLsfDetail=', _globalLsfDetail ? new Date(_globalLsfDetail).toLocaleTimeString() : 'NONE');
     _currentOpenIncidentData = inc;
     document.getElementById('incident-map-modal').classList.add('open');
+ 
+    // Check if incident has coords already — if not, fetch from DB first then render
+    const _quickLat = parseFloat(inc.latitude);
+    const _quickLng = parseFloat(inc.longitude);
+    const _hasDirectCoords = !isNaN(_quickLat) && _quickLat !== 0;
+    const _hasCachedCoords = !!(_nodeGpsCache[inc.node_id]?.lat) ||
+        !!(nodeData[inc.node_id]?.latitude && parseFloat(nodeData[inc.node_id].latitude) !== 0);
+ 
+    if (!_hasDirectCoords && !_hasCachedCoords) {
+        // Render immediately with gateway fallback so modal is not blank,
+        // then silently fetch DB coords and re-render sidebar only when ready.
+        _openIncidentMapModalRender(inc, sidebarOnly);
+        _fetchAndCacheNodeGps(inc.node_id).then(result => {
+            if (result && _currentOpenIncidentData?.incident_id === inc.incident_id) {
+                // Got real coords — re-render sidebar only (not the whole map)
+                _openIncidentMapModalRender(inc, true);
+            }
+        });
+        return;
+    }
+ 
+    _openIncidentMapModalRender(inc, sidebarOnly);
+}
+function _openIncidentMapModalRender(inc, sidebarOnly=false) {
     const rescueInfo = _incidentRescueMap[inc.incident_id];
-    const isRescued = rescueInfo && rescueInfo.status === 'rescued';
-    const gw = getPrimaryGateway();
-    const distKm = calcDistance(gw.lat, gw.lng, parseFloat(inc.latitude), parseFloat(inc.longitude));
+    const isRescued  = rescueInfo && rescueInfo.status === 'rescued';
+    const gw         = getPrimaryGateway();
+ 
+    // ── Resolve coords with fallback (fixes NaN on physical nodes) ──────────
+    const resolved    = _resolveIncidentCoords(inc);
+    const incLat      = resolved.lat;
+    const incLng      = resolved.lng;
+    const coordSource = resolved.source;   // 'incident' | 'node' | 'lastknown' | 'gateway'
+    // coordsValid controls routing (lastknown = real coords = route works fine)
+    // coordsForDisplay controls the badge (lastknown = GPS disconnected = show badge)
+    const coordsValid      = coordSource !== 'gateway';   // lastknown still routes correctly
+    const gpsInCurrentRead = coordSource === 'incident' || coordSource === 'node'; // badge logic
+ 
+    const distKm       = calcDistance(gw.lat, gw.lng, incLat, incLng);
     const { speed, factor } = getFiretruckSpeed();
     const baseTimeMins = Math.round((distKm * factor) / speed * 60);
-    const etaMin = getVehicleETA(baseTimeMins, null, rescueInfo?.vehicleType || _selectedVehicle);  // vehicle-aware initial ETA
-    const pred = (inc.ai_prediction||'').toLowerCase();
+    const etaMin       = getVehicleETA(baseTimeMins, null, rescueInfo?.vehicleType || _selectedVehicle);
+    const pred   = (inc.ai_prediction||'').toLowerCase();
     const isFire = pred === 'fire';
+ 
+    const coordNoticeHtml = !gpsInCurrentRead
+        ? coordSource === 'lastknown'
+            ? (() => {
+                const _savedAt = _nodeGpsCache[inc.node_id]?.savedAt;
+                const _savedStr = _savedAt ? ` &mdash; last seen ${_savedAt}` : '';
+                return `<div style="
+                    display:flex;align-items:flex-start;gap:10px;
+                    margin-bottom:10px;padding:10px 12px;
+                    background:linear-gradient(135deg,#1a1500aa,#2a1e00aa);
+                    border:1px solid #f1c40f88;border-left:3px solid #f1c40f;
+                    border-radius:8px;">
+                   <div style="flex-shrink:0;margin-top:1px;">
+                       <div style="
+                           width:10px;height:10px;border-radius:50%;
+                           background:#f1c40f;
+                           box-shadow:0 0 6px #f1c40f;
+                           animation:pulse-dot 1.2s ease infinite;">
+                       </div>
+                   </div>
+                   <div style="flex:1;min-width:0;">
+                       <div style="
+                           font-size:10px;font-weight:700;letter-spacing:1px;
+                           text-transform:uppercase;color:#f1c40f;margin-bottom:3px;">
+                           No GPS in Current Reading
+                       </div>
+                       <div style="font-size:10px;color:#c8a050;line-height:1.5;">
+                           GPS module not detected. Showing <strong style="color:#f1c40f;">last known position</strong> from database${_savedStr}. Route and ETA are based on that saved location.
+                       </div>
+                   </div>
+               </div>`;
+            })()
+            : `<div style="
+                    display:flex;align-items:flex-start;gap:10px;
+                    margin-bottom:10px;padding:10px 12px;
+                    background:linear-gradient(135deg,#1a1500aa,#2a1e00aa);
+                    border:1px solid #f1c40f88;border-left:3px solid #f1c40f;
+                    border-radius:8px;">
+                   <div style="flex-shrink:0;margin-top:1px;">
+                       <div style="
+                           width:10px;height:10px;border-radius:50%;
+                           background:#f1c40f;
+                           box-shadow:0 0 6px #f1c40f;
+                           animation:pulse-dot 1.2s ease infinite;">
+                       </div>
+                   </div>
+                   <div style="flex:1;min-width:0;">
+                       <div style="
+                           font-size:10px;font-weight:700;letter-spacing:1px;
+                           text-transform:uppercase;color:#f1c40f;margin-bottom:3px;">
+                           No GPS Detected
+                       </div>
+                       <div style="font-size:10px;color:#c8a050;line-height:1.5;">
+                           Node has no GPS coordinates. Route and map are using an <strong style="color:#f1c40f;">approximate position</strong> near the gateway. Distance and ETA may be inaccurate.
+                       </div>
+                   </div>
+               </div>`
+        : coordSource === 'node'
+            ? `<div style="
+                   display:flex;align-items:center;gap:8px;
+                   margin-bottom:8px;padding:7px 12px;
+                   background:#0a1a0a88;border:1px solid #2ecc7144;border-left:3px solid #2ecc71;
+                   border-radius:8px;color:#2ecc71;font-size:10px;font-weight:600;letter-spacing:.3px;">
+                   <div style="width:8px;height:8px;border-radius:50%;background:#2ecc71;box-shadow:0 0 5px #2ecc71;flex-shrink:0;"></div>
+                   GPS from live sensor data
+               </div>`
+            : '';
+ 
     document.getElementById('inc-map-sidebar').innerHTML = `
-        <!-- Status Banner -->
+        ${coordNoticeHtml}
         <div class="inc-status-banner ${isRescued?'resolved':'active'}">
             <div class="inc-status-icon">${isRescued?'✅':'⚠️'}</div>
             <div class="inc-status-text">
                 <div class="inc-status-label">Incident Status</div>
-                <div class="inc-status-val ${isRescued?'resolved':'fire'}">${isRescued?'RESOLVED':isFire?`ACTIVE FIRE${inc.trigger_source==='manual'?' <small style="font-size:9px;font-weight:700;color:#ffaa88;background:#5a100088;border:1px solid #ff6b6b55;border-radius:3px;padding:1px 4px;margin-left:4px;letter-spacing:.2px;">(Emergency Button)</small>':''}` :'POSSIBLE FIRE'}</div>
+                <div class="inc-status-val ${isRescued?'resolved':'fire'}">${isRescued?'RESOLVED':isFire?`ACTIVE FIRE${inc.trigger_source==='manual'?' <small style="font-size:9px;font-weight:700;color:#ffaa88;background:#5a100088;border:1px solid #ff6b6b55;border-radius:3px;padding:1px 4px;margin-left:4px;">(Emergency Button)</small>':''}` :'POSSIBLE FIRE'}</div>
             </div>
         </div>
         ${inc.trigger_source === 'manual' ? `
@@ -3603,8 +3942,7 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
             🚨 Emergency Button Alert!
             <span style="font-size:9px;font-weight:400;color:#c05050;margin-left:auto;">Triggered by physical button</span>
         </div>` : ''}
-
-        <!-- Location Info -->
+ 
         <div class="inc-sidebar-section">
             <div class="inc-sidebar-section-title">Location</div>
             <div class="inc-info-row">
@@ -3615,33 +3953,54 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
                 <span class="inc-info-label">Name</span>
                 <span class="inc-info-val">${inc.location_name||`Node ${inc.node_id}`}</span>
             </div>
-            <div class="inc-info-row">
-                <span class="inc-info-label">Coordinates</span>
-                <span class="inc-info-val" style="font-family:monospace;font-size:9px;color:#7a9abb;">${parseFloat(inc.latitude).toFixed(5)}, ${parseFloat(inc.longitude).toFixed(5)}</span>
-            </div>
+            <div class="inc-info-row" style="flex-direction:column;align-items:flex-start;gap:4px;">
+    <span class="inc-info-label">Coordinates</span>
+    <div style="display:flex;flex-direction:column;gap:3px;width:100%;">
+        <span class="inc-info-val" id="imd-coord-display" style="font-family:monospace;font-size:10px;color:#7a9abb;">
+            ${coordsValid
+                ? `${incLat.toFixed(5)}, ${incLng.toFixed(5)}`
+                : '<span style="color:#f1c40f;font-size:9px;font-weight:600;">No GPS — approx. only</span>'}
+        </span>
+        ${coordSource === 'incident'
+            ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;color:#2ecc71;letter-spacing:.3px;">
+                   <span style="width:6px;height:6px;border-radius:50%;background:#2ecc71;box-shadow:0 0 5px #2ecc71;flex-shrink:0;animation:pulse-dot 1.5s ease infinite;"></span>
+                   LIVE GPS — current reading
+               </span>`
+            : coordSource === 'node'
+            ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;color:#2ecc71;letter-spacing:.3px;">
+                   <span style="width:6px;height:6px;border-radius:50%;background:#2ecc71;box-shadow:0 0 5px #2ecc71;flex-shrink:0;animation:pulse-dot 1.5s ease infinite;"></span>
+                   LIVE GPS — from sensor data
+               </span>`
+            : coordSource === 'lastknown'
+            ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;color:#f1c40f;background:#1a1500aa;border:1px solid #f1c40f66;border-radius:4px;padding:2px 7px;letter-spacing:.3px;">
+                   ⚠ DATABASE FALLBACK — GPS not detected in current reading
+               </span>
+               ${_nodeGpsCache[inc.node_id]?.savedAt ? `<span style="font-size:8px;color:#9a7040;letter-spacing:.2px;">Last GPS saved: ${_nodeGpsCache[inc.node_id].savedAt}</span>` : ''}`
+            : `<span style="display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;color:#ff9f1c;background:#1a0e0088;border:1px solid #ff9f1c55;border-radius:4px;padding:2px 7px;letter-spacing:.3px;">
+                   ⚠ NO GPS — approximate position only
+               </span>`}
+    </div>
+</div>
             <div class="inc-info-row">
                 <span class="inc-info-label">Started</span>
                 <span class="inc-info-val" style="font-size:10px;color:#c8a080;">${formatTimestamp(inc.started_at)||'—'}</span>
             </div>
         </div>
-
-        <!-- Route Stats 2×2 grid — updated by calculateDetailRoute -->
+ 
         <div class="inc-sidebar-section">
             <div class="inc-sidebar-section-title">CH Routing · OSRM</div>
-            <!-- vehicle selector -->
             <div class="inc-vehicle-selector">
                 <button class="inc-vehicle-btn ${_selectedVehicle==='motor'?'active':''}" id="inc-vbtn-motor" onclick="selectVehicle('motor')">🏍<br>Motor</button>
                 <button class="inc-vehicle-btn ${_selectedVehicle==='small'?'active':''}" id="inc-vbtn-small" onclick="selectVehicle('small')">🚒<br>Small</button>
                 <button class="inc-vehicle-btn ${_selectedVehicle==='big'?'active':''}" id="inc-vbtn-big" onclick="selectVehicle('big')">🚛<br>Big</button>
             </div>
-            <!-- per-vehicle ETA chips removed — ETA adjusts based on selected vehicle -->
             <div class="inc-route-stats-grid">
                 <div class="inc-route-stat green">
-                    <div class="inc-route-stat-val green" id="imd-dist">${distKm.toFixed(1)} km</div>
+                    <div class="inc-route-stat-val green" id="imd-dist">${coordsValid ? distKm.toFixed(1)+' km' : '— km'}</div>
                     <div class="inc-route-stat-label">Distance</div>
                 </div>
                 <div class="inc-route-stat yellow">
-                    <div class="inc-route-stat-val yellow" id="imd-eta">~${etaMin} min</div>
+                    <div class="inc-route-stat-val yellow" id="imd-eta">${coordsValid ? '~'+etaMin+' min' : '— min'}</div>
                     <div class="inc-route-stat-label" id="imd-eta-label">ETA</div>
                 </div>
                 <div class="inc-route-stat blue">
@@ -3655,15 +4014,14 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
             </div>
             <div class="inc-traffic-row" style="margin-top:4px;">
                 <span class="inc-traffic-label">Traffic Condition</span>
-                <span class="inc-traffic-badge free" id="imd-traffic-badge">Loading…</span>
+                <span class="inc-traffic-badge free" id="imd-traffic-badge">${coordsValid ? 'Loading…' : 'Waiting for GPS…'}</span>
             </div>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-top:5px;padding:0 10px;">
                 <span style="font-size:9px;letter-spacing:.8px;text-transform:uppercase;color:#5a3a2a;">Updated</span>
                 <span class="traffic-age" id="imd-traffic-age"></span>
             </div>
         </div>
-
-        <!-- Sensor Readings -->
+ 
         ${(inc.temperature!=null||inc.smoke!=null||inc.humidity!=null)?`
         <div class="inc-sidebar-section">
             <div class="inc-sidebar-section-title">Sensor Readings</div>
@@ -3678,8 +4036,7 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
                 <span class="inc-info-val" style="color:${isFire?'#ff4757':'#f1c40f'};">${isFire?'🔥 FIRE':'⚠ POSSIBLE'} · ${inc.confidence_pct??'—'}%</span>
             </div>
         </div>`:''}
-
-        <!-- Rescue Status -->
+ 
         ${rescueInfo?`
         <div class="inc-sidebar-section">
             <div class="inc-sidebar-section-title">Rescue</div>
@@ -3691,28 +4048,28 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
                 <div class="inc-rescue-status-badge ${rescueInfo.status==='rescued'?'rescued':'en-route'}">${rescueInfo.status==='rescued'?'RESOLVED':'🚒 EN ROUTE'}</div>
             </div>
         </div>`:''}
-
-        <!-- Action Buttons -->
+ 
         <div style="display:flex;flex-direction:column;gap:6px;margin-top:auto;padding-top:4px;">
             <button class="inc-map-rescue-btn" onclick="closeIncidentMapModal();openRescueModal(${inc.incident_id},'${inc.node_id}','${(inc.location_name||'Node '+inc.node_id).replace(/'/g,"\\'")}')">🚒 ${rescueInfo ? 'EDIT DISPATCH' : 'DISPATCH RESCUE'}</button>
             <button class="inc-map-resolve-btn" id="inc-map-resolve-${inc.incident_id}" onclick="resolveIncident(${inc.incident_id},'${inc.node_id}')" ${isRescued?'disabled':''}>✓ MARK RESOLVED</button>
         </div>`;
-
+ 
     if (sidebarOnly) return;
+ 
     setTimeout(() => {
         if (_incDetailMap) { _incDetailMap.remove(); _incDetailMap = null; }
         _incDetailMarkers.forEach(m => { try{ m.remove(); } catch{} });
         _incDetailMarkers = [];
         if (_incDetailRouteLayer) { try{ _incDetailRouteLayer.remove(); } catch{} _incDetailRouteLayer = null; }
-        const incLat = parseFloat(inc.latitude), incLng = parseFloat(inc.longitude);
+ 
         _incDetailMap = L.map('incident-detail-map',{zoomControl:false,attributionControl:false}).setView([incLat,incLng],15);
         window._incDetailBaseTile=L.tileLayer(MAP_STYLES[2].url,MAP_STYLES[2].opts).addTo(_incDetailMap);
-        // Wire custom zoom buttons
+ 
         const _incZoomIn=document.getElementById('inc-zoom-in'),_incZoomOut=document.getElementById('inc-zoom-out');
         if(_incZoomIn){_incZoomIn.onclick=()=>_incDetailMap.zoomIn();}
         if(_incZoomOut){_incZoomOut.onclick=()=>_incDetailMap.zoomOut();}
-        // Wire map style cycle button
-        window._incMapStyleIdx = 2; // start on Standard (OSM), same as main map
+ 
+        window._incMapStyleIdx = 2;
         const _incStyleBtn=document.getElementById('inc-map-style-btn');
         if(_incStyleBtn){
             _incStyleBtn.onclick=()=>{
@@ -3722,7 +4079,6 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
                 window._incDetailBaseTile=L.tileLayer(s.url,s.opts).addTo(_incDetailMap);
                 window._incDetailBaseTile.bringToBack();
                 _incStyleBtn.title='Map: '+s.label+' \u2192 click to cycle';
-                // toast
                 let t=document.getElementById('inc-map-style-toast');
                 if(!t){
                     t=document.createElement('div');
@@ -3736,18 +4092,39 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
                 t._to=setTimeout(()=>t.style.opacity='0',1600);
             };
         }
-        // _incDetailBaseTile and _incMapStyleIdx already set above
+ 
         const fireMarker = L.marker([incLat, incLng], { icon: makeFireNodeIcon(false) }).addTo(_incDetailMap);
-        fireMarker.bindPopup(`<div style="font-weight:700;color:#ff9055;">Incident Location</div><div style="font-size:11px;color:#9a6a5a;">${inc.location_name || `Node ${inc.node_id}`}</div>`).openPopup();
+        fireMarker.bindPopup(
+            `<div style="font-weight:700;color:#ff9055;">Incident Location</div>
+             <div style="font-size:11px;color:#9a6a5a;">${inc.location_name || `Node ${inc.node_id}`}</div>
+             ${!coordsValid
+                ? `<div style="margin-top:6px;padding:4px 8px;background:#2a1e0099;border:1px solid #f1c40f66;border-radius:5px;color:#f1c40f;font-size:10px;font-weight:600;">
+                       &#9888; No GPS &mdash; approx. position
+                   </div>`
+                : ''}`
+        ).openPopup();
         _incDetailMarkers.push(fireMarker);
-        const redPinIcon = L.icon({ iconUrl: 'icons/EndPoint.png', iconSize: [60, 60], iconAnchor: [24, 60], popupAnchor: [0, -55], zIndexOffset: 100 });
-        const redPin = L.marker([incLat, incLng], { icon: redPinIcon }).addTo(_incDetailMap);
+ 
+        const redPinIcon = L.icon({iconUrl:'icons/EndPoint.png',iconSize:[60,60],iconAnchor:[24,60],popupAnchor:[0,-55],zIndexOffset:100});
+        const redPin = L.marker([incLat, incLng], {icon:redPinIcon}).addTo(_incDetailMap);
         _incDetailMarkers.push(redPin);
-        const gw = getPrimaryGateway();
-        const gwMarker = L.marker([gw.lat, gw.lng], {icon: greenIcon}).addTo(_incDetailMap);
+ 
+        const gwMarker = L.marker([gw.lat, gw.lng], {icon:greenIcon}).addTo(_incDetailMap);
         gwMarker.bindPopup('<div style="font-weight:700;color:#2ecc71;">🏠 Gateway / Start Point</div>');
         _incDetailMarkers.push(gwMarker);
-        calculateDetailRoute(gw, {lat:incLat, lng:incLng});
+ 
+        // ── Only route when we have real coords; otherwise show dashed placeholder ──
+        if (coordsValid) {
+            calculateDetailRoute(gw, {lat:incLat, lng:incLng});
+        } else {
+            const _fbLine = L.polyline([[gw.lat, gw.lng],[incLat, incLng]], {
+                color:'#f1c40f', weight:2, dashArray:'8,6', opacity:0.6
+            }).addTo(_incDetailMap);
+            _incDetailMarkers.push(_fbLine);
+            _incDetailMap.fitBounds(_fbLine.getBounds(), {padding:[30,30]});
+            // Flag for WS retry when real GPS arrives
+            window._pendingDetailRouteIncId = inc.incident_id;
+        }
     }, 150);
 }
 
@@ -3755,49 +4132,262 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
 // TOMTOM traffic code — incident map modal route uses server-managed per-incident traffic.
 // We do NOT fetch TomTom here — the backend _traffic_background_task handles it per incident_id.
 // This preserves the independent "Updated: just now / X mins ago" per incident.
+function _getLastKnownTraffic() {
+    let best = null;
+    let bestTime = 0;
+    Object.values(_incidentTrafficMap).forEach(entry => {
+        if (entry && entry.traffic && entry.lastSuccessfulFetch > bestTime) {
+            best     = entry.traffic;
+            bestTime = entry.lastSuccessfulFetch;
+        }
+    });
+    // Also check active route state on the main map
+    if (_activeRouteState?.lastTraffic && _globalLsfRoute > bestTime) {
+        best     = _activeRouteState.lastTraffic;
+        bestTime = _globalLsfRoute;
+    }
+    return best ? { traffic: best, fetchedAt: bestTime } : null;
+}
+ 
+function _getLastKnownTraffic() {
+    let best = null;
+    let bestTime = 0;
+    Object.values(_incidentTrafficMap).forEach(entry => {
+        if (entry && entry.traffic && entry.lastSuccessfulFetch > bestTime) {
+            best     = entry.traffic;
+            bestTime = entry.lastSuccessfulFetch;
+        }
+    });
+    // Also check active route state on the main map
+    if (_activeRouteState?.lastTraffic && _globalLsfRoute > bestTime) {
+        best     = _activeRouteState.lastTraffic;
+        bestTime = _globalLsfRoute;
+    }
+    return best ? { traffic: best, fetchedAt: bestTime } : null;
+}
+ 
+function _getLastKnownTraffic() {
+    let best = null;
+    let bestTime = 0;
+    Object.values(_incidentTrafficMap).forEach(entry => {
+        if (entry && entry.traffic && entry.lastSuccessfulFetch > bestTime) {
+            best     = entry.traffic;
+            bestTime = entry.lastSuccessfulFetch;
+        }
+    });
+    // Also check active route state on the main map
+    if (_activeRouteState?.lastTraffic && _globalLsfRoute > bestTime) {
+        best     = _activeRouteState.lastTraffic;
+        bestTime = _globalLsfRoute;
+    }
+    return best ? { traffic: best, fetchedAt: bestTime } : null;
+}
+ 
 async function calculateDetailRoute(start, end) {
     try {
         const rt = await chRoute(start.lat, start.lng, end.lat, end.lng);
         if (_incDetailRouteLayer) _incDetailRouteLayer.remove();
-        // Remove previous gradient segments
         _detailRouteGradientLayers.forEach(l => { try { l.remove(); } catch {} });
         _detailRouteGradientLayers = [];
-
-        // Use server-managed per-incident traffic — do NOT fetch fresh TomTom data here.
-        // Each incident has its own fetch timestamp managed by the backend background task.
-        // Using _incidentTrafficMap[incId] means:
-        //   - Incident A keeps its own age ("3 mins ago") even after Incident B arrives ("just now")
-        //   - Fetching stops only when the incident is resolved (server removes it from state)
-        const incId = String(_currentOpenIncidentData?.incident_id || '');
-        const perIncTrafficEntry = _incidentTrafficMap[incId];
-        const traffic = perIncTrafficEntry?.traffic || null;
-        const lsfForInc = perIncTrafficEntry?.lastSuccessfulFetch || 0;
-
-        // Activate route state with per-incident fetch timestamp (not Date.now())
+ 
+        const incId       = String(_currentOpenIncidentData?.incident_id || '');
+        const perIncEntry = _incidentTrafficMap[incId];
+ 
+        // ── Detect true gateway fallback (node has never had GPS at all) ─────
+        // coordSource is stored on _currentOpenIncidentData by _resolveIncidentCoords.
+        // 'lastknown' means we have real saved coords → fetch TomTom normally.
+        // 'gateway'   means the node has truly never sent GPS → use proxy data.
+        const _resolvedSource = (() => {
+            const resolved = _resolveIncidentCoords(_currentOpenIncidentData || {});
+            return resolved.source;
+        })();
+        const isGatewayFallback = _resolvedSource === 'gateway';
+ 
+        // Only skip fresh fetch if we have data for THIS specific incident < 5 min
+        const lsfForThisInc = perIncEntry?.incidentId == _currentOpenIncidentData?.incident_id
+            ? (perIncEntry?.lastSuccessfulFetch || 0)
+            : 0;
+        const msSinceFetch = lsfForThisInc ? (Date.now() - lsfForThisInc) : Infinity;
+ 
+        // lastknown = real saved coords but current reading has no GPS.
+        // We still attempt a TomTom fetch on the real coords, but if it returns
+        // null (short route near gateway = useless samples) we show "No live data"
+        // cleanly instead of leaving the badge stuck on "Fetching traffic…"
+        const isLastKnown      = _resolvedSource === 'lastknown';
+        const shouldFetch      = !isGatewayFallback && msSinceFetch >= TRAFFIC_LIVE_INTERVAL;
+ 
+        // Activate route state
         _activateDetailRoute(rt.coords, rt);
-        _activeDetailRouteState.lastTraffic = traffic;
-        if (lsfForInc) {
-            _activeDetailRouteState.lastFetch = lsfForInc;
-            _activeDetailRouteState.lastSuccessfulFetch = lsfForInc;
-            _globalLsfDetail = lsfForInc;
+        if (lsfForThisInc) {
+            _activeDetailRouteState.lastFetch            = lsfForThisInc;
+            _activeDetailRouteState.lastSuccessfulFetch  = lsfForThisInc;
+            _globalLsfDetail = lsfForThisInc;
         }
-
+ 
         // Invisible bounds helper
-        _incDetailRouteLayer = L.polyline(rt.coords, { opacity: 0, weight: 0,
-            dashArray: rt.isFallback ? '10,8' : 'none' }).addTo(_incDetailMap);
-
+        _incDetailRouteLayer = L.polyline(rt.coords, {
+            opacity: 0, weight: 0,
+            dashArray: rt.isFallback ? '10,8' : 'none'
+        }).addTo(_incDetailMap);
         _incDetailMap.fitBounds(L.polyline(rt.coords).getBounds(), {padding:[20,20]});
-
-        // Save OSRM result to persistent cache so details modal can use it
-        if (incId) _incidentOsrmCache[incId] = { coords: rt.coords, distKm: rt.distKm, timeMins: rt.timeMins };
-
-        // Update distance (not handled by _applyDetailRouteTraffic)
+ 
+        // Save to persistent OSRM cache
+        if (incId) _incidentOsrmCache[incId] = {
+            coords: rt.coords, distKm: rt.distKm, timeMins: rt.timeMins
+        };
+ 
+        // Update distance display
         const elDist = document.getElementById('imd-dist');
         if (elDist) elDist.textContent = rt.distKm + ' km';
-
-        // _applyDetailRouteTraffic handles: gradient, ETA, speed, badge, peak label — all vehicle-adjusted
-        _applyDetailRouteTraffic(traffic, rt);
-
+ 
+        // ── Always set Peak Period immediately regardless of traffic state ────
+        // This was blank because _applyDetailRouteTraffic only sets imd-algo
+        // after traffic resolves. Set it upfront so it's never empty.
+        const { label: _peakLabelNow } = getFiretruckSpeed();
+        const elAlgoNow = document.getElementById('imd-algo');
+        if (elAlgoNow) elAlgoNow.textContent = rt.isFallback ? 'Straight-line' : _peakLabelNow;
+ 
+        // ── Grab last known traffic to use as fallback display ────────────────
+        // When GPS is missing (lastknown), the fresh TomTom fetch may return null
+        // (route too short). Instead of showing "No live data", we display the
+        // most recent real traffic reading we have from any source.
+        const _lastKnownTrafficFallback = (() => {
+            // Check this incident's own last fetch first
+            if (perIncEntry?.traffic && perIncEntry.traffic.incidentId == incId) {
+                return { traffic: perIncEntry.traffic, fetchedAt: perIncEntry.lastSuccessfulFetch };
+            }
+            // Then check any other incident or main map route
+            return _getLastKnownTraffic();
+        })();
+ 
+        if (isGatewayFallback) {
+            // ── No GPS: reuse last known traffic from any incident/route ─────
+            const badge = document.getElementById('imd-traffic-badge');
+            const lastKnown = _getLastKnownTraffic();
+ 
+            if (lastKnown) {
+                // We have data from another incident — display it with a notice
+                const { traffic, fetchedAt } = lastKnown;
+                _activeDetailRouteState.lastTraffic            = traffic;
+                _activeDetailRouteState.lastFetch              = fetchedAt;
+                _activeDetailRouteState.lastSuccessfulFetch    = fetchedAt;
+                // Store under this incident's key so age badge shows correctly
+                _incidentTrafficMap[incId] = {
+                    traffic: {...traffic, incidentId: incId, isProxied: true},
+                    lastFetch: fetchedAt,
+                    lastSuccessfulFetch: fetchedAt
+                };
+                _globalLsfDetail = fetchedAt;
+                _applyDetailRouteTraffic(traffic, rt);
+                // Re-stamp peak period after _applyDetailRouteTraffic
+                const elAlgoGw = document.getElementById('imd-algo');
+                if (elAlgoGw) elAlgoGw.textContent = _peakLabelNow;
+                if (badge) {
+                    const existingText = badge.textContent;
+                    badge.title = 'No GPS — traffic data is from nearby road network';
+                }
+                // Show a subtle note under the traffic row
+                const trafficRow = document.querySelector('#inc-map-sidebar .inc-traffic-row');
+                if (trafficRow && !document.getElementById('imd-proxy-note')) {
+                    const note = document.createElement('div');
+                    note.id = 'imd-proxy-note';
+                    note.style.cssText = 'font-size:9px;color:#9a6a5a;text-align:center;padding:3px 0 0;letter-spacing:.3px;';
+                    note.textContent = '* Last known area traffic (no GPS)';
+                    trafficRow.after(note);
+                }
+            } else {
+                // No traffic data anywhere yet — nothing to show
+                _activeDetailRouteState.lastTraffic = null;
+                _applyDetailRouteTraffic(null, rt);
+                const elAlgoGwNull = document.getElementById('imd-algo');
+                const badgeGwNull  = document.getElementById('imd-traffic-badge');
+                if (elAlgoGwNull) elAlgoGwNull.textContent = _peakLabelNow;
+                if (badgeGwNull) { badgeGwNull.textContent = 'No live data'; badgeGwNull.className = 'inc-traffic-badge free'; }
+            }
+ 
+        } else if (shouldFetch) {
+            // ── Real coords (incident / node / lastknown): fresh TomTom fetch ─
+            const badge = document.getElementById('imd-traffic-badge');
+            if (badge) { badge.textContent = 'Fetching traffic…'; badge.className = 'inc-traffic-badge free'; }
+ 
+            const traffic   = await fetchTrafficOnRoute(rt.coords);
+            const fetchedAt = Date.now();
+ 
+            if (traffic) {
+                traffic.fetchedAt  = fetchedAt;
+                traffic.incidentId = incId;
+                _incidentTrafficMap[incId] = {
+                    traffic, lastFetch: fetchedAt, lastSuccessfulFetch: fetchedAt
+                };
+                _globalLsfDetail                             = fetchedAt;
+                _activeDetailRouteState.lastTraffic          = traffic;
+                _activeDetailRouteState.lastFetch            = fetchedAt;
+                _activeDetailRouteState.lastSuccessfulFetch  = fetchedAt;
+ 
+                // Broadcast so all devices see fresh data
+                fetch(`${API_BASE()}/traffic-state`, {
+                    method: 'POST',
+                    headers: {...authHeader(), 'Content-Type': 'application/json'},
+                    body: JSON.stringify({ [`incident_${incId}`]: traffic })
+                }).catch(() => {});
+ 
+                _applyDetailRouteTraffic(traffic, rt);
+                // Re-stamp peak period — _applyDetailRouteTraffic may overwrite imd-algo
+                const elAlgoPost = document.getElementById('imd-algo');
+                if (elAlgoPost && !rt.isFallback) elAlgoPost.textContent = _peakLabelNow;
+ 
+            } else {
+                // TomTom returned null — route too short or API unavailable.
+                // For lastknown coords this is expected (node near gateway).
+                // Reuse the last captured traffic reading instead of "No live data".
+                if (_lastKnownTrafficFallback && isLastKnown) {
+                    const { traffic: fallbackTraffic, fetchedAt: fallbackTime } = _lastKnownTrafficFallback;
+                    _activeDetailRouteState.lastTraffic         = fallbackTraffic;
+                    _activeDetailRouteState.lastFetch           = fallbackTime;
+                    _activeDetailRouteState.lastSuccessfulFetch = fallbackTime;
+                    _incidentTrafficMap[incId] = {
+                        traffic: {...fallbackTraffic, incidentId: incId, isProxied: true},
+                        lastFetch: fallbackTime,
+                        lastSuccessfulFetch: fallbackTime
+                    };
+                    _globalLsfDetail = fallbackTime;
+                    _applyDetailRouteTraffic(fallbackTraffic, rt);
+                    // Re-stamp peak period after _applyDetailRouteTraffic (it may overwrite)
+                    const elAlgo2 = document.getElementById('imd-algo');
+                    if (elAlgo2) elAlgo2.textContent = rt.isFallback ? 'Straight-line' : _peakLabelNow;
+                    // Add note that traffic is from last known reading
+                    const trafficRow2 = document.querySelector('#inc-map-sidebar .inc-traffic-row');
+                    if (trafficRow2 && !document.getElementById('imd-nogps-note')) {
+                        const note = document.createElement('div');
+                        note.id = 'imd-nogps-note';
+                        note.style.cssText = 'font-size:9px;color:#9a6a5a;text-align:center;padding:3px 0 0;letter-spacing:.3px;';
+                        note.textContent = '* Last captured traffic data (GPS disconnected)';
+                        trafficRow2.after(note);
+                    }
+                } else {
+                    // No traffic data anywhere at all — genuinely no data
+                    _activeDetailRouteState.lastTraffic = null;
+                    _applyDetailRouteTraffic(null, rt);
+                    // Force these after _applyDetailRouteTraffic since it may clear them
+                    const elAlgo2  = document.getElementById('imd-algo');
+                    const elSpeed2 = document.getElementById('imd-speed');
+                    const badge2   = document.getElementById('imd-traffic-badge');
+                    if (elAlgo2)  elAlgo2.textContent  = rt.isFallback ? 'Straight-line' : _peakLabelNow;
+                    if (elSpeed2) elSpeed2.textContent = '— km/h';
+                    if (badge2)   { badge2.textContent = 'No live data'; badge2.className = 'inc-traffic-badge free'; }
+                }
+            }
+ 
+        } else {
+            // ── Real coords, recently fetched: use cache ──────────────────────
+            const cachedTraffic = perIncEntry?.traffic || null;
+            _activeDetailRouteState.lastTraffic = cachedTraffic;
+            _applyDetailRouteTraffic(cachedTraffic, rt);
+            // Re-stamp peak period after _applyDetailRouteTraffic
+            const elAlgoCached = document.getElementById('imd-algo');
+            if (elAlgoCached) elAlgoCached.textContent = rt.isFallback ? 'Straight-line' : _peakLabelNow;
+        }
+ 
     } catch(e) { console.warn('CH detail route failed:', e.message); }
 }
 
