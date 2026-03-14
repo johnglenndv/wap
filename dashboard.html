@@ -311,15 +311,23 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 .gw-nodes-list{display:none;border-top:1px solid #3a1a0a33;background:#12050333;}
 [data-theme="light"] .gw-nodes-list{background:#f0ddd844;border-top-color:#c0907833;}
 .gw-nodes-list.visible{display:block;}
-.gw-node-row{display:flex;align-items:center;gap:7px;padding:6px 10px 6px 14px;cursor:pointer;border-bottom:1px solid #2a1a0a22;transition:background .15s;position:relative;}
+.gw-node-row{display:flex;align-items:center;gap:7px;padding:6px 10px 6px 14px;cursor:pointer;border-bottom:1px solid #2a1a0a22;transition:background .15s, opacity .3s;position:relative;}
 .gw-node-row:last-child{border-bottom:none;}
 .gw-node-row:hover{background:#2a0a0444;}
 [data-theme="light"] .gw-node-row:hover{background:#f0d8d044;}
 .gw-node-row:hover .gw-node-flyto{opacity:1;}
+/* ── Offline node row — visually dimmed ── */
+.gw-node-row.offline{opacity:0.42;filter:grayscale(0.6);}
+.gw-node-row.offline .gw-node-id{color:#6a6a6a;}
+.gw-node-row.offline .gw-node-loc,.gw-node-row.offline .gw-node-coords{color:#3a3a3a;}
+.gw-node-row.offline:hover{opacity:0.65;background:#1a1a1a22;}
+[data-theme="light"] .gw-node-row.offline{opacity:0.45;filter:grayscale(0.5);}
+[data-theme="light"] .gw-node-row.offline .gw-node-id{color:#9a9a9a;}
+[data-theme="light"] .gw-node-row.offline:hover{opacity:0.7;background:#e8e8e855;}
 .node-status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
 .node-status-dot.active{background:var(--green);box-shadow:0 0 5px var(--green);animation:pulse-dot 2s ease infinite;}
-.node-status-dot.offline{background:#4a4a4a;animation:none;box-shadow:none;}
-[data-theme="light"] .node-status-dot.offline{background:#9a9a9a;}
+.node-status-dot.offline{background:#888888;border:1.5px solid #5a5a5a;animation:none;box-shadow:none;}
+[data-theme="light"] .node-status-dot.offline{background:#aaaaaa;border-color:#888888;}
 .node-status-dot.fire{background:var(--red);box-shadow:0 0 7px var(--red);animation:fire-pulse-dot 1s ease infinite;}
 .node-status-dot.possible{background:#f1c40f;box-shadow:0 0 7px #f1c40f;animation:possible-pulse-dot 1.2s ease infinite;}
 .gw-node-info{flex:1;min-width:0;}
@@ -2845,7 +2853,7 @@ function renderGatewayStatusPanel() {
                 const flyBtn = hasCoords
                     ? `<div class="gw-node-flyto"><button class="gw-node-flyto-btn" onclick="flyToNode('${node.node_id}',${lat},${lng})" title="Go to node on map">Go</button></div>`
                     : '';
-                return `<div class="gw-node-row" onclick="flyToNode('${node.node_id}',${hasCoords?lat:'null'},${hasCoords?lng:'null'})">
+                return `<div class="gw-node-row${nStatus === 'offline' ? ' offline' : ''}" onclick="flyToNode('${node.node_id}',${hasCoords?lat:'null'},${hasCoords?lng:'null'})">
                     <div class="node-status-dot ${nStatus}"></div>
                     <div class="gw-node-info">
                         <div class="gw-node-id">${node.node_id} ${fireLabel}${offlineLabel}</div>
