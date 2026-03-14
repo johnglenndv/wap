@@ -385,6 +385,8 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 .incident-list{overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:0;}
 .incident-card{border-bottom:1px solid #3a1a0a44;padding:7px 0;flex-shrink:0;transition:opacity .4s,transform .4s;}
 [data-theme="light"] .incident-card{border-bottom-color:#c0907855;}
+.incident-card.manual-fire-card{border-left:3px solid #ff6b6b99;padding-left:8px;background:linear-gradient(to right,#3a000022,transparent);}
+[data-theme="light"] .incident-card.manual-fire-card{border-left-color:#d04040;background:linear-gradient(to right,#ffe8e822,transparent);}
 .incident-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px;}
 .incident-meta{font-size:11px;color:var(--text-dim);margin-bottom:2px;}
 .txt-active{color:var(--red);font-weight:700;}
@@ -2254,18 +2256,22 @@ const nodeIcon     = L.icon({iconUrl:'icons/Node.png',iconSize:[50,50],iconAncho
 
 const gwIcon       = L.icon({iconUrl:'icons/Gateway.png',iconSize:[55,55],iconAnchor:[20,20]});
 
-function makeFireNodeIcon(isPossible) {
+function makeFireNodeIcon(isPossible, isManual) {
     const cls = isPossible ? 'possible' : '';
+    const emergencyBadge = isManual
+        ? `<div style="position:absolute;top:-8px;right:-8px;z-index:10;background:#cc0000;border:1.5px solid #ff6b6b;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;box-shadow:0 0 6px #ff000099;animation:fire-ring-pulse 1.6s ease-out infinite;">🚨</div>`
+        : '';
     return L.divIcon({
         className: '',
         iconSize:  [70, 70],
         iconAnchor:[35, 60],
         popupAnchor:[0, -62],
-        html: `<div class="fire-node-wrap ${cls}">
+        html: `<div class="fire-node-wrap ${cls}" style="position:relative;">
                  <div class="fire-pulse-ring ${cls}"></div>
                  <div class="fire-pulse-ring ${cls}"></div>
                  <div class="fire-pulse-ring ${cls}"></div>
                  <img src="icons/FireNode.png" alt="fire node">
+                 ${emergencyBadge}
                </div>`
     });
 }
@@ -2360,7 +2366,9 @@ function applyFireAnimationForNode(nodeId, sensorData) {
     if (nodeMarkers[nodeId]) {
         const pred = (sensorData?.ai_prediction || nodeData[nodeId]?.ai_prediction || '').toLowerCase();
         const isPossible = pred === 'false';
-        nodeMarkers[nodeId].setIcon(makeFireNodeIcon(isPossible));
+        const isManualNode = sensorData?.trigger_source === 'manual' || nodeData[nodeId]?.trigger_source === 'manual'
+            || (_liveIncidentsCache.find(i => i.node_id === nodeId && !(i.resolved_at || i.resolved) && i.trigger_source === 'manual'));
+        nodeMarkers[nodeId].setIcon(makeFireNodeIcon(isPossible, !!isManualNode));
         nodeMarkers[nodeId].setOpacity(1);
         const el = nodeMarkers[nodeId].getElement();
         if (el) { el.classList.add('fire-node-active'); }
@@ -2449,11 +2457,13 @@ async function loadAndPlaceNodes(silent=false){
             const isFireActive     = isFire  && !resolvedNodeIds.has(nid);
             const isPossibleActive = isFalse && !resolvedNodeIds.has(nid);
             const hasAnyAlert      = isFireActive || isPossibleActive;
+            const isManualNode = n.trigger_source === 'manual'
+                || !!(_liveIncidentsCache.find(i => i.node_id === nid && !(i.resolved_at || i.resolved) && i.trigger_source === 'manual'));
 
             const activeIcon = isFireActive
-                ? makeFireNodeIcon(false)
+                ? makeFireNodeIcon(false, isManualNode)
                 : isPossibleActive
-                    ? makeFireNodeIcon(true)
+                    ? makeFireNodeIcon(true, false)
                     : offline
                         ? makeOfflineNodeIcon()
                         : nodeIcon;
@@ -2793,6 +2803,9 @@ function renderGatewayStatusPanel() {
             const t = parseUtc(gwLastSeen);
             if (t) gwOffline = (Date.now() - t.getTime()) / 60000 > OFFLINE_MIN;
         }
+        // If any child node is active or on fire, the gateway is NOT offline
+        // (node data arriving via MQTT means the gateway is forwarding packets)
+        if (hasFire || hasPossible || hasActive) gwOffline = false;
         if (!gwLastSeen) gwOffline = !hasActive && !hasFire && !hasPossible && nodes.length === 0;
         const status = hasFire ? 'fire' : hasPossible ? 'possible' : (gwOffline && !hasActive) ? 'offline' : 'online';
         return { gw, nodes, nodeStatuses, status };
@@ -2813,8 +2826,11 @@ function renderGatewayStatusPanel() {
                 const hasCoords = !isNaN(lat) && lat !== 0 && !isNaN(lng) && lng !== 0;
                 const locName = node.location_name || node.name || '';
                 const coordStr = hasCoords ? `${lat.toFixed(5)}, ${lng.toFixed(5)}` : 'No coordinates';
+                // Check if this node's fire was triggered by the emergency button
+                const _nodeManualFire = node.trigger_source === 'manual' || 
+                    (_liveIncidentsCache.find(i => i.node_id === node.node_id && !(i.resolved_at || i.resolved) && i.trigger_source === 'manual'));
                 const fireLabel = nStatus === 'fire'
-                    ? '<span class="fire-label">🔥 FIRE</span>'
+                    ? `<span class="fire-label">🔥 FIRE${_nodeManualFire ? ' <span style="font-size:7px;color:#ffaa88;background:#5a100088;border:1px solid #ff6b6b55;border-radius:3px;padding:1px 3px;vertical-align:middle;letter-spacing:.2px;">(Emergency Button)</span>' : ''}</span>`
                     : nStatus === 'possible'
                         ? '<span class="possible-label">⚠ POSSIBLE</span>'
                         : '';
@@ -3099,7 +3115,13 @@ async function loadLiveIncidents(silent=false){
                 const confColor = inc.confidence_pct>=70?'var(--green)':inc.confidence_pct>=40?'var(--yellow)':'var(--orange)';
                 const metaEls = card.querySelectorAll('.incident-meta');
                 if (metaEls[0]) metaEls[0].innerHTML = `Status: <span class="${inc.status_class}">${inc.status}</span>${isEnRoute&&!isRescued?` · <span style="color:#f1c40f;font-weight:600;">🚒 En Route</span>`:isRescued?` · <span style="color:#2ecc71;font-weight:600;">✓ Rescued</span>`:''}`;
-                if (metaEls[1]) metaEls[1].innerHTML = `AI: <strong>${isFire?'🔥 FIRE':'⚠ POSSIBLE'}</strong> <span style="color:${confColor};font-weight:600;">(${inc.confidence_pct}%)</span>`;
+                if (metaEls[1]) {
+                    const isManualPatch = inc.trigger_source === 'manual';
+                    const patchLabel = isFire
+                        ? `🔥 ACTIVE FIRE${isManualPatch ? ' <span style="font-size:9px;font-weight:700;color:#ffaa88;background:#5a100088;border:1px solid #ff6b6b55;border-radius:4px;padding:1px 5px;margin-left:3px;letter-spacing:.2px;vertical-align:middle;">(Emergency Button)</span>' : ''}`
+                        : '⚠ POSSIBLE';
+                    metaEls[1].innerHTML = `AI: <strong>${patchLabel}</strong> <span style="color:${confColor};font-weight:600;">(${inc.confidence_pct}%)</span>`;
+                }
                 const rescueRow = card.querySelector('.rescue-info-row');
                 if (dispatch.hasDispatch && !rescueRow) {
                     // Dispatch appeared — need full re-render so row is added
@@ -3160,12 +3182,15 @@ async function loadLiveIncidents(silent=false){
                 const vt0 = VEHICLE_TYPES[dispatchedVehicle];
                 const cardEta = getVehicleETA(baseTime0, traffic0, dispatchedVehicle);
                 const cardSpeed = traffic0 ? Math.round(traffic0.avgSpeed * vt0.speedMult) : Math.round(spd0 * vt0.speedMult);
+                const isManualFire = inc.trigger_source === 'manual';
+                const activePredLabel = isFire
+                    ? `🔥 ACTIVE FIRE${isManualFire ? ' <span style="font-size:9px;font-weight:700;color:#ffaa88;background:#5a100088;border:1px solid #ff6b6b55;border-radius:4px;padding:1px 5px;margin-left:3px;letter-spacing:.2px;vertical-align:middle;">(Emergency Button)</span>' : ''}`
+                    : '⚠ POSSIBLE';
                 listEl.innerHTML+=`
-                <div class="incident-card" id="incident-card-${inc.incident_id}" data-lat="${inc.latitude||0}" data-lng="${inc.longitude||0}" data-timemins="${baseTime0}">
+                <div class="incident-card${isManualFire ? ' manual-fire-card' : ''}" id="incident-card-${inc.incident_id}" data-lat="${inc.latitude||0}" data-lng="${inc.longitude||0}" data-timemins="${baseTime0}">
                     <div class="incident-title">${inc.location_name||`Node ${inc.node_id}`}</div>
-                    ${inc.trigger_source === 'manual' ? `<div style="display:inline-flex;align-items:center;gap:5px;margin-bottom:5px;padding:2px 9px;background:#3a000088;border:1px solid #ff475566;border-radius:5px;color:#ff6b6b;font-size:10px;font-weight:700;letter-spacing:.3px;">🚨 Emergency Button Alert!</div>` : ''}
                     <div class="incident-meta">Status: <span class="${inc.status_class}">${inc.status}</span>${isEnRoute?` · <span style="color:#f1c40f;font-weight:600;">🚒 En Route</span>`:isRescued?` · <span style="color:#2ecc71;font-weight:600;">✓ Rescued</span>`:''}</div>
-                    <div class="incident-meta">AI: <strong>${predLabel}</strong> <span style="color:${confColor};font-weight:600;">(${inc.confidence_pct}%)</span></div>
+                    <div class="incident-meta">AI: <strong>${activePredLabel}</strong> <span style="color:${confColor};font-weight:600;">(${inc.confidence_pct}%)</span></div>
                     <div class="incident-meta">Started: <span style="color:var(--text);">${formatTimestamp(inc.started_at)}</span></div>
                     <div class="incident-meta">Elapsed: <span id="card-elapsed-${inc.incident_id}" style="color:#ff904f;font-weight:600;">—</span></div>
                     ${dispatch.hasDispatch?`<div class="incident-meta rescue-info-row" style="color:#6db8ff;font-size:10px;">🏢 ${dispatch.orgName}${dispatch.vehicleLabel?' · '+dispatch.vehicleLabel:''}${dispatch.dispatchTime?' · Dispatched: '+toAmPm(dispatch.dispatchTime):''}</div>`:''}
@@ -3570,7 +3595,7 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
             <div class="inc-status-icon">${isRescued?'✅':'⚠️'}</div>
             <div class="inc-status-text">
                 <div class="inc-status-label">Incident Status</div>
-                <div class="inc-status-val ${isRescued?'resolved':'fire'}">${isRescued?'RESOLVED':isFire?'ACTIVE FIRE':'POSSIBLE FIRE'}</div>
+                <div class="inc-status-val ${isRescued?'resolved':'fire'}">${isRescued?'RESOLVED':isFire?`ACTIVE FIRE${inc.trigger_source==='manual'?' <small style="font-size:9px;font-weight:700;color:#ffaa88;background:#5a100088;border:1px solid #ff6b6b55;border-radius:3px;padding:1px 4px;margin-left:4px;letter-spacing:.2px;">(Emergency Button)</small>':''}` :'POSSIBLE FIRE'}</div>
             </div>
         </div>
         ${inc.trigger_source === 'manual' ? `
@@ -3796,7 +3821,12 @@ function _patchIncidentMapSidebarSensors(inc) {
     if (statusVal) {
         const pred = (inc.ai_prediction || '').toLowerCase();
         const isRescued = _incidentRescueMap[inc.incident_id]?.status === 'rescued';
-        statusVal.textContent = isRescued ? 'RESOLVED' : pred === 'fire' ? 'ACTIVE FIRE' : 'POSSIBLE FIRE';
+        const isManualPatch2 = inc.trigger_source === 'manual';
+        const statusText = isRescued ? 'RESOLVED'
+            : pred === 'fire'
+                ? `ACTIVE FIRE${isManualPatch2 ? ' <small style="font-size:9px;font-weight:700;color:#ffaa88;background:#5a100088;border:1px solid #ff6b6b55;border-radius:3px;padding:1px 4px;margin-left:4px;letter-spacing:.2px;">(Emergency Button)</small>' : ''}`
+                : 'POSSIBLE FIRE';
+        statusVal.innerHTML = statusText;
         statusVal.className = 'inc-status-val ' + (isRescued ? 'resolved' : 'fire');
     }
 }
