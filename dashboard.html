@@ -2390,12 +2390,11 @@ function buildNodePopupContent(n, nid, lat, lng, offline) {
         })();
 
     const posNote = n.isUsingFallbackPosition ? `<div style="color:#ff9f1c;font-size:10px;margin-top:5px;">(Approx. position near gateway)</div>` : '';
-    let aiStatusHtml = '';
-    if (isResolved && (isFire || isFalse)) {
-        aiStatusHtml = `<br><div style="display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:3px 8px;background:#0a1a0a88;border:1px solid #2ecc7166;border-radius:5px;color:#2ecc71;font-size:11px;font-weight:700;">✓ INCIDENT RESOLVED</div>`;
-    } else {
-        aiStatusHtml = `<b style="color:${stColor}">${stLabel}</b>`;
-    }
+    let aiStatusHtml = `<b style="color:${stColor}">${stLabel}</b>`;
+    const isManual = n.trigger_source === 'manual';
+    const manualBadgeHtml = isManual
+        ? `<br><div style="display:inline-flex;align-items:center;gap:5px;margin-top:6px;padding:3px 9px;background:#3a000088;border:1px solid #ff475577;border-radius:5px;color:#ff6b6b;font-size:11px;font-weight:700;letter-spacing:.3px;">🚨 Emergency Button Alert!</div>`
+        : '';
     return `
         <div class="popup-title">📡 ${nid}</div>
         ${offline && !isFire && !isFalse ? `<div style="color:#ff9f1c;font-weight:600;margin:6px 0;font-size:12px;">⚠ OFFLINE · Last: ${lastStr}</div>` : ''}
@@ -2407,6 +2406,7 @@ function buildNodePopupContent(n, nid, lat, lng, offline) {
             Smoke: <b style="color:#ff904f">${n.smoke??'—'} ppm</b><br>
             AI: <strong>${pred.toUpperCase()}</strong> (${(conf*100).toFixed(1)}%)
             ${aiStatusHtml}
+            ${manualBadgeHtml}
             <br><small style="color:${(offline && !isFire && !isFalse) ? '#ff9f1c' : '#7a5a4a'};">Updated: ${lastStr}</small>
         </div>
         <button class="popup-history-btn" onclick="(function(){window._flames_map && window._flames_map.closePopup(); openHistoryPanel('${nid}');})()">View History</button>`;
@@ -2550,6 +2550,7 @@ function connectWebSocket(){
                     if(msg.flame       != null) _currentOpenIncidentData.flame       = msg.flame;
                     if(msg.ai_prediction)       _currentOpenIncidentData.ai_prediction = msg.ai_prediction;
                     if(msg.confidence  != null) _currentOpenIncidentData.confidence_pct = Math.round(msg.confidence * 100);
+                    if(msg.trigger_source)      _currentOpenIncidentData.trigger_source = msg.trigger_source;
                     _patchIncidentMapSidebarSensors(_currentOpenIncidentData);
                 }
             }
@@ -2629,6 +2630,7 @@ function connectWebSocket(){
                             timestamp:     msg.timestamp,
                             latitude:      msg.latitude,
                             longitude:     msg.longitude,
+                            trigger_source: msg.trigger_source || 'ai',
                         });
                     }
                     loadAndPlaceNodes(true);
@@ -3147,6 +3149,7 @@ async function loadLiveIncidents(silent=false){
                 listEl.innerHTML+=`
                 <div class="incident-card" id="incident-card-${inc.incident_id}" data-lat="${inc.latitude||0}" data-lng="${inc.longitude||0}" data-timemins="${baseTime0}">
                     <div class="incident-title">${inc.location_name||`Node ${inc.node_id}`}</div>
+                    ${inc.trigger_source === 'manual' ? `<div style="display:inline-flex;align-items:center;gap:5px;margin-bottom:5px;padding:2px 9px;background:#3a000088;border:1px solid #ff475566;border-radius:5px;color:#ff6b6b;font-size:10px;font-weight:700;letter-spacing:.3px;">🚨 Emergency Button Alert!</div>` : ''}
                     <div class="incident-meta">Status: <span class="${inc.status_class}">${inc.status}</span>${isEnRoute?` · <span style="color:#f1c40f;font-weight:600;">🚒 En Route</span>`:isRescued?` · <span style="color:#2ecc71;font-weight:600;">✓ Rescued</span>`:''}</div>
                     <div class="incident-meta">AI: <strong>${predLabel}</strong> <span style="color:${confColor};font-weight:600;">(${inc.confidence_pct}%)</span></div>
                     <div class="incident-meta">Started: <span style="color:var(--text);">${formatTimestamp(inc.started_at)}</span></div>
@@ -3326,6 +3329,7 @@ async function loadResolvedIncidents() {
                     </div>
                     <button class="resolved-info-btn" title="View Details" onclick="openIncidentDetailsModal(${inc.incident_id})">i</button>
                 </div>
+                ${inc.trigger_source === 'manual' ? `<div style="display:inline-flex;align-items:center;gap:4px;margin-bottom:4px;padding:1px 7px;background:#3a000066;border:1px solid #ff475544;border-radius:4px;color:#ff8080;font-size:9px;font-weight:700;letter-spacing:.3px;">🚨 Emergency Button Alert!</div>` : ''}
                 <div class="resolved-card-meta">
                     📅 ${formatTimestamp(inc.started_at)||'—'} → ✓ ${formatTimestamp(inc.resolved_at)||inc.timestamp||'—'}<br>
                     📡 ${inc.node_id||'—'}${rescueInfo?` · <span style="color:#6db8ff;">🏢 ${rescueInfo.orgName}</span>`:''}
@@ -3555,6 +3559,11 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
                 <div class="inc-status-val ${isRescued?'resolved':'fire'}">${isRescued?'RESOLVED':isFire?'ACTIVE FIRE':'POSSIBLE FIRE'}</div>
             </div>
         </div>
+        ${inc.trigger_source === 'manual' ? `
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;padding:6px 10px;background:#3a000088;border:1px solid #ff475566;border-radius:7px;color:#ff7070;font-size:11px;font-weight:700;letter-spacing:.3px;">
+            🚨 Emergency Button Alert!
+            <span style="font-size:9px;font-weight:400;color:#c05050;margin-left:auto;">Triggered by physical button</span>
+        </div>` : ''}
 
         <!-- Location Info -->
         <div class="inc-sidebar-section">
