@@ -2813,6 +2813,11 @@ function renderGatewayStatusPanel() {
                 const offlineLabel = nStatus === 'offline'
                     ? '<span style="font-size:8px;color:#5a5a5a;background:#2a2a2a;border:1px solid #3a3a3a;border-radius:3px;padding:1px 4px;margin-left:3px;">⚫ OFFLINE</span>'
                     : '';
+                // Check if this node has an active manual-triggered incident
+                const _nodeActiveInc = _liveIncidentsCache.find(i => i.node_id === node.node_id && i.trigger_source === 'manual');
+                const emergencyLabel = _nodeActiveInc
+                    ? '<span style="font-size:8px;font-weight:700;color:#ff6b6b;background:#3a000088;border:1px solid #ff475566;border-radius:4px;padding:1px 5px;letter-spacing:.3px;flex-shrink:0;">🚨 EMERGENCY</span>'
+                    : '';
                 const flyBtn = hasCoords
                     ? `<div class="gw-node-flyto"><button class="gw-node-flyto-btn" onclick="flyToNode('${node.node_id}',${lat},${lng})" title="Go to node on map">Go</button></div>`
                     : '';
@@ -2820,6 +2825,7 @@ function renderGatewayStatusPanel() {
                     <div class="node-status-dot ${nStatus}"></div>
                     <div class="gw-node-info">
                         <div class="gw-node-id">${node.node_id} ${fireLabel}${offlineLabel}</div>
+                        ${emergencyLabel ? `<div style="margin-top:2px;">${emergencyLabel}</div>` : ''}
                         ${locName ? `<div class="gw-node-loc">📍 ${locName}</div>` : ''}
                         <div class="gw-node-coords">${coordStr}</div>
                     </div>
