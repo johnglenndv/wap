@@ -1483,7 +1483,10 @@ function parseUtc(ts) {
     if (!ts) return null;
     if (typeof ts !== 'string') return new Date(ts);
     const s = ts.replace(' ', 'T');
-    return new Date(s.includes('Z') || s.includes('+') ? s : s + 'Z');
+    // If already has timezone info, parse as-is
+    if (s.includes('Z') || s.includes('+') || s.includes('-', 10)) return new Date(s);
+    // No timezone suffix — treat as PH local time (UTC+8), not UTC
+    return new Date(s + '+08:00');
 }
 
 // ── AM/PM timestamp formatter ──────────────────────────────────────────────
@@ -2429,7 +2432,8 @@ async function loadAndPlaceNodes(silent=false){
             let fallback=false;
             if(lat==null||isNaN(lat)){const off=10+Math.random()*90,ang=Math.random()*2*Math.PI;lat=gw.lat+(off/111000)*Math.cos(ang);lng=gw.lng+(off/(111000*Math.cos(gw.lat*Math.PI/180)))*Math.sin(ang);fallback=true;}
 
-            const utcTimestamp = n.timestamp || n.updated_at || n.last_seen || new Date().toISOString();
+            // Prefer local_timestamp (PH time) for offline detection — avoids UTC vs local confusion
+            const utcTimestamp = n.local_timestamp || n.timestamp || n.updated_at || n.last_seen || new Date().toISOString();
             nodeData[nid]={...nodeData[nid]||{},...n,latitude:lat,longitude:lng,last_updated:utcTimestamp,isUsingFallbackPosition:fallback};
 
             const pred=(n.ai_prediction||'normal').toLowerCase();
@@ -2739,7 +2743,8 @@ function getNodeStatus(node) {
     const isResolved = resolvedNodeIds.has(node.node_id);
     const isFireConfirmed = pred === 'fire'  && !isResolved;
     const isPossible      = pred === 'false' && !isResolved;
-    const lastUpdated = node.timestamp || node.updated_at || node.last_seen || null;
+    // Prefer local_timestamp (PH time) for offline detection
+    const lastUpdated = node.local_timestamp || node.timestamp || node.updated_at || node.last_seen || null;
     let offline = false;
     if (lastUpdated) {
         const lastTime = parseUtc(lastUpdated);
