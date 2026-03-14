@@ -2031,13 +2031,18 @@ const authHeader = () => ({ 'Authorization': `Bearer ${TOKEN()}` });
 if (!TOKEN()) window.location.href = 'login.html';
 _initTomTomTileKey(); // safe to call now that API_BASE and authHeader are defined
 
+// OPTIMIZED: single /dashboard-init request replaces 5+ separate startup fetches
+// (was: /me, /gateways x2, /nodes, /incidents/active, /incidents/history)
 (async () => {
     try {
-        const res = await fetch(`${API_BASE()}/me`, { headers: authHeader() });
+        const res = await fetch(`${API_BASE()}/dashboard-init`, { headers: authHeader() });
         if (res.status === 401) { window.location.href = 'login.html'; return; }
-        const me = await res.json();
-        localStorage.setItem('flames_username', me.username);
-        window._flamesCurrentUser = me;  // store for dispatch use
+        const init = await res.json();
+
+        // -- User info --
+        const me = init.me || {};
+        localStorage.setItem('flames_username', me.username || '');
+        window._flamesCurrentUser = me;
         document.getElementById('side-username').textContent = me.username || '—';
         document.getElementById('side-org-name').textContent = me.organization_name || '—';
         const rb = document.getElementById('side-role-badge');
@@ -2047,7 +2052,65 @@ _initTomTomTileKey(); // safe to call now that API_BASE and authHeader are defin
             document.getElementById('admin-btn').style.display='flex';
         } else { rb.textContent='MEMBER'; }
         window._flamesIsAdmin = !!me.is_admin;
-    } catch { document.getElementById('side-username').textContent = localStorage.getItem('flames_username') || '—'; }
+
+        // -- Gateways (pre-load from init payload) --
+        if (init.gateways) {
+            gatewayData = init.gateways;
+            Object.keys(gatewayMarkers).forEach(id => {
+                if (!init.gateways.some(g => g.gateway_id === id)) {
+                    map.removeLayer(gatewayMarkers[id]); delete gatewayMarkers[id];
+                }
+            });
+            init.gateways.forEach(gw => {
+                const lat = parseFloat(gw.latitude), lng = parseFloat(gw.longitude);
+                if (isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) return;
+                const popup = `<b>🏠 ${gw.gateway_id}</b>${gw.location_name ? `<br><span style="color:#9a6a5a;">${gw.location_name}</span>` : ''}`;
+                if (gatewayMarkers[gw.gateway_id]) { gatewayMarkers[gw.gateway_id].setLatLng([lat, lng]).setPopupContent(popup); }
+                else { gatewayMarkers[gw.gateway_id] = L.marker([lat, lng], {icon: gwIcon}).addTo(map).bindPopup(popup); }
+            });
+        }
+
+        // -- Nodes (pre-load from init payload) --
+        if (init.nodes) {
+            _gwStatusNodes = init.nodes;
+            init.nodes.forEach(n => {
+                const nid = n.node_id;
+                nodeData[nid] = n;
+                const lat = parseFloat(n.latitude), lng = parseFloat(n.longitude);
+                if (isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) return;
+                const pred = (n.ai_prediction || 'normal').toLowerCase();
+                const isResolved = resolvedNodeIds.has(nid);
+                const hasAnyAlert = (pred === 'fire' || pred === 'false') && !isResolved;
+                const lastTime = parseUtc(n.local_timestamp || n.timestamp);
+                const offline = lastTime && (Date.now() - lastTime.getTime()) / 60000 > OFFLINE_MIN && !hasAnyAlert;
+                const icon = hasAnyAlert ? makeFireNodeIcon(pred === 'false') : offline ? makeOfflineNodeIcon() : nodeIcon;
+                if (nodeMarkers[nid]) {
+                    nodeMarkers[nid].setIcon(icon); nodeMarkers[nid].setLatLng([lat, lng]);
+                } else {
+                    const marker = L.marker([lat, lng], {icon, opacity: 1}).addTo(map);
+                    marker.bindPopup(buildNodePopupContent(n, nid, lat, lng, offline));
+                    marker.on('click', () => { selectedNodeId = nid; updateSensorBar(nodeData[nid], nid); });
+                    if (hasAnyAlert) { const el = marker.getElement(); if (el) el.classList.add('fire-node-active'); }
+                    nodeMarkers[nid] = marker;
+                }
+            });
+            if (selectedNodeId && nodeData[selectedNodeId]) updateSensorBar(nodeData[selectedNodeId], selectedNodeId);
+            renderGatewayStatusPanel();
+        }
+
+        // -- Active incidents (pre-load from init payload) --
+        if (init.incidents) {
+            _liveIncidentsCache = init.incidents;
+            document.getElementById('incident-count').textContent = init.incidents.length;
+        }
+
+    } catch (e) {
+        console.error('dashboard-init failed, falling back:', e);
+        document.getElementById('side-username').textContent = localStorage.getItem('flames_username') || '—';
+    }
+    // Always do a full refresh pass after init so data stays consistent
+    loadAndPlaceNodes(true);
+    loadLiveIncidents(true);
 })();
 
 const modeToggle = document.getElementById('mode-toggle');
@@ -2297,7 +2360,8 @@ async function loadGatewaysOnMap(silent=false){
     }catch(err){if(!silent)console.error('Failed to load gateways:',err);}
 }
 function getPrimaryGateway(){const gw=gatewayData.find(g=>parseFloat(g.latitude)&&parseFloat(g.longitude));return gw?{lat:parseFloat(gw.latitude),lng:parseFloat(gw.longitude)}:{lat:16.046962,lng:120.342117};}
-loadGatewaysOnMap();
+// loadGatewaysOnMap() is now called via /dashboard-init on startup
+// keeping the function available for WebSocket-triggered refreshes
 
 let nodeMarkers={},nodeData={},selectedNodeId=null;
 const OFFLINE_MIN=3;
@@ -2477,7 +2541,8 @@ async function loadAndPlaceNodes(silent=false){
 }
 
 syncResolvedNodesFromAPI().then(() => loadAndPlaceNodes());
-setInterval(()=>loadAndPlaceNodes(true), 15000);
+// Reduced poll interval: WebSocket handles real-time updates; polling is just a safety net
+setInterval(()=>loadAndPlaceNodes(true), 30000);
 setInterval(syncResolvedNodesFromAPI, 60000);
 
 // ====================== WEBSOCKET ======================
@@ -2872,7 +2937,7 @@ function flyToNode(nodeId, lat, lng) {
 
 function refreshGatewayPanel() { loadGatewayStatusPanel(false); }
 loadGatewayStatusPanel();
-setInterval(() => loadGatewayStatusPanel(true), 15000);
+setInterval(() => loadGatewayStatusPanel(true), 30000);
 
 // ====================== PINNED ======================
 let pinnedLocations=[],pinnedMarkers={};
