@@ -1828,7 +1828,12 @@ function _applyDetailRouteTraffic(traffic, rt) {
     } else {
         if (elEtaLbl) elEtaLbl.textContent = 'ETA';
         if (elSpeed)  elSpeed.textContent  = '— km/h';
-        if (elTraf)  { elTraf.textContent  = 'No live data'; elTraf.className = 'inc-traffic-badge free'; }
+        if (elTraf)  { elTraf.textContent  = 'Loading…'; elTraf.className = 'inc-traffic-badge free'; }
+    }
+    // Always stamp Peak Period — never leave it blank even when traffic is null
+    const { label: _peakStamp } = getFiretruckSpeed();
+    if (elAlgo && (!elAlgo.textContent || elAlgo.textContent === '')) {
+        elAlgo.textContent = rt.isFallback ? 'Straight-line' : _peakStamp;
     }
     // Age indicator — use per-incident lastSuccessfulFetch so each incident shows its own age independently
     const incId = String(_currentOpenIncidentData?.incident_id || '');
@@ -2643,8 +2648,11 @@ function connectWebSocket(){
                     _patchIncidentMapSidebarSensors(_currentOpenIncidentData);
                 }
                 // ── Persist GPS to cache if this WS message carries real coordinates ─
-                if (msg.node_id && msg.latitude && parseFloat(msg.latitude) !== 0) {
-                    _persistNodeGpsToCache(msg.node_id, msg.latitude, msg.longitude);
+                const _msgLat = msg.latitude || msg.lat;
+                const _msgLng = msg.longitude || msg.lon;
+                const _msgNid = msg.node_id   || msg.node;
+                if (_msgNid && _msgLat && parseFloat(_msgLat) !== 0) {
+                    _persistNodeGpsToCache(_msgNid, _msgLat, _msgLng);
                 }
                 // ── GPS retry: if modal was waiting for node coordinates, retry now ──
                 if (window._pendingDetailRouteIncId != null
@@ -3239,64 +3247,27 @@ async function loadLiveIncidents(silent=false){
         } else {
             const gw0ref = getPrimaryGateway();
             const _incRouteMap = {};
-            // ── Backfill missing incident coords from live nodeData ──────────
-            // Physical nodes often fire before GPS reaches fire_incidents table.
-            // nodeData is updated every 15s by loadAndPlaceNodes and is usually ahead.
+            // ── Mark original DB coords FIRST before any backfill ──────────
             incidents.forEach(inc => {
-                const hasCoords = inc.latitude && inc.longitude
-                    && parseFloat(inc.latitude) !== 0 && parseFloat(inc.longitude) !== 0;
-                if (!hasCoords && nodeData[inc.node_id]) {
-                    const nd = nodeData[inc.node_id];
-                    if (nd.latitude && parseFloat(nd.latitude) !== 0) {
-                        inc.latitude  = nd.latitude;
-                        inc.longitude = nd.longitude;
-                        inc._coordsBackfilled = true;
-                    }
-                }
+                const _lat = parseFloat(inc.latitude);
+                const _lng = parseFloat(inc.longitude);
+                inc._hadOriginalCoords = !isNaN(_lat) && _lat !== 0 && !isNaN(_lng) && _lng !== 0;
             });
-            // ── Backfill missing incident coords from live nodeData ──────────
-            // Physical nodes often fire before GPS reaches fire_incidents table.
-            // nodeData is updated every 15s by loadAndPlaceNodes and is usually ahead.
+            // ── Backfill missing coords only when DB truly has none ──────────
             incidents.forEach(inc => {
-                const hasCoords = inc.latitude && inc.longitude
-                    && parseFloat(inc.latitude) !== 0 && parseFloat(inc.longitude) !== 0;
-                if (!hasCoords && nodeData[inc.node_id]) {
-                    const nd = nodeData[inc.node_id];
-                    if (nd.latitude && parseFloat(nd.latitude) !== 0) {
-                        inc.latitude  = nd.latitude;
-                        inc.longitude = nd.longitude;
-                        inc._coordsBackfilled = true;
-                    }
+                if (inc._hadOriginalCoords) return; // DB already has real coords, skip
+                const nd = nodeData[inc.node_id];
+                if (nd && nd.latitude && parseFloat(nd.latitude) !== 0) {
+                    inc.latitude  = nd.latitude;
+                    inc.longitude = nd.longitude;
+                    inc._coordsBackfilled = true;
+                    return;
                 }
-                // Also try last-known GPS store for this node
-                if (!inc.latitude || parseFloat(inc.latitude) === 0) {
-                    const lastGps = _getLastNodeGps(inc.node_id);
-                    if (lastGps) {
-                        inc.latitude  = lastGps.lat;
-                        inc.longitude = lastGps.lng;
-                        inc._coordsBackfilled = true;
-                    }
-                }
-            });
-            incidents.forEach(inc => {
-                const hasCoords = inc.latitude && inc.longitude
-                    && parseFloat(inc.latitude) !== 0 && parseFloat(inc.longitude) !== 0;
-                if (!hasCoords && nodeData[inc.node_id]) {
-                    const nd = nodeData[inc.node_id];
-                    if (nd.latitude && parseFloat(nd.latitude) !== 0) {
-                        inc.latitude  = nd.latitude;
-                        inc.longitude = nd.longitude;
-                        inc._coordsBackfilled = true;
-                    }
-                }
-                // Also try in-memory GPS cache (populated from DB or live readings)
-                if (!inc.latitude || parseFloat(inc.latitude) === 0) {
-                    const cached = _nodeGpsCache[inc.node_id];
-                    if (cached) {
-                        inc.latitude  = cached.lat;
-                        inc.longitude = cached.lng;
-                        inc._coordsBackfilled = true;
-                    }
+                const cached = _nodeGpsCache[inc.node_id];
+                if (cached && cached.lat) {
+                    inc.latitude  = cached.lat;
+                    inc.longitude = cached.lng;
+                    inc._coordsBackfilled = true;
                 }
             });
             await Promise.allSettled(incidents.map(async inc => {
@@ -3447,7 +3418,7 @@ setInterval(() => {
     }
     // Incident map modal (imd) — use per-incident traffic age, not global
     const _lsfImd = _currentOpenIncidentData
-        ? (_incidentTrafficMap[String(_currentOpenIncidentData.incident_id)]?.lastSuccessfulFetch || _globalLsfDetail || 0)
+        ? (_incidentTrafficMap[String(_currentOpenIncidentData.incident_id)]?.lastSuccessfulFetch)
         : (_globalLsfCards || _globalLsfDetail || 0);
     if (_lsfImd) {
         _applyAgeEl(document.getElementById('imd-traffic-age'), _lsfImd);
@@ -3696,8 +3667,8 @@ setInterval(() => {
     if (!elAlgo) return;
     const { speed, factor, label } = getFiretruckSpeed();
     // Update peak period label
-    if (elAlgo.textContent && elAlgo.textContent !== 'Straight-line') {
-        elAlgo.textContent = label;
+    if (elAlgo) {
+        elAlgo.textContent = _activeDetailRouteState?.rt?.isFallback ? 'Straight-line' : label;
     }
     // Recalculate ETA with updated period speed + current traffic
     // Use OSRM timeMins from active route state if available — straight-line only as fallback
@@ -3778,25 +3749,25 @@ function _resolveIncidentCoords(inc) {
     const incLat = parseFloat(inc.latitude);
     const incLng = parseFloat(inc.longitude);
     if (!isNaN(incLat) && incLat !== 0 && !isNaN(incLng) && incLng !== 0
-        && !inc._coordsBackfilled) {
+        && (inc._hadOriginalCoords || !inc._coordsBackfilled)) {
         return { lat: incLat, lng: incLng, source: 'incident' };
     }
  
     // 2. Live nodeData cache (updated every 15s by /nodes poll)
+    // Source = 'node' if the CURRENT reading has GPS coords (lat/lon present and non-zero).
+    // Source = 'lastknown' if current reading has no GPS — we fall through to the DB cache.
     const nd = nodeData[inc.node_id];
     if (nd) {
         const ndLat = parseFloat(nd.latitude);
         const ndLng = parseFloat(nd.longitude);
         if (!isNaN(ndLat) && ndLat !== 0 && !isNaN(ndLng) && ndLng !== 0) {
             _persistNodeGpsToCache(inc.node_id, ndLat, ndLng);
-            // nodeData is the latest reading — but it could be stale after restart.
-            // Check if it's recent (within last 5 mins) to decide if it's "live"
-            const lastUpdated = nd.local_timestamp || nd.timestamp;
-            const lastTime = parseUtc(lastUpdated);
-            const minsAgo = lastTime ? (Date.now() - lastTime.getTime()) / 60000 : 999;
-            const isRecent = minsAgo < 5;
-            return { lat: ndLat, lng: ndLng, source: isRecent ? 'node' : 'lastknown' };
+            // The current reading HAS GPS — always show as LIVE GPS regardless of age.
+            // If the node stops sending GPS, nd.latitude becomes 0/null in the next poll
+            // and we fall through to the _nodeGpsCache (lastknown) below.
+            return { lat: ndLat, lng: ndLng, source: 'node' };
         }
+        // Current reading exists but has NO GPS coords — fall through to DB cache
     }
  
     // 3. Last known GPS from DB (fetched by _fetchAndCacheNodeGps before modal opens)
@@ -4054,6 +4025,24 @@ function _openIncidentMapModalRender(inc, sidebarOnly=false) {
             <button class="inc-map-resolve-btn" id="inc-map-resolve-${inc.incident_id}" onclick="resolveIncident(${inc.incident_id},'${inc.node_id}')" ${isRescued?'disabled':''}>✓ MARK RESOLVED</button>
         </div>`;
  
+    // Immediately restore traffic age from persistent cache — prevents "just now" flash on reopen
+    const _restoreIncId = String(inc.incident_id);
+    const _restoreLsf = _incidentTrafficMap[_restoreIncId]?.lastSuccessfulFetch || 0;
+    if (_restoreLsf) {
+        _applyAgeEl(document.getElementById('imd-traffic-age'), _restoreLsf);
+        const _restoreBadge = document.getElementById('imd-traffic-badge');
+        if (_restoreBadge && _incidentTrafficMap[_restoreIncId]?.traffic) {
+            const _tj = _jamLabel(_incidentTrafficMap[_restoreIncId].traffic.avgJam);
+            _restoreBadge.textContent = _tj.text;
+            _restoreBadge.className = `inc-traffic-badge ${_tj.cls}`;
+            const _restoreSpeed = document.getElementById('imd-speed');
+            const _restoreVt = VEHICLE_TYPES[_incidentRescueMap[inc.incident_id]?.vehicleType || _selectedVehicle];
+            if (_restoreSpeed) _restoreSpeed.textContent = Math.round(_incidentTrafficMap[_restoreIncId].traffic.avgSpeed * _restoreVt.speedMult) + ' km/h';
+            const _restoreAlgo = document.getElementById('imd-algo');
+            if (_restoreAlgo) _restoreAlgo.textContent = getFiretruckSpeed().label;
+        }
+    }
+
     if (sidebarOnly) return;
  
     setTimeout(() => {
@@ -4132,39 +4121,7 @@ function _openIncidentMapModalRender(inc, sidebarOnly=false) {
 // TOMTOM traffic code — incident map modal route uses server-managed per-incident traffic.
 // We do NOT fetch TomTom here — the backend _traffic_background_task handles it per incident_id.
 // This preserves the independent "Updated: just now / X mins ago" per incident.
-function _getLastKnownTraffic() {
-    let best = null;
-    let bestTime = 0;
-    Object.values(_incidentTrafficMap).forEach(entry => {
-        if (entry && entry.traffic && entry.lastSuccessfulFetch > bestTime) {
-            best     = entry.traffic;
-            bestTime = entry.lastSuccessfulFetch;
-        }
-    });
-    // Also check active route state on the main map
-    if (_activeRouteState?.lastTraffic && _globalLsfRoute > bestTime) {
-        best     = _activeRouteState.lastTraffic;
-        bestTime = _globalLsfRoute;
-    }
-    return best ? { traffic: best, fetchedAt: bestTime } : null;
-}
- 
-function _getLastKnownTraffic() {
-    let best = null;
-    let bestTime = 0;
-    Object.values(_incidentTrafficMap).forEach(entry => {
-        if (entry && entry.traffic && entry.lastSuccessfulFetch > bestTime) {
-            best     = entry.traffic;
-            bestTime = entry.lastSuccessfulFetch;
-        }
-    });
-    // Also check active route state on the main map
-    if (_activeRouteState?.lastTraffic && _globalLsfRoute > bestTime) {
-        best     = _activeRouteState.lastTraffic;
-        bestTime = _globalLsfRoute;
-    }
-    return best ? { traffic: best, fetchedAt: bestTime } : null;
-}
+
  
 function _getLastKnownTraffic() {
     let best = null;
@@ -4204,9 +4161,7 @@ async function calculateDetailRoute(start, end) {
         const isGatewayFallback = _resolvedSource === 'gateway';
  
         // Only skip fresh fetch if we have data for THIS specific incident < 5 min
-        const lsfForThisInc = perIncEntry?.incidentId == _currentOpenIncidentData?.incident_id
-            ? (perIncEntry?.lastSuccessfulFetch || 0)
-            : 0;
+        const lsfForThisInc = perIncEntry?.lastSuccessfulFetch || 0;
         const msSinceFetch = lsfForThisInc ? (Date.now() - lsfForThisInc) : Infinity;
  
         // lastknown = real saved coords but current reading has no GPS.
@@ -4306,76 +4261,16 @@ async function calculateDetailRoute(start, end) {
             }
  
         } else if (shouldFetch) {
-            // ── Real coords (incident / node / lastknown): fresh TomTom fetch ─
-            const badge = document.getElementById('imd-traffic-badge');
-            if (badge) { badge.textContent = 'Fetching traffic…'; badge.className = 'inc-traffic-badge free'; }
- 
-            const traffic   = await fetchTrafficOnRoute(rt.coords);
-            const fetchedAt = Date.now();
- 
-            if (traffic) {
-                traffic.fetchedAt  = fetchedAt;
-                traffic.incidentId = incId;
-                _incidentTrafficMap[incId] = {
-                    traffic, lastFetch: fetchedAt, lastSuccessfulFetch: fetchedAt
-                };
-                _globalLsfDetail                             = fetchedAt;
-                _activeDetailRouteState.lastTraffic          = traffic;
-                _activeDetailRouteState.lastFetch            = fetchedAt;
-                _activeDetailRouteState.lastSuccessfulFetch  = fetchedAt;
- 
-                // Broadcast so all devices see fresh data
-                fetch(`${API_BASE()}/traffic-state`, {
-                    method: 'POST',
-                    headers: {...authHeader(), 'Content-Type': 'application/json'},
-                    body: JSON.stringify({ [`incident_${incId}`]: traffic })
-                }).catch(() => {});
- 
-                _applyDetailRouteTraffic(traffic, rt);
-                // Re-stamp peak period — _applyDetailRouteTraffic may overwrite imd-algo
-                const elAlgoPost = document.getElementById('imd-algo');
-                if (elAlgoPost && !rt.isFallback) elAlgoPost.textContent = _peakLabelNow;
- 
-            } else {
-                // TomTom returned null — route too short or API unavailable.
-                // For lastknown coords this is expected (node near gateway).
-                // Reuse the last captured traffic reading instead of "No live data".
-                if (_lastKnownTrafficFallback && isLastKnown) {
-                    const { traffic: fallbackTraffic, fetchedAt: fallbackTime } = _lastKnownTrafficFallback;
-                    _activeDetailRouteState.lastTraffic         = fallbackTraffic;
-                    _activeDetailRouteState.lastFetch           = fallbackTime;
-                    _activeDetailRouteState.lastSuccessfulFetch = fallbackTime;
-                    _incidentTrafficMap[incId] = {
-                        traffic: {...fallbackTraffic, incidentId: incId, isProxied: true},
-                        lastFetch: fallbackTime,
-                        lastSuccessfulFetch: fallbackTime
-                    };
-                    _globalLsfDetail = fallbackTime;
-                    _applyDetailRouteTraffic(fallbackTraffic, rt);
-                    // Re-stamp peak period after _applyDetailRouteTraffic (it may overwrite)
-                    const elAlgo2 = document.getElementById('imd-algo');
-                    if (elAlgo2) elAlgo2.textContent = rt.isFallback ? 'Straight-line' : _peakLabelNow;
-                    // Add note that traffic is from last known reading
-                    const trafficRow2 = document.querySelector('#inc-map-sidebar .inc-traffic-row');
-                    if (trafficRow2 && !document.getElementById('imd-nogps-note')) {
-                        const note = document.createElement('div');
-                        note.id = 'imd-nogps-note';
-                        note.style.cssText = 'font-size:9px;color:#9a6a5a;text-align:center;padding:3px 0 0;letter-spacing:.3px;';
-                        note.textContent = '* Last captured traffic data (GPS disconnected)';
-                        trafficRow2.after(note);
-                    }
-                } else {
-                    // No traffic data anywhere at all — genuinely no data
-                    _activeDetailRouteState.lastTraffic = null;
-                    _applyDetailRouteTraffic(null, rt);
-                    // Force these after _applyDetailRouteTraffic since it may clear them
-                    const elAlgo2  = document.getElementById('imd-algo');
-                    const elSpeed2 = document.getElementById('imd-speed');
-                    const badge2   = document.getElementById('imd-traffic-badge');
-                    if (elAlgo2)  elAlgo2.textContent  = rt.isFallback ? 'Straight-line' : _peakLabelNow;
-                    if (elSpeed2) elSpeed2.textContent = '— km/h';
-                    if (badge2)   { badge2.textContent = 'No live data'; badge2.className = 'inc-traffic-badge free'; }
-                }
+            // Frontend never fetches TomTom — backend _traffic_background_task owns all fetches.
+            // Just show cached data or wait for WS broadcast.
+            const cachedTraffic = perIncEntry?.traffic || null;
+            _activeDetailRouteState.lastTraffic = cachedTraffic;
+            _applyDetailRouteTraffic(cachedTraffic, rt);
+            const elAlgoWait = document.getElementById('imd-algo');
+            if (elAlgoWait) elAlgoWait.textContent = rt.isFallback ? 'Straight-line' : _peakLabelNow;
+            if (!cachedTraffic) {
+                const badge = document.getElementById('imd-traffic-badge');
+                if (badge) { badge.textContent = 'Loading…'; badge.className = 'inc-traffic-badge free'; }
             }
  
         } else {
@@ -4504,25 +4399,18 @@ async function openIncidentDetailsModal(incidentId) {
         const _iLat = parseFloat(data.latitude), _iLng = parseFloat(data.longitude);
         console.log('[FLAMES] modal: calling chRoute from', _gw2.lat, _gw2.lng, 'to', _iLat, _iLng);
         chRoute(_gw2.lat, _gw2.lng, _iLat, _iLng).then(rt => {
-            console.log('[FLAMES] modal: chRoute resolved, coords length=', rt?.coords?.length);
             _activateDetailsModalTraffic(rt.coords);
-            // FIX: guard now checks THIS incident's own lastSuccessfulFetch — not _globalLsfCards
-            // (which is the latest fetch of ANY incident and could wrongly skip a fetch for this one).
             const _incIdStr = String(incidentId);
-            const _lastFetchForInc = _incidentTrafficMap[_incIdStr]?.lastSuccessfulFetch || 0;
-            const _msSinceLast = _lastFetchForInc ? (Date.now() - _lastFetchForInc) : Infinity;
-            if (_msSinceLast < TRAFFIC_LIVE_INTERVAL) {
-                _patchDetailsModal(); // just patch display, no new fetch
-                return Promise.resolve(null);
-            }
-            return fetchTrafficOnRoute(rt.coords);
-        }).then(t => {
-            if (t && _activeDetailsModalTrafficState) {
-                _activeDetailsModalTrafficState.lastTraffic = t;
-                _activeDetailsModalTrafficState.lastFetch = Date.now();
-                _globalLsfModal = Date.now();
+            const _existing = _incidentTrafficMap[_incIdStr];
+            if (_existing && _existing.lastSuccessfulFetch) {
+                // Already have traffic for this incident — restore age, never refetch
+                _activeDetailsModalTrafficState.lastFetch           = _existing.lastSuccessfulFetch;
+                _activeDetailsModalTrafficState.lastSuccessfulFetch = _existing.lastSuccessfulFetch;
+                _activeDetailsModalTrafficState.lastTraffic         = _existing.traffic;
                 _patchDetailsModal();
             }
+            // No traffic yet — backend will fetch and broadcast via WS traffic_update
+            // ws.onmessage handler calls _patchDetailsModal() when data arrives
         }).catch((err) => {
             console.log('[FLAMES] modal: chRoute FAILED, falling back to straight-line. Error:', err);
             const _sampleCoords = Array.from({length: 8}, (_, i) => {
