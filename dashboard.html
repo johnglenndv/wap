@@ -2343,8 +2343,9 @@ function clearFireAnimationForNode(nodeId) {
             }
         }
         nodeMarkers[nodeId].setIcon(isOffline ? makeOfflineNodeIcon() : nodeIcon);
+        nodeMarkers[nodeId].setOpacity(isOffline ? 0.45 : 1);
         const el = nodeMarkers[nodeId].getElement();
-        if (el) { el.classList.remove('fire-node-active'); el.style.opacity = '1'; }
+        if (el) { el.classList.remove('fire-node-active'); }
         if (nd) {
             const popupContent = buildNodePopupContent(nd, nodeId, nd.latitude, nd.longitude, isOffline);
             nodeMarkers[nodeId].setPopupContent(popupContent);
@@ -2360,8 +2361,9 @@ function applyFireAnimationForNode(nodeId, sensorData) {
         const pred = (sensorData?.ai_prediction || nodeData[nodeId]?.ai_prediction || '').toLowerCase();
         const isPossible = pred === 'false';
         nodeMarkers[nodeId].setIcon(makeFireNodeIcon(isPossible));
+        nodeMarkers[nodeId].setOpacity(1);
         const el = nodeMarkers[nodeId].getElement();
-        if (el) { el.classList.add('fire-node-active'); el.style.opacity = '1'; }
+        if (el) { el.classList.add('fire-node-active'); }
         const nd = sensorData || nodeData[nodeId];
         if (nd) {
             const popupContent = buildNodePopupContent(nd, nodeId, nd.latitude || nodeData[nodeId]?.latitude, nd.longitude || nodeData[nodeId]?.longitude, false);
@@ -2464,13 +2466,11 @@ async function loadAndPlaceNodes(silent=false){
                 nodeMarkers[nid].setIcon(activeIcon);
                 nodeMarkers[nid].setLatLng([lat,lng]);
                 nodeMarkers[nid].setPopupContent(popupContent);
+                nodeMarkers[nid].setOpacity(offline ? 0.45 : 1);
                 const el = nodeMarkers[nid].getElement();
-                if(el){
-                    el.style.opacity = offline ? '0.75' : '1';
-                    el.classList.toggle('fire-node-active', hasAnyAlert);
-                }
+                if(el){ el.classList.toggle('fire-node-active', hasAnyAlert); }
             } else {
-                const marker=L.marker([lat,lng],{icon:activeIcon,opacity:offline?0.75:1}).addTo(map);
+                const marker=L.marker([lat,lng],{icon:activeIcon,opacity:offline?0.45:1}).addTo(map);
                 marker.bindPopup(popupContent);
                 marker.on('click',()=>{selectedNodeId=nid;updateSensorBar(nodeData[nid],nid);});
                 if(hasAnyAlert){ const el=marker.getElement(); if(el) el.classList.add('fire-node-active'); }
