@@ -3156,8 +3156,8 @@ async function loadLiveIncidents(silent=false){
                 if (!inc.latitude || !inc.longitude) return;
                 try {
                     const rt = await chRoute(gw0ref.lat, gw0ref.lng, parseFloat(inc.latitude), parseFloat(inc.longitude));
-                    _incRouteMap[inc.incident_id] = { coords: rt.coords, distKm: rt.distKm, timeMins: rt.timeMins };
-                    _incidentOsrmCache[inc.incident_id] = { coords: rt.coords, distKm: rt.distKm, timeMins: rt.timeMins };
+                    _incRouteMap[String(inc.incident_id)] = { coords: rt.coords, distKm: rt.distKm, timeMins: rt.timeMins };
+                    _incidentOsrmCache[String(inc.incident_id)] = { coords: rt.coords, distKm: rt.distKm, timeMins: rt.timeMins };
                 } catch(e) {}
             }));
             // Per-incident traffic — backend handles fetch timing per incident_id.
@@ -3173,11 +3173,11 @@ async function loadLiveIncidents(silent=false){
                 const isRescued = _incidentRescueMap[inc.incident_id]?.status === 'rescued';
                 const isEnRoute = dispatch.hasDispatch && !isRescued;
                 const gw0 = getPrimaryGateway();
-                const _incRoute = _incRouteMap[inc.incident_id];
+                const _incRoute = _incRouteMap[String(inc.incident_id)];
                 const distKm0 = _incRoute?.distKm ?? calcDistance(gw0.lat, gw0.lng, parseFloat(inc.latitude||0), parseFloat(inc.longitude||0));
                 const { speed: spd0, factor: fac0 } = getFiretruckSpeed();
                 const baseTime0 = _incRoute?.timeMins ?? Math.round((distKm0 * fac0) / spd0 * 60);
-                const traffic0 = _incRoute?.traffic || _incidentTrafficMap[inc.incident_id]?.traffic || null;
+                const traffic0 = _incRoute?.traffic || _incidentTrafficMap[String(inc.incident_id)]?.traffic || null;
                 const dispatchedVehicle = dispatch.vehicleType || _selectedVehicle;
                 const vt0 = VEHICLE_TYPES[dispatchedVehicle];
                 const cardEta = getVehicleETA(baseTime0, traffic0, dispatchedVehicle);
@@ -3885,8 +3885,9 @@ async function openIncidentDetailsModal(incidentId) {
 
     const { speed: _spd, factor: _fac, label: _peakLabel } = getFiretruckSpeed();
     const _straightDist = calcDistance(_gw.lat, _gw.lng, parseFloat(data.latitude||0), parseFloat(data.longitude||0));
-    // Guarantee OSRM data: fetch now if not yet cached
-    if (data.latitude && data.longitude && !_incidentOsrmCache[String(incidentId)]) {
+    // Guarantee OSRM data: always attempt fetch — chRoute has its own LRU cache so repeat calls are instant.
+    // This ensures real hardware incidents that arrive fresh (no prior map modal open) still get a route.
+    if (data.latitude && data.longitude) {
         try {
             const _gwF = getPrimaryGateway();
             const _rt = await chRoute(_gwF.lat, _gwF.lng, parseFloat(data.latitude), parseFloat(data.longitude));
@@ -3918,10 +3919,13 @@ async function openIncidentDetailsModal(incidentId) {
             _activateDetailsModalTraffic(rt.coords);
             // FIX: guard now checks THIS incident's own lastSuccessfulFetch — not _globalLsfCards
             // (which is the latest fetch of ANY incident and could wrongly skip a fetch for this one).
+            // Also: never skip if route is fallback (straight-line) — real hardware incidents that
+            // arrive fresh need a TomTom fetch even if server has recent per-incident traffic data,
+            // because without a real OSRM route the traffic coords would be wrong anyway.
             const _incIdStr = String(incidentId);
             const _lastFetchForInc = _incidentTrafficMap[_incIdStr]?.lastSuccessfulFetch || 0;
             const _msSinceLast = _lastFetchForInc ? (Date.now() - _lastFetchForInc) : Infinity;
-            if (_msSinceLast < TRAFFIC_LIVE_INTERVAL) {
+            if (_msSinceLast < TRAFFIC_LIVE_INTERVAL && !rt.isFallback) {
                 _patchDetailsModal(); // just patch display, no new fetch
                 return Promise.resolve(null);
             }
@@ -3943,6 +3947,8 @@ async function openIncidentDetailsModal(incidentId) {
             const _incIdStr2 = String(incidentId);
             const _lastFetchForInc2 = _incidentTrafficMap[_incIdStr2]?.lastSuccessfulFetch || 0;
             const _msSinceLast2 = _lastFetchForInc2 ? (Date.now() - _lastFetchForInc2) : Infinity;
+            // Always fetch for fallback (straight-line) routes — means real OSRM failed, so
+            // we still want fresh TomTom traffic to give at least a traffic-adjusted ETA.
             if (_msSinceLast2 < TRAFFIC_LIVE_INTERVAL) { _patchDetailsModal(); return; }
             fetchTrafficOnRoute(_sampleCoords).then(t => {
                 if (t && _activeDetailsModalTrafficState) {
