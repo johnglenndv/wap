@@ -2568,7 +2568,38 @@ function connectWebSocket(){
                     if(msg.ai_prediction)       _currentOpenIncidentData.ai_prediction = msg.ai_prediction;
                     if(msg.confidence  != null) _currentOpenIncidentData.confidence_pct = Math.round(msg.confidence * 100);
                     if(msg.trigger_source)      _currentOpenIncidentData.trigger_source = msg.trigger_source;
-                    _patchIncidentMapSidebarSensors(_currentOpenIncidentData);
+                    // GPS fix transition: if the open incident had no GPS before but now has coords,
+                    // update coordinates and trigger a full re-route automatically.
+                    const _hadNoGps = !(_currentOpenIncidentData.latitude &&
+                        _currentOpenIncidentData.longitude &&
+                        !(parseFloat(_currentOpenIncidentData.latitude)===0 && parseFloat(_currentOpenIncidentData.longitude)===0));
+                    const _nowHasGps = !!(msg.latitude && msg.longitude &&
+                        !(parseFloat(msg.latitude)===0 && parseFloat(msg.longitude)===0));
+                    if(msg.latitude  != null) _currentOpenIncidentData.latitude  = msg.latitude;
+                    if(msg.longitude != null) _currentOpenIncidentData.longitude = msg.longitude;
+                    if(_hadNoGps && _nowHasGps && _incDetailMap) {
+                        // GPS just locked! Fire marker + route automatically
+                        console.log("[FLAMES] GPS fix acquired for open incident — auto-routing now");
+                        const _gpsGw = getPrimaryGateway();
+                        const _gpsLat = parseFloat(msg.latitude), _gpsLng = parseFloat(msg.longitude);
+                        // Remove old no-GPS marker, place real fire marker
+                        _incDetailMarkers.forEach(m => { try{ m.remove(); }catch{} });
+                        _incDetailMarkers = [];
+                        const _gpsFire = L.marker([_gpsLat, _gpsLng], {icon: makeFireNodeIcon(false)}).addTo(_incDetailMap);
+                        _gpsFire.bindPopup(`<div style="font-weight:700;color:#ff9055;">Incident Location</div><div style="font-size:11px;color:#9a6a5a;">${_currentOpenIncidentData.location_name||'Node '+_currentOpenIncidentData.node_id}</div>`).openPopup();
+                        _incDetailMarkers.push(_gpsFire);
+                        const _gpsPin = L.icon({iconUrl:'icons/EndPoint.png',iconSize:[60,60],iconAnchor:[24,60],popupAnchor:[0,-55],zIndexOffset:100});
+                        const _gpsRedPin = L.marker([_gpsLat, _gpsLng], {icon:_gpsPin}).addTo(_incDetailMap);
+                        _incDetailMarkers.push(_gpsRedPin);
+                        const _gpsGwMarker = L.marker([_gpsGw.lat, _gpsGw.lng], {icon:greenIcon}).addTo(_incDetailMap);
+                        _gpsGwMarker.bindPopup('<div style="font-weight:700;color:#2ecc71;">🏠 Gateway / Start Point</div>');
+                        _incDetailMarkers.push(_gpsGwMarker);
+                        _incidentOsrmCache[String(_currentOpenIncidentData.incident_id)] = null; // clear stale cache
+                        _incDetailMap.flyTo([_gpsLat, _gpsLng], 15);
+                        calculateDetailRoute(_gpsGw, {lat:_gpsLat, lng:_gpsLng});
+                    } else {
+                        _patchIncidentMapSidebarSensors(_currentOpenIncidentData);
+                    }
                 }
             }
             if(msg.type==='node_update'){
@@ -2680,6 +2711,9 @@ function connectWebSocket(){
                         if(msg.flame       != null) _currentOpenIncidentData.flame       = msg.flame;
                         if(msg.ai_prediction)       _currentOpenIncidentData.ai_prediction = msg.ai_prediction;
                         if(msg.confidence  != null) _currentOpenIncidentData.confidence_pct = Math.round(msg.confidence * 100);
+                        // Update coordinates from incident_update message
+                        if(msg.latitude  != null) _currentOpenIncidentData.latitude  = msg.latitude;
+                        if(msg.longitude != null) _currentOpenIncidentData.longitude = msg.longitude;
                     }
                     // Only do a full sidebar re-render if THIS incident was the one that changed
                     // (e.g. resolved, rescue dispatched). For new/unrelated incidents, skip the
@@ -3617,7 +3651,7 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
             </div>
             <div class="inc-info-row">
                 <span class="inc-info-label">Coordinates</span>
-                <span class="inc-info-val" style="font-family:monospace;font-size:9px;color:#7a9abb;">${parseFloat(inc.latitude).toFixed(5)}, ${parseFloat(inc.longitude).toFixed(5)}</span>
+                <span class="inc-info-val" style="font-family:monospace;font-size:9px;color:${_incHasGps?'#7a9abb':'#f1c40f'};">${_incHasGps ? parseFloat(inc.latitude).toFixed(5)+', '+parseFloat(inc.longitude).toFixed(5) : '📡 No GPS Fix'}</span>
             </div>
             <div class="inc-info-row">
                 <span class="inc-info-label">Started</span>
@@ -3628,6 +3662,7 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
         <!-- Route Stats 2×2 grid — updated by calculateDetailRoute -->
         <div class="inc-sidebar-section">
             <div class="inc-sidebar-section-title">CH Routing · OSRM</div>
+            ${!_incHasGps ? `<div style="display:flex;align-items:center;gap:6px;margin:0 0 8px 0;padding:5px 9px;background:#2a1a0088;border:1px solid #f1c40f66;border-radius:7px;color:#f1c40f;font-size:10px;font-weight:700;">📡 No GPS Fix<span style="font-size:9px;font-weight:400;color:#a08020;margin-left:auto;">Showing gateway area</span></div>` : ''}
             <!-- vehicle selector -->
             <div class="inc-vehicle-selector">
                 <button class="inc-vehicle-btn ${_selectedVehicle==='motor'?'active':''}" id="inc-vbtn-motor" onclick="selectVehicle('motor')">🏍<br>Motor</button>
@@ -3637,12 +3672,12 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
             <!-- per-vehicle ETA chips removed — ETA adjusts based on selected vehicle -->
             <div class="inc-route-stats-grid">
                 <div class="inc-route-stat green">
-                    <div class="inc-route-stat-val green" id="imd-dist">${distKm.toFixed(1)} km</div>
+                    <div class="inc-route-stat-val green" id="imd-dist">${_incHasGps ? distKm.toFixed(1)+' km' : '—'}</div>
                     <div class="inc-route-stat-label">Distance</div>
                 </div>
                 <div class="inc-route-stat yellow">
-                    <div class="inc-route-stat-val yellow" id="imd-eta">~${etaMin} min</div>
-                    <div class="inc-route-stat-label" id="imd-eta-label">ETA</div>
+                    <div class="inc-route-stat-val yellow" id="imd-eta">${_incHasGps ? '~'+etaMin+' min' : '—'}</div>
+                    <div class="inc-route-stat-label" id="imd-eta-label">${_incHasGps ? 'ETA' : 'GPS Pending'}</div>
                 </div>
                 <div class="inc-route-stat blue">
                     <div class="inc-route-stat-val blue" id="imd-speed">— km/h</div>
@@ -3704,7 +3739,12 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
         _incDetailMarkers.forEach(m => { try{ m.remove(); } catch{} });
         _incDetailMarkers = [];
         if (_incDetailRouteLayer) { try{ _incDetailRouteLayer.remove(); } catch{} _incDetailRouteLayer = null; }
-        const incLat = parseFloat(inc.latitude), incLng = parseFloat(inc.longitude);
+        // GPS fix detection for map modal
+        const _incHasGps = !!(inc.latitude && inc.longitude &&
+            !(parseFloat(inc.latitude) === 0 && parseFloat(inc.longitude) === 0));
+        const gw0 = getPrimaryGateway();
+        const incLat = _incHasGps ? parseFloat(inc.latitude) : gw0.lat;
+        const incLng = _incHasGps ? parseFloat(inc.longitude) : gw0.lng;
         _incDetailMap = L.map('incident-detail-map',{zoomControl:false,attributionControl:false}).setView([incLat,incLng],15);
         window._incDetailBaseTile=L.tileLayer(MAP_STYLES[2].url,MAP_STYLES[2].opts).addTo(_incDetailMap);
         // Wire custom zoom buttons
@@ -3737,16 +3777,25 @@ function openIncidentMapModal(inc, sidebarOnly=false) {
             };
         }
         // _incDetailBaseTile and _incMapStyleIdx already set above
-        const fireMarker = L.marker([incLat, incLng], { icon: makeFireNodeIcon(false) }).addTo(_incDetailMap);
-        fireMarker.bindPopup(`<div style="font-weight:700;color:#ff9055;">Incident Location</div><div style="font-size:11px;color:#9a6a5a;">${inc.location_name || `Node ${inc.node_id}`}</div>`).openPopup();
-        _incDetailMarkers.push(fireMarker);
-        const redPinIcon = L.icon({ iconUrl: 'icons/EndPoint.png', iconSize: [60, 60], iconAnchor: [24, 60], popupAnchor: [0, -55], zIndexOffset: 100 });
-        const redPin = L.marker([incLat, incLng], { icon: redPinIcon }).addTo(_incDetailMap);
-        _incDetailMarkers.push(redPin);
+        if (_incHasGps) {
+            const fireMarker = L.marker([incLat, incLng], { icon: makeFireNodeIcon(false) }).addTo(_incDetailMap);
+            fireMarker.bindPopup(`<div style="font-weight:700;color:#ff9055;">Incident Location</div><div style="font-size:11px;color:#9a6a5a;">${inc.location_name || `Node ${inc.node_id}`}</div>`).openPopup();
+            _incDetailMarkers.push(fireMarker);
+            const redPinIcon = L.icon({ iconUrl: 'icons/EndPoint.png', iconSize: [60, 60], iconAnchor: [24, 60], popupAnchor: [0, -55], zIndexOffset: 100 });
+            const redPin = L.marker([incLat, incLng], { icon: redPinIcon }).addTo(_incDetailMap);
+            _incDetailMarkers.push(redPin);
+        } else {
+            // No GPS fix — show pulsing warning marker at gateway location
+            const noGpsIcon = L.divIcon({ className:'', html: '<div style="background:#f1c40f;border:2px solid #7a6000;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 0 8px #f1c40f88;animation:pulse 1.2s infinite;">&#x1F4E1;</div>', iconSize:[22,22], iconAnchor:[11,11] });
+            const noGpsMarker = L.marker([incLat, incLng], {icon: noGpsIcon}).addTo(_incDetailMap);
+            noGpsMarker.bindPopup('<div style="font-weight:700;color:#f1c40f;">📡 No GPS Fix</div><div style="font-size:11px;color:#9a8a5a;">Showing gateway area — incident coordinates unavailable</div>').openPopup();
+            _incDetailMarkers.push(noGpsMarker);
+        }
         const gw = getPrimaryGateway();
         const gwMarker = L.marker([gw.lat, gw.lng], {icon: greenIcon}).addTo(_incDetailMap);
         gwMarker.bindPopup('<div style="font-weight:700;color:#2ecc71;">🏠 Gateway / Start Point</div>');
         _incDetailMarkers.push(gwMarker);
+        // Route: if GPS available route to incident, else just center on gateway (0-dist route)
         calculateDetailRoute(gw, {lat:incLat, lng:incLng});
     }, 150);
 }
@@ -3884,18 +3933,23 @@ async function openIncidentDetailsModal(incidentId) {
     const _gw = getPrimaryGateway();
 
     const { speed: _spd, factor: _fac, label: _peakLabel } = getFiretruckSpeed();
-    const _straightDist = calcDistance(_gw.lat, _gw.lng, parseFloat(data.latitude||0), parseFloat(data.longitude||0));
-    // Guarantee OSRM data: always attempt fetch — chRoute has its own LRU cache so repeat calls are instant.
-    // This ensures real hardware incidents that arrive fresh (no prior map modal open) still get a route.
-    if (data.latitude && data.longitude) {
-        try {
-            const _gwF = getPrimaryGateway();
-            const _rt = await chRoute(_gwF.lat, _gwF.lng, parseFloat(data.latitude), parseFloat(data.longitude));
-            if (_rt && _rt.distKm) {
-                _incidentOsrmCache[String(incidentId)] = { coords: _rt.coords, distKm: _rt.distKm, timeMins: _rt.timeMins };
-            }
-        } catch(e) { /* fall through to straight-line */ }
-    }
+    // GPS fix detection — if lat/lng is null/0/missing, use gateway as fallback destination for routing
+    const _hasGps = !!(data.latitude && data.longitude &&
+        !(parseFloat(data.latitude) === 0 && parseFloat(data.longitude) === 0));
+    const _routeLat = _hasGps ? parseFloat(data.latitude)  : _gw.lat;
+    const _routeLng = _hasGps ? parseFloat(data.longitude) : _gw.lng;
+    const _straightDist = _hasGps
+        ? calcDistance(_gw.lat, _gw.lng, _routeLat, _routeLng)
+        : 0;
+    // Always attempt OSRM fetch — chRoute has its own LRU cache so repeat calls are instant.
+    // When no GPS: route to gateway itself (0 km) just to populate TomTom traffic for the area.
+    try {
+        const _gwF = getPrimaryGateway();
+        const _rt = await chRoute(_gwF.lat, _gwF.lng, _routeLat, _routeLng);
+        if (_rt && _rt.distKm) {
+            _incidentOsrmCache[String(incidentId)] = { coords: _rt.coords, distKm: _rt.distKm, timeMins: _rt.timeMins };
+        }
+    } catch(e) { /* fall through to straight-line */ }
     // Use persistent OSRM cache first, then active route state, then straight-line fallback
     const _cachedRoute = _incidentOsrmCache[String(incidentId)] || _incidentOsrmCache[String(data.incident_id)] || null;
     const _osrmTime = _cachedRoute?.timeMins || _activeDetailRouteState?.rt?.timeMins || 0;
@@ -3910,10 +3964,12 @@ async function openIncidentDetailsModal(incidentId) {
     const _etaMin = getVehicleETA(_baseTime, _traffic, _vehicleType);
     const _liveSpeed = _traffic ? Math.round(_traffic.avgSpeed * _vt.speedMult) : Math.round(_spd * _vt.speedMult);
     // Start own traffic ticker using actual OSRM route coords (not straight-line)
-    if (data.latitude && data.longitude) {
+    // Always run traffic ticker — use GPS-fallback coords (_routeLat/_routeLng) so
+    // TomTom works even when device has no GPS fix yet.
+    {
         const _gw2 = getPrimaryGateway();
-        const _iLat = parseFloat(data.latitude), _iLng = parseFloat(data.longitude);
-        console.log('[FLAMES] modal: calling chRoute from', _gw2.lat, _gw2.lng, 'to', _iLat, _iLng);
+        const _iLat = _routeLat, _iLng = _routeLng;
+        console.log('[FLAMES] modal: calling chRoute from', _gw2.lat, _gw2.lng, 'to', _iLat, _iLng, _hasGps ? '(GPS)' : '(No GPS - gateway fallback)');
         chRoute(_gw2.lat, _gw2.lng, _iLat, _iLng).then(rt => {
             console.log('[FLAMES] modal: chRoute resolved, coords length=', rt?.coords?.length);
             _activateDetailsModalTraffic(rt.coords);
@@ -3991,9 +4047,14 @@ async function openIncidentDetailsModal(incidentId) {
         ${rescueInfo ? `
         <div class="inc-details-section">
             <div class="inc-details-section-title">Routing Information</div>
+            ${!_hasGps ? `<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;padding:5px 10px;background:#2a1a0088;border:1px solid #f1c40f55;border-radius:7px;color:#f1c40f;font-size:10px;font-weight:700;">
+                📡 No GPS Fix &mdash; ETA estimated from gateway
+                <span style="font-size:9px;font-weight:400;color:#a08020;margin-left:auto;">Device coordinates unavailable</span>
+            </div>` : ''}
             <div class="inc-details-row"><span class="inc-details-row-label">Vehicle</span><span class="inc-details-row-val" data-field="details-vehicle">${_vt.label}</span></div>
-            <div class="inc-details-row"><span class="inc-details-row-label">Distance</span><span class="inc-details-row-val" style="color:var(--green);">${_distKm.toFixed(1)} km${(_cachedRoute||_activeDetailRouteState)?'':'  (est.)'}</span></div>
-            <div class="inc-details-row"><span class="inc-details-row-label">ETA</span><span class="inc-details-row-val" data-field="details-eta" style="color:var(--yellow);">~${_etaMin} min</span></div>
+            <div class="inc-details-row"><span class="inc-details-row-label">GPS Status</span><span class="inc-details-row-val" style="color:${_hasGps ? '#2ecc71' : '#f1c40f'};">${_hasGps ? '✅ Fixed' : '📡 No Fix'}</span></div>
+            <div class="inc-details-row"><span class="inc-details-row-label">Distance</span><span class="inc-details-row-val" style="color:${_hasGps ? 'var(--green)' : '#888'};">${_hasGps ? _distKm.toFixed(1)+' km'+((_cachedRoute||_activeDetailRouteState)?'':' (est.)') : '— (GPS pending)'}</span></div>
+            <div class="inc-details-row"><span class="inc-details-row-label">ETA</span><span class="inc-details-row-val" data-field="details-eta" style="color:${_hasGps ? 'var(--yellow)' : '#888'};">${_hasGps ? '~'+_etaMin+' min' : '— (GPS pending)'}</span></div>
             <div class="inc-details-row"><span class="inc-details-row-label">Peak Period</span><span class="inc-details-row-val" data-field="details-peak">${_peakLabel}</span></div>
 
         </div>
