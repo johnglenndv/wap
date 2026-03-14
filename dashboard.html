@@ -2465,12 +2465,9 @@ async function loadAndPlaceNodes(silent=false){
                 nodeMarkers[nid].setLatLng([lat,lng]);
                 nodeMarkers[nid].setPopupContent(popupContent);
                 const el = nodeMarkers[nid].getElement();
-                if(el){
-                    el.style.opacity = offline ? '0.55' : '1';
-                    el.classList.toggle('fire-node-active', hasAnyAlert);
-                }
+                if(el){ el.style.opacity='1'; el.classList.toggle('fire-node-active', hasAnyAlert); }
             } else {
-                const marker=L.marker([lat,lng],{icon:activeIcon,opacity:offline?0.45:1}).addTo(map);
+                const marker=L.marker([lat,lng],{icon:activeIcon,opacity:1}).addTo(map);
                 marker.bindPopup(popupContent);
                 marker.on('click',()=>{selectedNodeId=nid;updateSensorBar(nodeData[nid],nid);});
                 if(hasAnyAlert){ const el=marker.getElement(); if(el) el.classList.add('fire-node-active'); }
