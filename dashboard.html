@@ -1,4 +1,4 @@
-    <!DOCTYPE html>
+<!DOCTYPE html>
     <html lang="en">
     <head>
         <title>F.L.A.M.E.S. | Dashboard</title>
@@ -363,7 +363,14 @@
     .btn-small{background:transparent;border:1px solid #4a1a0a;color:var(--text);padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-family:Arial,sans-serif;transition:.3s;white-space:nowrap;}
     [data-theme="light"] .btn-small{border-color:#c09078;color:var(--text);}
     .btn-small:hover{background:linear-gradient(to right,#8b1a00,#c43d00);border-color:var(--accent);color:white;}
-    .pinned-list{display:none;flex-direction:column;gap:5px;overflow:hidden;flex:1;padding-top:8px;}
+    .pinned-list{display:none;flex-direction:column;gap:5px;overflow-y:auto;overflow-x:hidden;flex:1;padding-top:8px;scrollbar-width:thin;scrollbar-color:#4a1a0a66 transparent;}
+    .pinned-list::-webkit-scrollbar{width:4px;}
+    .pinned-list::-webkit-scrollbar-track{background:transparent;}
+    .pinned-list::-webkit-scrollbar-thumb{background:#4a1a0a99;border-radius:4px;}
+    .pinned-list::-webkit-scrollbar-thumb:hover{background:#8b3a1a99;}
+    [data-theme="light"] .pinned-list{scrollbar-color:#c09078aa transparent;}
+    [data-theme="light"] .pinned-list::-webkit-scrollbar-thumb{background:#c09078aa;}
+    [data-theme="light"] .pinned-list::-webkit-scrollbar-thumb:hover{background:#a07060cc;}
     .pinned-list.visible{display:flex;}
     .pinned-item{background:#2a0a0555;border:1px solid #3a1a0a44;border-radius:8px;padding:7px 10px;display:flex;justify-content:space-between;align-items:center;font-size:12px;flex-shrink:0;}
     [data-theme="light"] .pinned-item{background:#f5e8e055;border-color:#c0907866;}
