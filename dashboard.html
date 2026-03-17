@@ -4823,14 +4823,14 @@
             }
             wrap.innerHTML = `
             <div style="overflow-x:auto;">
-            <table class="adm-orgs-table" style="table-layout:fixed;min-width:520px;">
+            <table class="adm-orgs-table" style="table-layout:auto;width:100%;">
                 <thead><tr>
                     <th style="width:36px;">ID</th>
-                    <th style="width:20%;">Username</th>
-                    <th style="width:22%;">Email</th>
-                    <th style="width:13%;">Role</th>
+                    <th style="width:18%;">Username</th>
+                    <th style="width:20%;">Email</th>
+                    <th style="width:12%;">Role</th>
                     <th>Assigned Nodes</th>
-                    <th style="width:64px;"></th>
+                    <th style="width:80px;text-align:center;"></th>
                 </tr></thead>
                 <tbody>
                 ${users.map(u => {
@@ -4845,7 +4845,7 @@
                         <td style="color:#9a6a5a;font-size:11px;padding:7px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.email||'—'}</td>
                         <td style="padding:7px 8px;font-size:11px;">${roleLabel}</td>
                         <td style="padding:7px 8px;">${nodeChips}</td>
-                        <td style="padding:7px 8px;"><button class="adm-btn-sm" onclick="openUserDrawer(${uJson})">Manage</button></td>
+                        <td style="padding:7px 8px;text-align:center;white-space:nowrap;"><button class="adm-btn-sm" onclick="openUserDrawer(${uJson})">Manage</button></td>
                     </tr>`;
                 }).join('')}
                 </tbody>

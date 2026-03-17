@@ -900,6 +900,13 @@ function connectWS() {
             const msg = JSON.parse(event.data);
             if (msg.type === 'ping') return;
 
+            // Admin assigned/removed a node for this user — reload everything
+            if (msg.type === 'node_assignment_update') {
+                _alertDismissed = false;
+                loadMyNodes();
+                return;
+            }
+
             // Live sensor update for one of our nodes
             const isMyNode = _myNodes.some(n => n.node_id === (msg.node_id || msg.node));
             if (!isMyNode) return;
