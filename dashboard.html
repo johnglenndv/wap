@@ -382,6 +382,21 @@
     [data-theme="light"] .btn-icon-sm:hover{background:#f0d0c055;}
     .no-pinned{color:var(--text-muted);font-size:12px;text-align:center;margin-top:10px;}
 
+
+    /* ===================== LIVE NODE DOT ===================== */
+    .live-dot-indicator{
+        position:absolute;bottom:4px;right:4px;
+        width:11px;height:11px;
+        background:#2ecc71;border:2px solid #0d0302;
+        border-radius:50%;display:block;
+        box-shadow:0 0 6px #2ecc71cc;
+        animation:live-dot-pulse 2s ease infinite;
+    }
+    [data-theme="light"] .live-dot-indicator{border-color:#ede4df;}
+    @keyframes live-dot-pulse{
+        0%,100%{box-shadow:0 0 4px #2ecc71bb;opacity:1;}
+        50%{box-shadow:0 0 10px #2ecc71ff,0 0 18px #2ecc7177;opacity:.75;}
+    }
     /* ===================== INCIDENTS ===================== */
     .incidents-panel{min-height:0;display:flex;flex-direction:column;}
     .node-placeholder{color:var(--text-muted);font-size:12px;text-align:center;padding:16px 0;}
@@ -2264,7 +2279,19 @@
 
     const redIcon      = L.icon({iconUrl:'icons/EndPoint.png',iconSize:[60,60],iconAnchor:[30,40],popupAnchor:[0,-60]});
 
-    const nodeIcon     = L.icon({iconUrl:'icons/Node.png',iconSize:[50,50],iconAnchor:[18,18]});
+    function makeLiveNodeIcon(){
+        return L.divIcon({
+            className: '',
+            iconSize:  [50, 50],
+            iconAnchor:[18, 18],
+            popupAnchor:[0, -22],
+            html: `<div style="position:relative;width:50px;height:50px;">
+                    <img src="icons/Node.png" style="width:50px;height:50px;" alt="node">
+                    <span class="live-dot-indicator"></span>
+                </div>`
+        });
+    }
+    const nodeIcon = makeLiveNodeIcon();
 
     const gwIcon       = L.icon({iconUrl:'icons/Gateway.png',iconSize:[55,55],iconAnchor:[20,20]});
 
@@ -2395,7 +2422,7 @@
                     isOffline = minAgo > OFFLINE_MIN;
                 }
             }
-            nodeMarkers[nodeId].setIcon(isOffline ? makeOfflineNodeIcon() : nodeIcon);
+            nodeMarkers[nodeId].setIcon(isOffline ? makeOfflineNodeIcon() : makeLiveNodeIcon());
             nodeMarkers[nodeId].setOpacity(isOffline ? 0.75 : 1);
             const el = nodeMarkers[nodeId].getElement();
             if (el) { el.classList.remove('fire-node-active'); }
