@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>F.L.A.M.E.S. | My Nodes</title>
+    <link rel="icon" type="image/png" href="icons/heading-logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta charset="UTF-8">
+    <style>
+:root {
+    --bg-deep:#0d0302; --bg-panel:#1a0905ee; --bg-card:#200b06dd;
+    --border:#4a1a0a55; --border-glow:#8b3a1a44;
+    --accent:#e14f00; --accent-soft:#c43d0088;
+    --text:#f0d0b8; --text-dim:#9a6a5a; --text-muted:#5a3a2a;
+    --green:#2ecc71; --yellow:#f1c40f; --red:#ff4757; --orange:#ff9f1c;
+    --hdr:60px; --radius:12px;
+}
+[data-theme="light"] {
+    --bg-deep:#ede4df; --bg-panel:#ffffffdd; --bg-card:#fff8f5ee;
+    --border:#c0907866; --border-glow:#d4896055;
+    --text:#1e0e06; --text-dim:#6a3a22; --text-muted:#9a6040;
+    --green:#1a9e52; --yellow:#c89400; --red:#d93040; --orange:#d4750a;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;background:var(--bg-deep);font-family:Arial,sans-serif;color:var(--text);overflow-x:hidden;}
+html::-webkit-scrollbar,body::-webkit-scrollbar{width:4px;}
+html::-webkit-scrollbar-thumb,body::-webkit-scrollbar-thumb{background:#3a1a0a55;border-radius:4px;}
+
+/* ── HEADER ── */
+#main-header{
+    height:var(--hdr);background:linear-gradient(to right,#180401,#3a1005);
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 max(14px,env(safe-area-inset-left));
+    position:fixed;top:0;left:0;right:0;z-index:10000;
+}
+[data-theme="light"] #main-header{background:linear-gradient(to right,#f5e6dcf8,#ecddd5f8);}
+.header-logo{display:flex;align-items:center;gap:10px;}
+.header-logo img{width:45px;filter:drop-shadow(0 0 8px #e14f0077);}
+.header-logo h1{
+    font-family:'Cinzel',serif;font-size:clamp(13px,2vw,22px);
+    letter-spacing:1px;font-weight:800;
+    background:linear-gradient(to bottom,#ff7733,#9b1a00);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.header-right{display:flex;align-items:center;gap:10px;}
+.ws-indicator{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-dim);}
+.ws-dot{width:8px;height:8px;border-radius:50%;background:#555;transition:background .3s;}
+.ws-dot.connected{background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse-dot 2s ease infinite;}
+.ws-dot.error{background:var(--red);}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.4}}
+.profile-icon-btn{background:transparent;border:none;cursor:pointer;padding:4px;}
+.profile-icon-btn img{width:34px;height:34px;border-radius:50%;border:2px solid transparent;transition:border-color .2s;}
+.profile-icon-btn:hover img{border-color:var(--accent);}
+
+/* ── SIDE PANEL ── */
+.side-panel{
+    position:fixed;top:0;right:-110%;width:min(300px,100vw);height:100%;
+    background:linear-gradient(to bottom,#1a0805f5,#120404f5);
+    border-left:1px solid #5a1a0a55;box-shadow:-10px 0 40px #00000088;
+    z-index:20000;transition:right .4s cubic-bezier(.25,.46,.45,.94);
+    display:flex;flex-direction:column;padding:20px;
+}
+[data-theme="light"] .side-panel{background:linear-gradient(to bottom,#fff8f5f8,#f5e6dcf8);border-left-color:#c0907866;}
+.side-panel.active{right:0;}
+.panel-header{display:flex;justify-content:space-between;align-items:center;padding-bottom:16px;border-bottom:1px solid #4a1a0a55;margin-bottom:20px;}
+.panel-header h2{font-size:14px;letter-spacing:2px;color:var(--text);}
+.close-btn{font-size:22px;color:var(--text-dim);cursor:pointer;transition:color .2s;line-height:1;}
+.close-btn:hover{color:var(--accent);}
+.panel-section{background:#3a0a0433;border:1px solid #4a1a0a44;border-radius:10px;padding:14px 16px;margin-bottom:14px;}
+[data-theme="light"] .panel-section{background:#f5e0d444;border-color:#c0907866;}
+.panel-section h3{font-size:10px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-bottom:12px;}
+.setting-item{display:flex;justify-content:space-between;align-items:center;}
+.setting-item span{font-size:14px;color:var(--text);}
+.theme-switch{position:relative;display:inline-block;width:52px;height:26px;}
+.theme-switch input{opacity:0;width:0;height:0;}
+.slider{position:absolute;cursor:pointer;inset:0;background:#2a1a14;border-radius:26px;transition:.4s;}
+.slider:before{position:absolute;content:"☀️";font-size:13px;height:20px;width:20px;left:3px;top:3px;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:.4s;}
+input:checked+.slider{background:#c8a08855;}
+input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
+.side-profile-card{background:linear-gradient(135deg,#3a0a0444,#2a1a0a33);border:1px solid #5a2a1a55;border-radius:12px;padding:16px;margin-bottom:14px;display:flex;flex-direction:column;gap:8px;}
+[data-theme="light"] .side-profile-card{background:#f5e0d455;border-color:#c0907866;}
+.side-profile-avatar{width:48px;height:48px;border-radius:50%;border:2px solid var(--accent);}
+.side-profile-username{font-size:16px;font-weight:700;color:var(--text);}
+.side-profile-role{font-size:10px;letter-spacing:2px;color:#ff7033;background:#3a0a0455;border:1px solid #c43d0055;border-radius:20px;padding:2px 10px;width:fit-content;}
+.logout-btn{margin-top:auto;background:transparent;border:1px solid #4a1a0a55;color:var(--text-dim);padding:10px 14px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:10px;font-family:Arial,sans-serif;font-size:14px;width:100%;transition:.3s;}
+.logout-btn:hover{background:#5a0a0533;border-color:var(--accent);color:var(--text);}
+.logout-btn img{width:18px;opacity:.7;}
+.panel-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;z-index:15000;backdrop-filter:blur(4px);}
+.panel-overlay.active{display:block;}
+
+/* ── MAIN CONTENT ── */
+.page-wrap{padding:calc(var(--hdr) + 16px) 14px 24px;max-width:1100px;margin:0 auto;}
+
+/* ── FIRE ALERT BANNER ── */
+.fire-alert-banner{
+    background:linear-gradient(to right,#3a0500,#5a0a00);
+    border:1px solid #ff475566;border-radius:var(--radius);
+    padding:14px 18px;margin-bottom:16px;
+    display:none;align-items:center;gap:14px;
+    animation:banner-in .4s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes banner-in{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+.fire-alert-banner.visible{display:flex;}
+[data-theme="light"] .fire-alert-banner{background:linear-gradient(to right,#ffeeee,#ffe0e0);border-color:#d04040;}
+.fire-pulse-icon{width:44px;height:44px;border-radius:50%;background:#1a000088;border:2px solid #ff4757;display:flex;align-items:center;justify-content:center;font-size:20px;animation:pulse-dot .8s ease infinite;flex-shrink:0;}
+.fire-alert-content{flex:1;min-width:0;}
+.fire-alert-content h3{font-size:14px;font-weight:700;color:#ff6575;margin-bottom:2px;}
+.fire-alert-content p{font-size:11px;color:#9a4a3a;}
+[data-theme="light"] .fire-alert-content h3{color:#c02030;}
+[data-theme="light"] .fire-alert-content p{color:#7a2020;}
+.ack-btn{background:linear-gradient(135deg,#8b1a00,#c43d00);border:1px solid #e14f0055;border-radius:7px;color:white;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;padding:8px 14px;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:.3s;}
+.ack-btn:hover{box-shadow:0 0 15px #e14f0055;}
+
+/* ── WELCOME BAR ── */
+.welcome-bar{
+    background:var(--bg-panel);border:1px solid var(--border);border-top:1px solid var(--border-glow);
+    border-radius:var(--radius);padding:14px 18px;margin-bottom:16px;
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
+}
+.welcome-text h2{font-size:15px;color:var(--text);}
+.welcome-text p{font-size:11px;color:var(--text-dim);margin-top:3px;}
+.status-chips{display:flex;gap:7px;flex-wrap:wrap;}
+.chip{font-size:9px;font-weight:700;padding:3px 10px;border-radius:20px;border:1px solid;letter-spacing:.5px;}
+.chip-fire{color:var(--red);border-color:#ff475555;background:#1a000055;animation:pulse-dot 1s ease infinite;}
+.chip-normal{color:var(--green);border-color:#2ecc7155;background:#0a1a0a55;}
+.chip-total{color:var(--text-dim);border-color:var(--border);}
+
+/* ── SECTION LABEL ── */
+.section-label{font-size:9px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
+
+/* ── NODES GRID ── */
+.nodes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-bottom:20px;}
+.node-card{
+    background:var(--bg-panel);border:1px solid var(--border);border-top:1px solid var(--border-glow);
+    border-radius:var(--radius);overflow:hidden;transition:border-color .2s;
+    box-shadow:0 4px 20px #00000033;
+}
+.node-card:hover{border-color:#6a2a1a88;}
+.node-card.fire{border-color:#ff475566;border-top-color:#ff4757aa;box-shadow:0 4px 20px #ff475722;}
+.node-card.possible{border-color:#f1c40f55;border-top-color:#f1c40f88;box-shadow:0 4px 20px #f1c40f11;}
+.node-card.offline{opacity:.7;}
+
+/* card header */
+.node-card-header{padding:12px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #2a1a0a33;}
+[data-theme="light"] .node-card-header{border-bottom-color:#c0907844;}
+.status-ring{width:40px;height:40px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.status-ring.normal{background:#0a1a0a55;border:2px solid #2ecc7155;}
+.status-ring.fire{background:#1a000055;border:2px solid #ff475577;animation:pulse-dot .8s ease infinite;}
+.status-ring.possible{background:#1a160055;border:2px solid #f1c40f77;animation:pulse-dot 1.2s ease infinite;}
+.status-ring.offline{background:#1a1a1a33;border:2px solid #4a4a4a44;}
+.node-header-info{flex:1;min-width:0;}
+.node-id-label{font-size:13px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.node-location-label{font-size:10px;color:var(--text-dim);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ai-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;border:1px solid;flex-shrink:0;}
+.ai-fire{color:var(--red);border-color:#ff475544;background:#ff475511;}
+.ai-possible{color:var(--yellow);border-color:#f1c40f44;background:#f1c40f11;}
+.ai-normal{color:var(--green);border-color:#2ecc7144;background:#2ecc7111;}
+.ai-offline{color:#5a5a5a;border-color:#3a3a3a44;background:#2a2a2a11;}
+
+/* sensor grid */
+.sensor-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#2a1a0a22;}
+[data-theme="light"] .sensor-grid{background:#c0907822;}
+.sensor-cell{padding:10px 14px;background:var(--bg-card);}
+.sensor-lbl{font-size:8px;letter-spacing:1.5px;color:var(--text-dim);text-transform:uppercase;margin-bottom:3px;}
+.sensor-val{font-size:18px;font-weight:700;font-family:Arial,sans-serif;}
+.sval-normal{color:#c84a00;}
+[data-theme="light"] .sval-normal{color:#b83a00;}
+.sval-ok{color:var(--green);}
+.sval-warn{color:var(--yellow);}
+.sval-alert{color:var(--red);}
+
+/* sparkline */
+.sparkline-wrap{padding:8px 14px 0;}
+.sparkline-lbl{font-size:8px;letter-spacing:1.5px;color:var(--text-dim);text-transform:uppercase;margin-bottom:4px;}
+.sparkline-box{height:42px;background:#12050333;border-radius:5px;border:1px solid #2a1a0a33;overflow:hidden;}
+[data-theme="light"] .sparkline-box{background:#f5e8e055;border-color:#c0907833;}
+.sparkline-box svg{width:100%;height:100%;}
+
+/* card footer */
+.node-card-footer{padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid #2a1a0a22;flex-wrap:wrap;}
+[data-theme="light"] .node-card-footer{border-top-color:#c0907833;}
+.node-time-label{font-size:10px;color:var(--text-muted);}
+.gps-badge{font-size:9px;color:#7a9abb;background:#0a101a55;border:1px solid #1a3a5a44;border-radius:4px;padding:2px 6px;}
+[data-theme="light"] .gps-badge{background:#e8f0ff;border-color:#3d9cff44;color:#1a40a0;}
+.history-btn{background:none;border:1px solid #4a1a0a55;border-radius:6px;color:var(--text-dim);font-size:10px;padding:4px 10px;cursor:pointer;transition:.2s;font-family:Arial,sans-serif;}
+[data-theme="light"] .history-btn{border-color:#c0907866;}
+.history-btn:hover{border-color:var(--accent);color:var(--text);}
+
+/* ── EMPTY STATE ── */
+.empty-state{text-align:center;padding:40px 20px;color:var(--text-muted);}
+.empty-state-icon{font-size:42px;margin-bottom:14px;opacity:.4;}
+.empty-state h3{font-size:14px;color:var(--text-dim);margin-bottom:6px;}
+.empty-state p{font-size:12px;line-height:1.6;}
+
+/* ── HISTORY PANEL ── */
+.history-panel{
+    background:var(--bg-panel);border:1px solid var(--border);border-top:1px solid var(--border-glow);
+    border-radius:var(--radius);display:none;flex-direction:column;margin-bottom:20px;overflow:hidden;
+    box-shadow:0 4px 20px #00000033;
+}
+.history-panel.visible{display:flex;}
+.hp-header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid #2a1a0a33;flex-shrink:0;flex-wrap:wrap;}
+[data-theme="light"] .hp-header{border-bottom-color:#c0907855;}
+.hp-back-btn{background:#2a0a0466;border:1px solid #5a2a1a66;color:var(--text);border-radius:7px;padding:6px 12px;font-size:12px;cursor:pointer;font-family:Arial,sans-serif;transition:.2s;white-space:nowrap;}
+[data-theme="light"] .hp-back-btn{background:#f5e8e066;border-color:#c0907888;}
+.hp-back-btn:hover{border-color:var(--accent);}
+.hp-node-badge{font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;color:#ff7033;background:#3a0a0455;border:1px solid #c43d0055;border-radius:20px;padding:2px 10px;}
+.hp-live-badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;color:var(--green);letter-spacing:1px;margin-left:4px;}
+.hp-live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse-dot 1.5s ease infinite;}
+.hp-body{padding:12px 14px;}
+.hp-limit-row{display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
+.hp-limit-lbl{font-size:9px;color:#7a4a3a;letter-spacing:1px;text-transform:uppercase;}
+.hp-limit-btn{background:#2a0a0455;border:1px solid #4a1a0a55;color:#9a6a5a;padding:3px 10px;border-radius:5px;font-size:10px;cursor:pointer;transition:.2s;}
+[data-theme="light"] .hp-limit-btn{background:#f5e8e066;border-color:#c0907866;color:var(--text-dim);}
+.hp-limit-btn.active,.hp-limit-btn:hover{background:linear-gradient(135deg,#6b1200,#a03000);border-color:var(--accent);color:white;}
+.hp-stats{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.hp-stat{background:#2a0a0444;border:1px solid #3a1a0a55;border-radius:7px;padding:5px 10px;font-size:10px;display:flex;align-items:center;gap:5px;}
+[data-theme="light"] .hp-stat{background:#f5e8e055;border-color:#c0907866;}
+.hp-stat-lbl{color:var(--text-muted);font-size:8px;letter-spacing:1px;text-transform:uppercase;}
+.hp-stat-val{color:#ff904f;font-weight:700;}
+[data-theme="light"] .hp-stat-val{color:#b83a00;}
+/* chart */
+.hp-chart-tabs{display:flex;gap:3px;margin-bottom:5px;flex-wrap:wrap;}
+.hp-chart-tab{padding:3px 9px;border-radius:5px;font-size:9px;font-weight:700;letter-spacing:1px;cursor:pointer;border:1px solid transparent;background:#2a0a0444;color:#5a3a2a;transition:.2s;}
+[data-theme="light"] .hp-chart-tab{background:#f5e8e066;color:var(--text-dim);}
+.hp-chart-tab[data-m="temperature"].active{background:#ff6b3522;border-color:#ff6b35;color:#ff8555;}
+.hp-chart-tab[data-m="humidity"].active{background:#3d9cff22;border-color:#3d9cff;color:#6db8ff;}
+.hp-chart-tab[data-m="smoke"].active{background:#b0b0b022;border-color:#c8c8c8;color:#d8d8d8;}
+.hp-chart-tab[data-m="flame"].active{background:#ff475722;border-color:#ff4757;color:#ff6575;}
+.hp-chart-lbl{font-size:8px;color:var(--text-muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;}
+.hp-chart{height:64px;background:#12050344;border-radius:7px;border:1px solid #3a1a0a44;padding:5px 7px;}
+[data-theme="light"] .hp-chart{background:#f5e8e055;border-color:#c0907866;}
+.hp-chart svg{width:100%;height:100%;overflow:visible;}
+/* table */
+.hp-table-wrap{margin-top:10px;overflow-x:auto;border:1px solid #3a1a0a44;border-radius:7px;}
+[data-theme="light"] .hp-table-wrap{border-color:#c0907866;}
+.hp-table{width:100%;border-collapse:collapse;font-size:11px;min-width:480px;}
+.hp-table thead tr{background:#120503;}
+[data-theme="light"] .hp-table thead tr{background:#f5e0d0;}
+.hp-table thead th{padding:7px 8px;text-align:left;font-size:8px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);border-bottom:1px solid #3a1a0a55;font-weight:700;}
+.hp-table tbody tr{border-bottom:1px solid #2a1a0a33;transition:background .15s;}
+[data-theme="light"] .hp-table tbody tr{border-bottom-color:#c0907844;}
+.hp-table tbody tr:hover{background:#3a1a0a22;}
+[data-theme="light"] .hp-table tbody tr:hover{background:#f5e0d033;}
+.hp-table tbody td{padding:6px 8px;color:#c8a080;white-space:nowrap;}
+[data-theme="light"] .hp-table tbody td{color:#5a3020;}
+.hp-table .c-val{font-family:monospace;font-weight:600;color:#ff904f;}
+[data-theme="light"] .hp-table .c-val{color:#b83a00;}
+.hp-spinner{width:20px;height:20px;border:3px solid #3a1a0a;border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:14px auto;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── READINGS TABLE PANEL ── */
+.panel-box{background:var(--bg-panel);border:1px solid var(--border);border-top:1px solid var(--border-glow);border-radius:var(--radius);padding:14px;margin-bottom:20px;box-shadow:0 4px 20px #00000033;}
+.readings-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
+.readings-title{font-size:9px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;}
+.node-filter-select{background:#12060566;border:1px solid #4a1a0a;border-radius:6px;color:var(--text);font-size:11px;padding:4px 10px;outline:none;cursor:pointer;}
+[data-theme="light"] .node-filter-select{background:#fff8f5;border-color:#c09078;color:var(--text);}
+.readings-table-wrap{overflow-x:auto;}
+.readings-table{width:100%;border-collapse:collapse;font-size:11px;min-width:520px;}
+.readings-table thead th{padding:6px 8px;text-align:left;font-size:8px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);border-bottom:1px solid #3a1a0a44;font-weight:700;}
+[data-theme="light"] .readings-table thead th{border-bottom-color:#c0907866;}
+.readings-table tbody tr{border-bottom:1px solid #2a1a0a22;transition:background .15s;}
+[data-theme="light"] .readings-table tbody tr{border-bottom-color:#c0907833;}
+.readings-table tbody tr:hover{background:#3a1a0a22;}
+[data-theme="light"] .readings-table tbody tr:hover{background:#f5e0d033;}
+.readings-table tbody td{padding:6px 8px;color:#c8a080;white-space:nowrap;}
+[data-theme="light"] .readings-table tbody td{color:#5a3020;}
+.readings-table .node-col{font-family:monospace;color:#ff9055;font-weight:700;}
+.readings-table .val-col{font-family:monospace;font-weight:600;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:600px){
+    :root{--hdr:52px;}
+    .nodes-grid{grid-template-columns:1fr;}
+    .status-chips{display:none;}
+}
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="main-header">
+    <div class="header-logo">
+        <img src="icons/logo.png" alt="FLAMES">
+        <h1>F.L.A.M.E.S.</h1>
+    </div>
+    <div class="header-right">
+        <div class="ws-indicator">
+            <div class="ws-dot" id="ws-dot"></div>
+            <span id="ws-label" style="display:none;font-size:11px;">Connecting…</span>
+        </div>
+        <button class="profile-icon-btn" id="profile-btn">
+            <img src="icons/Profile.png" alt="Profile">
+        </button>
+    </div>
+</div>
+
+<!-- SIDE PANEL -->
+<div id="side-panel" class="side-panel">
+    <div class="panel-header">
+        <h2>SETTINGS</h2>
+        <span class="close-btn" id="close-panel">✕</span>
+    </div>
+    <div class="side-profile-card">
+        <img src="icons/Profile.png" alt="Profile" class="side-profile-avatar">
+        <div class="side-profile-username" id="side-username">—</div>
+        <span class="side-profile-role">USER</span>
+    </div>
+    <div class="panel-section">
+        <h3>Display</h3>
+        <div class="setting-item">
+            <span>Theme: <strong id="mode-text">Dark</strong></span>
+            <label class="theme-switch">
+                <input type="checkbox" id="mode-toggle" checked>
+                <div class="slider"></div>
+            </label>
+        </div>
+    </div>
+    <button class="logout-btn" id="logout-trigger">
+        <img src="icons/logout-icon.png" alt="logout">
+        <span>Log Out</span>
+    </button>
+</div>
+<div id="panel-overlay" class="panel-overlay"></div>
+
+<!-- MAIN -->
+<div class="page-wrap">
+
+    <!-- Fire Alert Banner -->
+    <div class="fire-alert-banner" id="fire-alert-banner">
+        <div class="fire-pulse-icon">🔥</div>
+        <div class="fire-alert-content">
+            <h3 id="alert-title">Fire Detected!</h3>
+            <p id="alert-sub">—</p>
+        </div>
+        <button class="ack-btn" onclick="dismissAlert()">ACKNOWLEDGE</button>
+    </div>
+
+    <!-- Welcome Bar -->
+    <div class="welcome-bar">
+        <div class="welcome-text">
+            <h2>My Assigned Nodes</h2>
+            <p id="welcome-sub">You are monitoring <strong id="node-count-text" style="color:var(--text);">0 nodes</strong> assigned by your administrator.</p>
+        </div>
+        <div class="status-chips" id="status-chips"></div>
+    </div>
+
+    <!-- Nodes Section -->
+    <div class="section-label">
+        <span>Live Sensor Status</span>
+        <span id="last-update-label" style="font-size:9px;color:var(--green);"></span>
+    </div>
+
+    <div id="nodes-loading" style="text-align:center;padding:30px;color:var(--text-muted);">
+        <div class="hp-spinner"></div>
+        Loading your nodes…
+    </div>
+
+    <div class="nodes-grid" id="nodes-grid" style="display:none;"></div>
+
+    <div class="empty-state" id="nodes-empty" style="display:none;">
+        <div class="empty-state-icon">📡</div>
+        <h3>No Nodes Assigned</h3>
+        <p>Your administrator hasn't assigned any sensor nodes to your account yet.<br>Please contact your system administrator.</p>
+    </div>
+
+    <!-- History Panel (shown when user clicks "History" on a node) -->
+    <div class="history-panel" id="history-panel">
+        <div class="hp-header">
+            <button class="hp-back-btn" onclick="closeHistory()">← Back</button>
+            <span style="font-size:10px;color:var(--text-dim);letter-spacing:1px;">SENSOR HISTORY</span>
+            <span class="hp-live-badge"><span class="hp-live-dot"></span>LIVE</span>
+            <span class="hp-node-badge" id="hp-node-label">—</span>
+        </div>
+        <div class="hp-body">
+            <div class="hp-limit-row">
+                <span class="hp-limit-lbl">Show:</span>
+                <button class="hp-limit-btn" onclick="setLimit(20)">20</button>
+                <button class="hp-limit-btn active" onclick="setLimit(50)">50</button>
+                <button class="hp-limit-btn" onclick="setLimit(100)">100</button>
+                <button class="hp-limit-btn" onclick="setLimit(200)">200</button>
+            </div>
+            <div class="hp-stats" id="hp-stats"></div>
+            <div class="hp-chart-tabs">
+                <button class="hp-chart-tab active" data-m="temperature" onclick="switchMetric('temperature')">🌡 Temp</button>
+                <button class="hp-chart-tab" data-m="humidity" onclick="switchMetric('humidity')">💧 Hum</button>
+                <button class="hp-chart-tab" data-m="smoke" onclick="switchMetric('smoke')">💨 Smoke</button>
+                <button class="hp-chart-tab" data-m="flame" onclick="switchMetric('flame')">🔥 Flame</button>
+            </div>
+            <div class="hp-chart-lbl" id="hp-chart-lbl">Temperature Trend (°C)</div>
+            <div class="hp-chart">
+                <svg id="hp-chart-svg" viewBox="0 0 800 62" preserveAspectRatio="none">
+                    <text x="400" y="36" text-anchor="middle" fill="#3a1a0a" font-size="12">No data</text>
+                </svg>
+            </div>
+            <div id="hp-table-wrap" class="hp-table-wrap" style="margin-top:10px;">
+                <div class="hp-spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Readings -->
+    <div class="section-label">
+        <span>Recent Readings</span>
+    </div>
+    <div class="panel-box">
+        <div class="readings-header">
+            <span class="readings-title">Last 20 Readings</span>
+            <select class="node-filter-select" id="node-filter" onchange="filterReadings(this.value)">
+                <option value="all">All My Nodes</option>
+            </select>
+        </div>
+        <div class="readings-table-wrap">
+            <table class="readings-table">
+                <thead><tr>
+                    <th>Time</th><th>Node</th>
+                    <th style="text-align:right;">Temp °C</th>
+                    <th style="text-align:right;">Hum %</th>
+                    <th style="text-align:right;">Smoke</th>
+                    <th style="text-align:right;">Flame</th>
+                    <th>AI</th>
+                    <th style="text-align:right;">Conf.</th>
+                </tr></thead>
+                <tbody id="readings-tbody">
+                    <tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text-muted);">Loading…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div><!-- /page-wrap -->
+
+<script>
+// ── CONFIG ──
+const API_BASE = () => localStorage.getItem('flames_api') || 'https://flamesapp.up.railway.app';
+const TOKEN    = () => localStorage.getItem('flames_token');
+const authHdr  = () => ({ 'Authorization': `Bearer ${TOKEN()}` });
+
+if (!TOKEN()) window.location.href = 'login.html';
+
+// ── STATE ──
+let _myNodes       = [];
+let _allReadings   = [];
+let _filterNode    = 'all';
+let _hpNode        = null;
+let _hpLimit       = 50;
+let _hpMetric      = 'temperature';
+let _alertDismissed = false;
+let _ws            = null;
+
+const CHART_CFG = {
+    temperature: { label:'Temperature Trend (°C)',  unit:'°C',  color:'#ff6b35', key:'temperature' },
+    humidity:    { label:'Humidity Trend (%)',        unit:'%',   color:'#3d9cff', key:'humidity' },
+    smoke:       { label:'Smoke Trend (ppm)',         unit:' ppm',color:'#c8c8c8', key:'smoke' },
+    flame:       { label:'Flame Sensor Trend',        unit:'',    color:'#ff4757', key:'flame' },
+};
+
+// ── THEME ──
+const modeToggle = document.getElementById('mode-toggle');
+const modeText   = document.getElementById('mode-text');
+function applyTheme(isDark) {
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    modeText.textContent = isDark ? 'Dark' : 'Light';
+    modeToggle.checked = isDark;
+}
+modeToggle.addEventListener('change', () => {
+    applyTheme(modeToggle.checked);
+    localStorage.setItem('flames_theme', modeToggle.checked ? 'dark' : 'light');
+});
+applyTheme(localStorage.getItem('flames_theme') !== 'light');
+
+// ── SIDE PANEL ──
+document.getElementById('profile-btn').addEventListener('click', () => {
+    document.getElementById('side-panel').classList.add('active');
+    document.getElementById('panel-overlay').classList.add('active');
+});
+function closePanel() {
+    document.getElementById('side-panel').classList.remove('active');
+    document.getElementById('panel-overlay').classList.remove('active');
+}
+document.getElementById('close-panel').addEventListener('click', closePanel);
+document.getElementById('panel-overlay').addEventListener('click', closePanel);
+document.getElementById('logout-trigger').addEventListener('click', () => {
+    if (confirm('Are you sure you want to log out?')) {
+        localStorage.removeItem('flames_token');
+        window.location.href = 'login.html';
+    }
+});
+
+// ── USER INFO ──
+(async () => {
+    try {
+        const res = await fetch(`${API_BASE()}/me`, { headers: authHdr() });
+        if (res.status === 401) { window.location.href = 'login.html'; return; }
+        const me = await res.json();
+        // Redirect admins and members to the main dashboard
+        if (me.is_admin || me.organization_id) {
+            window.location.href = 'dashboard.html';
+            return;
+        }
+        document.getElementById('side-username').textContent = me.username || '—';
+    } catch {
+        document.getElementById('side-username').textContent = localStorage.getItem('flames_username') || '—';
+    }
+})();
+
+// ── HELPERS ──
+function formatTimestamp(raw) {
+    if (!raw) return '—';
+    try {
+        const s = raw.toString().replace('T', ' ').replace(/\.\d+Z?$/, '');
+        const [d, t] = s.split(' ');
+        if (!d) return raw;
+        const [yr, m, day] = d.split('-');
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const mon = months[parseInt(m, 10) - 1] || m;
+        if (!t) return `${mon} ${parseInt(day,10)}, ${yr}`;
+        const [hh, mm] = t.split(':');
+        const h = parseInt(hh, 10);
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 || 12;
+        return `${mon} ${parseInt(day,10)}, ${yr} ${h12}:${mm} ${ampm}`;
+    } catch { return raw; }
+}
+
+function aiClass(pred) {
+    const p = (pred || '').toLowerCase();
+    return p === 'fire' ? 'ai-fire' : p === 'false' ? 'ai-possible' : p === 'normal' ? 'ai-normal' : 'ai-offline';
+}
+function aiLabel(pred) {
+    const p = (pred || '').toLowerCase();
+    return p === 'fire' ? 'FIRE' : p === 'false' ? 'POSSIBLE' : p === 'normal' ? 'Normal' : '—';
+}
+function cardClass(pred) {
+    const p = (pred || '').toLowerCase();
+    return p === 'fire' ? 'fire' : p === 'false' ? 'possible' : 'normal';
+}
+function statusRingClass(pred) {
+    const p = (pred || '').toLowerCase();
+    return p === 'fire' ? 'fire' : p === 'false' ? 'possible' : 'normal';
+}
+function statusIcon(pred) {
+    const p = (pred || '').toLowerCase();
+    return p === 'fire' ? '🔥' : p === 'false' ? '⚠️' : '📡';
+}
+function tempColor(t, pred) {
+    if ((pred||'').toLowerCase()==='fire') return 'sval-alert';
+    if (t > 35) return 'sval-warn';
+    return 'sval-normal';
+}
+function smokeColor(s, pred) {
+    if ((pred||'').toLowerCase()==='fire') return 'sval-alert';
+    if (s > 100) return 'sval-warn';
+    return 'sval-normal';
+}
+
+function sparklineSVG(vals, color) {
+    if (!vals || vals.length < 2) return '';
+    const W = 300, H = 42, P = 4;
+    const mn = Math.min(...vals), mx = Math.max(...vals), rng = mx - mn || 1;
+    const px = i => P + (i / (vals.length - 1)) * (W - P * 2);
+    const py = v => P + (1 - (v - mn) / rng) * (H - P * 2);
+    const pts = vals.map((v, i) => `${px(i)},${py(v)}`).join(' ');
+    const area = `M${px(0)},${H} ` + vals.map((v,i) => `L${px(i)},${py(v)}`).join(' ') + ` L${px(vals.length-1)},${H} Z`;
+    return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+        <path d="${area}" fill="${color}" opacity=".15"/>
+        <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>
+        <circle cx="${px(vals.length-1)}" cy="${py(vals[vals.length-1])}" r="3" fill="${color}"/>
+    </svg>`;
+}
+
+// ── RENDER NODES ──
+function renderNodes() {
+    const grid    = document.getElementById('nodes-grid');
+    const loading = document.getElementById('nodes-loading');
+    const empty   = document.getElementById('nodes-empty');
+    const chips   = document.getElementById('status-chips');
+
+    loading.style.display = 'none';
+
+    if (!_myNodes.length) {
+        grid.style.display = 'none';
+        empty.style.display = 'block';
+        document.getElementById('node-count-text').textContent = '0 nodes';
+        return;
+    }
+
+    empty.style.display = 'none';
+    grid.style.display  = 'grid';
+
+    let fireCount = 0, normalCount = 0;
+    const filterSel = document.getElementById('node-filter');
+    const existing  = new Set([...filterSel.options].map(o => o.value));
+
+    grid.innerHTML = _myNodes.map(n => {
+        const pred = (n.ai_prediction || 'normal').toLowerCase();
+        const isFire = pred === 'fire' || pred === 'false';
+        if (pred === 'fire' || pred === 'false') fireCount++; else normalCount++;
+
+        // add to filter dropdown
+        if (!existing.has(n.node_id)) {
+            const opt = document.createElement('option');
+            opt.value = n.node_id;
+            opt.textContent = n.node_id;
+            filterSel.appendChild(opt);
+            existing.add(n.node_id);
+        }
+
+        const sparkColor = pred === 'fire' ? '#ff4757' : pred === 'false' ? '#f1c40f' : '#2ecc71';
+        const history = (n._history || []).map(r => r.temperature).filter(v => v != null);
+        const hasGps  = n.latitude && parseFloat(n.latitude) !== 0;
+
+        return `<div class="node-card ${cardClass(pred)}" id="nodecard-${n.node_id}">
+            <div class="node-card-header">
+                <div class="status-ring ${statusRingClass(pred)}">${statusIcon(pred)}</div>
+                <div class="node-header-info">
+                    <div class="node-id-label">${n.node_id}</div>
+                    <div class="node-location-label">${n.location_name || (n.gateway_id ? `via ${n.gateway_id}` : 'No location set')}</div>
+                </div>
+                <span class="ai-badge ${aiClass(pred)}">${aiLabel(pred)}</span>
+            </div>
+            <div class="sensor-grid">
+                <div class="sensor-cell">
+                    <div class="sensor-lbl">Temperature</div>
+                    <div class="sensor-val ${tempColor(n.temperature, pred)}">${n.temperature != null ? n.temperature + '°C' : '—'}</div>
+                </div>
+                <div class="sensor-cell">
+                    <div class="sensor-lbl">Humidity</div>
+                    <div class="sensor-val sval-normal">${n.humidity != null ? n.humidity + '%' : '—'}</div>
+                </div>
+                <div class="sensor-cell">
+                    <div class="sensor-lbl">Smoke (ppm)</div>
+                    <div class="sensor-val ${smokeColor(n.smoke, pred)}">${n.smoke != null ? n.smoke : '—'}</div>
+                </div>
+                <div class="sensor-cell">
+                    <div class="sensor-lbl">Flame</div>
+                    <div class="sensor-val ${n.flame > 0 ? 'sval-alert' : 'sval-ok'}">${n.flame > 0 ? n.flame + ' det.' : 'None'}</div>
+                </div>
+            </div>
+            <div class="sparkline-wrap">
+                <div class="sparkline-lbl">Temp trend (last readings)</div>
+                <div class="sparkline-box">${history.length >= 2 ? sparklineSVG(history.slice(0,20).reverse(), sparkColor) : '<svg><text x="50%" y="55%" text-anchor="middle" fill="#3a1a0a" font-size="10">No trend data</text></svg>'}</div>
+            </div>
+            <div class="node-card-footer">
+                <span class="node-time-label">Updated: ${formatTimestamp(n.local_timestamp)}</span>
+                ${hasGps ? `<span class="gps-badge">GPS: ${parseFloat(n.latitude).toFixed(4)}, ${parseFloat(n.longitude).toFixed(4)}</span>` : '<span class="gps-badge" style="color:var(--text-muted);">No GPS</span>'}
+                <button class="history-btn" onclick="openHistory('${n.node_id}')">History</button>
+            </div>
+        </div>`;
+    }).join('');
+
+    // Status chips
+    chips.innerHTML = '';
+    if (fireCount) chips.innerHTML += `<span class="chip chip-fire">🔥 ${fireCount} ALERT</span>`;
+    chips.innerHTML += `<span class="chip chip-normal">✓ ${normalCount} NORMAL</span>`;
+    chips.innerHTML += `<span class="chip chip-total">${_myNodes.length} TOTAL</span>`;
+
+    document.getElementById('node-count-text').textContent = `${_myNodes.length} node${_myNodes.length !== 1 ? 's' : ''}`;
+
+    // Fire alert banner
+    const fireNode = _myNodes.find(n => ['fire','false'].includes((n.ai_prediction||'').toLowerCase()));
+    if (fireNode && !_alertDismissed) {
+        const p = (fireNode.ai_prediction || '').toLowerCase();
+        document.getElementById('fire-alert-banner').classList.add('visible');
+        document.getElementById('alert-title').textContent = p === 'fire' ? `Fire Detected on ${fireNode.node_id}!` : `Possible Fire on ${fireNode.node_id}!`;
+        document.getElementById('alert-sub').textContent = `${fireNode.location_name || 'via ' + fireNode.gateway_id} · AI confidence ${fireNode.confidence != null ? Math.round(parseFloat(fireNode.confidence) * (parseFloat(fireNode.confidence) <= 1 ? 100 : 1)) : '—'}%`;
+    } else if (!fireNode) {
+        document.getElementById('fire-alert-banner').classList.remove('visible');
+    }
+
+    document.getElementById('last-update-label').textContent = `Updated: ${new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',hour12:true})}`;
+}
+
+function dismissAlert() {
+    _alertDismissed = true;
+    document.getElementById('fire-alert-banner').classList.remove('visible');
+}
+
+// ── LOAD NODES ──
+async function loadMyNodes(silent = false) {
+    try {
+        const res = await fetch(`${API_BASE()}/me/nodes`, { headers: authHdr(), cache: 'no-cache' });
+        if (res.status === 401) { window.location.href = 'login.html'; return; }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        _myNodes = await res.json();
+        renderNodes();
+        // Load a bit of history for sparklines
+        await loadSparklineHistory();
+        loadRecentReadings();
+    } catch (err) {
+        if (!silent) {
+            document.getElementById('nodes-loading').innerHTML = `<p style="color:var(--red);">⚠ Could not load nodes: ${err.message}</p>`;
+        }
+    }
+}
+
+async function loadSparklineHistory() {
+    // Load last 20 readings per node for sparkline
+    await Promise.allSettled(_myNodes.map(async n => {
+        try {
+            const res = await fetch(`${API_BASE()}/me/nodes/${encodeURIComponent(n.node_id)}/history?limit=20`, { headers: authHdr() });
+            if (res.ok) n._history = await res.json();
+        } catch {}
+    }));
+    renderNodes(); // re-render with sparkline data
+}
+
+// ── RECENT READINGS ──
+async function loadRecentReadings() {
+    const tbody = document.getElementById('readings-tbody');
+    try {
+        // Fetch last 20 readings per node, merge and sort
+        const allRows = [];
+        await Promise.allSettled(_myNodes.map(async n => {
+            try {
+                const res = await fetch(`${API_BASE()}/me/nodes/${encodeURIComponent(n.node_id)}/history?limit=20`, { headers: authHdr() });
+                if (res.ok) {
+                    const rows = await res.json();
+                    rows.forEach(r => allRows.push({ ...r, node_id: n.node_id }));
+                }
+            } catch {}
+        }));
+        _allReadings = allRows.sort((a, b) => {
+            const ta = new Date(a.local_timestamp || 0), tb = new Date(b.local_timestamp || 0);
+            return tb - ta;
+        }).slice(0, 40);
+        renderReadings();
+    } catch {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:14px;color:var(--text-muted);">Could not load readings.</td></tr>';
+    }
+}
+
+function renderReadings() {
+    const tbody = document.getElementById('readings-tbody');
+    const rows = _filterNode === 'all' ? _allReadings : _allReadings.filter(r => r.node_id === _filterNode);
+    if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:14px;color:var(--text-muted);">No readings yet.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = rows.slice(0, 20).map(r => {
+        const pred = (r.ai_prediction || '').toLowerCase();
+        const conf = r.confidence != null ? parseFloat(r.confidence) : null;
+        const confPct = conf != null ? (conf <= 1 ? Math.round(conf * 100) : Math.round(conf)) : null;
+        const confColor = confPct != null ? (confPct >= 70 ? 'var(--green)' : confPct >= 40 ? 'var(--yellow)' : 'var(--orange)') : 'var(--text-muted)';
+        const aiCls = aiClass(r.ai_prediction);
+        const tempC = r.temperature != null ? (pred === 'fire' ? `<span style="color:var(--red);font-weight:700;">${r.temperature}</span>` : r.temperature) : '—';
+        return `<tr>
+            <td style="color:var(--text-muted);font-size:10px;">${formatTimestamp(r.local_timestamp)}</td>
+            <td class="node-col">${r.node_id || '—'}</td>
+            <td class="val-col" style="text-align:right;">${tempC}</td>
+            <td style="text-align:right;">${r.humidity != null ? r.humidity : '—'}</td>
+            <td class="val-col" style="text-align:right;color:${r.smoke > 100 ? 'var(--red)' : r.smoke > 40 ? 'var(--yellow)' : 'inherit'};">${r.smoke != null ? r.smoke : '—'}</td>
+            <td style="text-align:right;color:${r.flame > 0 ? 'var(--red)' : 'var(--text-muted)'};">${r.flame != null ? (r.flame > 0 ? r.flame : '—') : '—'}</td>
+            <td><span class="ai-badge ${aiCls}" style="font-size:8px;">${aiLabel(r.ai_prediction)}</span></td>
+            <td style="text-align:right;color:${confColor};font-weight:600;font-family:monospace;">${confPct != null ? confPct + '%' : '—'}</td>
+        </tr>`;
+    }).join('');
+}
+
+function filterReadings(val) {
+    _filterNode = val;
+    renderReadings();
+}
+
+// ── HISTORY PANEL ──
+function openHistory(nodeId) {
+    _hpNode   = nodeId;
+    _hpMetric = 'temperature';
+    document.getElementById('hp-node-label').textContent = nodeId;
+    document.getElementById('history-panel').classList.add('visible');
+    document.querySelectorAll('.hp-limit-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.hp-limit-btn')[1].classList.add('active');
+    _hpLimit = 50;
+    document.querySelectorAll('.hp-chart-tab').forEach(b => b.classList.toggle('active', b.dataset.m === 'temperature'));
+    document.getElementById('hp-chart-lbl').textContent = CHART_CFG.temperature.label;
+    document.getElementById('hp-table-wrap').innerHTML = '<div class="hp-spinner"></div>';
+    document.getElementById('hp-stats').innerHTML = '';
+    window.scrollTo({ top: document.getElementById('history-panel').offsetTop - 80, behavior: 'smooth' });
+    fetchHistory();
+}
+
+function closeHistory() {
+    document.getElementById('history-panel').classList.remove('visible');
+    _hpNode = null;
+}
+
+function setLimit(n) {
+    _hpLimit = n;
+    document.querySelectorAll('.hp-limit-btn').forEach(b => b.classList.toggle('active', parseInt(b.textContent) === n));
+    fetchHistory();
+}
+
+function switchMetric(m) {
+    _hpMetric = m;
+    document.querySelectorAll('.hp-chart-tab').forEach(b => b.classList.toggle('active', b.dataset.m === m));
+    document.getElementById('hp-chart-lbl').textContent = CHART_CFG[m].label;
+    const nodeData = _myNodes.find(n => n.node_id === _hpNode);
+    if (nodeData && nodeData._fullHistory) renderHpChart(nodeData._fullHistory);
+}
+
+async function fetchHistory() {
+    if (!_hpNode) return;
+    document.getElementById('hp-table-wrap').innerHTML = '<div class="hp-spinner"></div>';
+    try {
+        const res = await fetch(`${API_BASE()}/me/nodes/${encodeURIComponent(_hpNode)}/history?limit=${_hpLimit}`, { headers: authHdr() });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const rows = await res.json();
+        // Cache on node object
+        const nd = _myNodes.find(n => n.node_id === _hpNode);
+        if (nd) nd._fullHistory = rows;
+        renderHpStats(rows);
+        renderHpChart(rows);
+        renderHpTable(rows);
+    } catch (err) {
+        document.getElementById('hp-table-wrap').innerHTML = `<p style="text-align:center;padding:16px;color:var(--red);">⚠ ${err.message}</p>`;
+    }
+}
+
+function renderHpStats(rows) {
+    const temps  = rows.map(r => r.temperature).filter(v => v != null);
+    const smokes = rows.map(r => r.smoke).filter(v => v != null);
+    const hums   = rows.map(r => r.humidity).filter(v => v != null);
+    const fires  = rows.filter(r => (r.ai_prediction || '').toLowerCase() === 'fire').length;
+    const avg = arr => arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(1) : '—';
+    const max = arr => arr.length ? Math.max(...arr).toFixed(1) : '—';
+    document.getElementById('hp-stats').innerHTML = `
+        <div class="hp-stat"><span class="hp-stat-lbl">AVG TEMP</span><span class="hp-stat-val">${avg(temps)}°C</span></div>
+        <div class="hp-stat"><span class="hp-stat-lbl">MAX TEMP</span><span class="hp-stat-val">${max(temps)}°C</span></div>
+        <div class="hp-stat"><span class="hp-stat-lbl">AVG SMOKE</span><span class="hp-stat-val">${avg(smokes)}</span></div>
+        <div class="hp-stat"><span class="hp-stat-lbl">AVG HUM</span><span class="hp-stat-val">${avg(hums)}%</span></div>
+        <div class="hp-stat" style="${fires > 0 ? 'border-color:#ff475555;' : ''}"><span class="hp-stat-lbl">🔥 FIRE</span><span class="hp-stat-val" style="${fires > 0 ? 'color:var(--red);' : ''}">${fires}</span></div>
+        <div class="hp-stat"><span class="hp-stat-lbl">TOTAL</span><span class="hp-stat-val">${rows.length}</span></div>`;
+}
+
+function renderHpChart(rows) {
+    const svg = document.getElementById('hp-chart-svg');
+    const cfg = CHART_CFG[_hpMetric];
+    const vals = [...rows].reverse().map(r => r[cfg.key]).filter(v => v != null);
+    if (vals.length < 2) {
+        svg.innerHTML = '<text x="400" y="36" text-anchor="middle" fill="#3a1a0a" font-size="12">Not enough data</text>';
+        return;
+    }
+    const W = 800, H = 62, P = 6;
+    const mn = Math.min(...vals), mx = Math.max(...vals), rng = mx - mn || 1;
+    const px = i => P + (i / (vals.length - 1)) * (W - P * 2);
+    const py = v => P + (1 - (v - mn) / rng) * (H - P * 2);
+    const pts = vals.map((v, i) => `${px(i)},${py(v)}`).join(' ');
+    const aD = `M${px(0)},${H} ` + vals.map((v, i) => `L${px(i)},${py(v)}`).join(' ') + ` L${px(vals.length - 1)},${H} Z`;
+    const c = cfg.color;
+    svg.innerHTML = `<defs><linearGradient id="hpg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${c}" stop-opacity="0.3"/><stop offset="100%" stop-color="${c}" stop-opacity="0.02"/></linearGradient></defs>
+        <path d="${aD}" fill="url(#hpg)"/>
+        <polyline points="${pts}" fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+        <circle cx="${px(vals.length-1)}" cy="${py(vals[vals.length-1])}" r="3" fill="${c}" opacity=".9"/>
+        <text x="${P+2}" y="${H-3}" fill="#4a2a1a" font-size="9">${parseFloat(mn).toFixed(1)}${cfg.unit}</text>
+        <text x="${P+2}" y="13" fill="#4a2a1a" font-size="9">${parseFloat(mx).toFixed(1)}${cfg.unit}</text>`;
+}
+
+function renderHpTable(rows) {
+    document.getElementById('hp-table-wrap').innerHTML = `
+    <table class="hp-table">
+        <thead><tr>
+            <th>#</th><th>Timestamp</th>
+            <th style="text-align:right;">Temp</th><th style="text-align:right;">Hum</th>
+            <th style="text-align:right;">Smoke</th><th style="text-align:right;">Flame</th>
+            <th>AI</th><th style="text-align:right;">Conf.</th><th style="text-align:right;">RSSI</th>
+        </tr></thead>
+        <tbody>${rows.map((r, i) => {
+            const conf = r.confidence != null ? parseFloat(r.confidence) : null;
+            const cp   = conf != null ? (conf <= 1 ? Math.round(conf * 100) : Math.round(conf)) : null;
+            const cc   = cp != null ? (cp >= 70 ? 'var(--green)' : cp >= 40 ? 'var(--yellow)' : 'var(--orange)') : 'var(--text-muted)';
+            return `<tr>
+                <td style="color:var(--text-muted);font-size:9px;">${i + 1}</td>
+                <td style="color:var(--text-muted);font-size:9px;">${formatTimestamp(r.local_timestamp)}</td>
+                <td class="c-val" style="text-align:right;">${r.temperature != null ? r.temperature : '—'}</td>
+                <td style="text-align:right;">${r.humidity != null ? r.humidity : '—'}</td>
+                <td class="c-val" style="text-align:right;">${r.smoke != null ? r.smoke : '—'}</td>
+                <td style="text-align:right;color:${r.flame > 0 ? 'var(--red)' : 'var(--text-muted)'};">${r.flame != null ? (r.flame > 0 ? r.flame : '—') : '—'}</td>
+                <td><span class="ai-badge ${aiClass(r.ai_prediction)}" style="font-size:8px;">${aiLabel(r.ai_prediction)}</span></td>
+                <td style="text-align:right;color:${cc};font-weight:600;font-family:monospace;">${cp != null ? cp + '%' : '—'}</td>
+                <td style="text-align:right;color:var(--text-muted);font-family:monospace;">${r.rssi != null ? r.rssi : '—'}</td>
+            </tr>`;
+        }).join('')}</tbody>
+    </table>`;
+}
+
+// ── WEBSOCKET ──
+function connectWS() {
+    const wsUrl = API_BASE().replace(/^http/, 'ws') + '/ws';
+    _ws = new WebSocket(wsUrl);
+    const dot   = document.getElementById('ws-dot');
+    const label = document.getElementById('ws-label');
+    let delay = 2000;
+
+    _ws.onopen  = () => { dot.className = 'ws-dot connected'; label.textContent = 'Live'; delay = 2000; };
+    _ws.onclose = () => { dot.className = 'ws-dot error'; setTimeout(connectWS, delay); delay = Math.min(delay * 2, 15000); };
+    _ws.onerror = () => { dot.className = 'ws-dot error'; };
+
+    _ws.onmessage = event => {
+        try {
+            const msg = JSON.parse(event.data);
+            if (msg.type === 'ping') return;
+
+            // Live sensor update for one of our nodes
+            const isMyNode = _myNodes.some(n => n.node_id === (msg.node_id || msg.node));
+            if (!isMyNode) return;
+
+            if (msg.type === 'new_reading' || msg.node_id) {
+                // Update the node in _myNodes
+                const nd = _myNodes.find(n => n.node_id === (msg.node_id || msg.node));
+                if (nd) {
+                    if (msg.temperature  != null) nd.temperature   = msg.temperature;
+                    if (msg.humidity     != null) nd.humidity      = msg.humidity;
+                    if (msg.smoke        != null) nd.smoke         = msg.smoke;
+                    if (msg.flame        != null) nd.flame         = msg.flame;
+                    if (msg.ai_prediction)        nd.ai_prediction = msg.ai_prediction;
+                    if (msg.confidence   != null) nd.confidence    = msg.confidence;
+                    if (msg.local_timestamp)      nd.local_timestamp = msg.local_timestamp;
+                    if (msg.latitude)             nd.latitude      = msg.latitude;
+                    if (msg.longitude)            nd.longitude     = msg.longitude;
+                    _alertDismissed = false; // re-show banner if fire reoccurs
+                }
+                renderNodes();
+                loadRecentReadings();
+                // Update history panel if open on this node
+                if (_hpNode === (msg.node_id || msg.node)) fetchHistory();
+            }
+        } catch {}
+    };
+}
+
+// ── INIT ──
+loadMyNodes();
+connectWS();
+setInterval(() => loadMyNodes(true), 30000);
+</script>
+</body>
+</html>

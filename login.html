@@ -184,7 +184,18 @@
 
             localStorage.setItem('flames_token', data.access_token);
             localStorage.setItem('flames_username', username);
-            window.location.href = 'index.html';
+
+            // Fetch role and redirect to the correct dashboard
+            const meRes = await fetch(`${API}/me`, {
+                headers: { 'Authorization': `Bearer ${data.access_token}` }
+            });
+            const me = await meRes.json();
+
+            if (me.is_admin || me.organization_id) {
+                window.location.href = 'dashboard.html';       // admin or member
+            } else {
+                window.location.href = 'user-dashboard.html';  // plain user (no org)
+            }
         } catch (err) {
             showError(err.message);
         } finally {

@@ -97,9 +97,9 @@
         <div class="field"><label>Email <span style="color:#5a4a3a">(optional)</span></label><input type="email" id="email" placeholder="your@email.com"></div>
         <div class="field"><label>Password</label><input type="password" id="password" placeholder="Create a password"></div>
         <div class="field">
-            <label>Organization Invite Code</label>
-            <input type="text" id="invite_code" placeholder="Enter your invite code" style="text-transform:uppercase">
-            <div class="invite-hint">Required — contact your organization admin for a code.</div>
+            <label>Invite Code <span style="color:#5a4a3a">(optional — org members only)</span></label>
+            <input type="text" id="invite_code" placeholder="Leave blank if not an org member" style="text-transform:uppercase">
+            <div class="invite-hint">Organization members enter their code here. Leave blank to register as a standard user — an admin will assign your nodes.</div>
         </div>
         <button class="btn-signup" id="signup-btn" onclick="doSignup()">
             <span id="btn-text">CREATE ACCOUNT</span>
@@ -130,7 +130,7 @@
         const sucEl = document.getElementById('success-msg');
         const btn = document.getElementById('signup-btn');
 
-        if (!username || !password || !invite_code) { showError('Username, password, and invite code are required.'); return; }
+        if (!username || !password) { showError('Username and password are required.'); return; }
         if (password.length < 6) { showError('Password must be at least 6 characters.'); return; }
 
         btn.disabled = true;
@@ -142,12 +142,12 @@
             const res = await fetch(`${API}/signup`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, email: email || null, password, invite_code })
+                body: JSON.stringify({ username, email: email || null, password, invite_code: invite_code || '' })
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.detail || 'Signup failed');
 
-            sucEl.textContent = `Account created! Welcome to FLAMES. Redirecting to login...`;
+            sucEl.textContent = `Account created successfully! Redirecting to login...`;
             sucEl.style.display = 'block';
             setTimeout(() => window.location.href = 'login.html', 2500);
         } catch (err) {

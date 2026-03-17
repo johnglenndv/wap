@@ -1429,6 +1429,7 @@
             <div id="admin-tabs-row">
                 <button id="admin-tab-invite" onclick="switchAdminTab('invite')">🎟 INVITE CODES</button>
                 <button id="admin-tab-orgs" onclick="switchAdminTab('orgs')">🏢 ORGANIZATIONS</button>
+                <button id="admin-tab-users" onclick="switchAdminTab('users')">👤 USERS</button>
             </div>
             <div class="admin-content">
                 <div id="admin-panel-invite">
@@ -1486,6 +1487,42 @@
                         </div>
                     </div>
                 </div>
+                <div id="admin-panel-users" style="display:none;">
+                    <div class="adm-section">
+                        <div class="adm-section-title"><span class="adm-section-title-bar"></span>Search Users</div>
+                        <div class="adm-grid adm-grid-3" style="margin-bottom:10px;">
+                            <div>
+                                <label class="adm-label">Search</label>
+                                <input id="adm-user-search" type="text" placeholder="Username, email, or node ID…" class="adm-input" oninput="adminSearchUsers()">
+                            </div>
+                            <div>
+                                <label class="adm-label">Role</label>
+                                <select id="adm-user-role" class="adm-select" onchange="adminSearchUsers()">
+                                    <option value="">All Roles</option>
+                                    <option value="user">User (no org)</option>
+                                    <option value="member">Member</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                            </div>
+                            <div style="display:flex;align-items:flex-end;">
+                                <button class="adm-btn-primary" onclick="adminSearchUsers()">🔍 Search</button>
+                            </div>
+                        </div>
+                        <div id="adm-user-table-wrap">
+                            <div style="color:#5a3a2a;font-size:12px;text-align:center;padding:20px;">Click Search to load users.</div>
+                        </div>
+                        <div id="adm-user-pagination" style="display:flex;gap:6px;align-items:center;justify-content:center;margin-top:10px;"></div>
+                    </div>
+                </div>
+                <!-- User Drawer -->
+                <div id="adm-user-drawer" style="display:none;position:fixed;top:0;right:0;width:min(360px,100vw);height:100%;background:linear-gradient(to bottom,#1a0805f5,#120404f5);border-left:1px solid #5a1a0a55;z-index:40000;box-shadow:-10px 0 40px #00000088;flex-direction:column;padding:20px;overflow-y:auto;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #4a1a0a55;">
+                        <span style="font-family:'Cinzel',serif;font-size:12px;letter-spacing:2px;color:#e8c4a0;">USER DETAILS</span>
+                        <span style="font-size:22px;cursor:pointer;color:#9a6a5a;" onclick="closeUserDrawer()">✕</span>
+                    </div>
+                    <div id="adm-drawer-content"></div>
+                </div>
+                <div id="adm-drawer-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:39000;" onclick="closeUserDrawer()"></div>
                 <div id="admin-panel-denied" style="display:none;text-align:center;padding:36px 20px;">
                     <div style="font-size:44px;margin-bottom:12px;">🔒</div>
                     <div style="color:#e8c4a0;font-family:'Cinzel',serif;font-size:13px;letter-spacing:3px;margin-bottom:8px;">ACCESS RESTRICTED</div>
@@ -2108,18 +2145,21 @@
     function openAdminModal() {
         document.getElementById('admin-modal').style.display='flex';
         loadOrganizations(); adminLoadGatewaysForSelect(); switchAdminTab('invite');
+        _admAllNodes = []; // reset node cache on each open
     }
     function closeAdminModal() { document.getElementById('admin-modal').style.display='none'; }
     document.getElementById('admin-modal').addEventListener('click', e => { if (e.target===document.getElementById('admin-modal')) closeAdminModal(); });
     function switchAdminTab(tab) {
         document.getElementById('admin-panel-invite').style.display = tab==='invite'?'block':'none';
         document.getElementById('admin-panel-orgs').style.display   = tab==='orgs'  ?'block':'none';
-        ['invite','orgs'].forEach(t => {
+        document.getElementById('admin-panel-users').style.display  = tab==='users' ?'block':'none';
+        ['invite','orgs','users'].forEach(t => {
             const btn = document.getElementById(`admin-tab-${t}`); if (!btn) return;
             btn.style.background = t===tab?'linear-gradient(135deg,#8b1a00,#c43d00)':'#2a0a0466';
             btn.style.color = t===tab?'white':'#9a6a5a';
         });
-        if (tab==='orgs') adminLoadGatewaysForSelect();
+        if (tab==='orgs')  adminLoadGatewaysForSelect();
+        if (tab==='users') adminSearchUsers(1);
     }
 
     let _allGateways = [];
@@ -4757,6 +4797,198 @@
     }
     document.addEventListener('click',(e)=>{if(!_portal.contains(e.target)){_portal.classList.remove('open');_portalOrgId=null;}});
     document.addEventListener('scroll',()=>{_portal.classList.remove('open');_portalOrgId=null;},true);
+    // ====================== ADMIN USERS TAB ======================
+    let _admUserPage = 1;
+    let _admUserLastSearch = '';
+    let _admUserLastRole = '';
+    let _admAllNodes = [];
+
+    async function adminSearchUsers(page = 1) {
+        _admUserPage = page;
+        const search = (document.getElementById('adm-user-search').value || '').trim();
+        const role   = document.getElementById('adm-user-role').value || '';
+        _admUserLastSearch = search;
+        _admUserLastRole   = role;
+        const wrap = document.getElementById('adm-user-table-wrap');
+        wrap.innerHTML = '<div style="text-align:center;padding:16px;color:#5a3a2a;font-size:12px;">Loading…</div>';
+        try {
+            const params = new URLSearchParams({ search, role, page, limit: 15 });
+            const res = await fetch(`${API_BASE()}/admin/users?${params}`, { headers: authHeader() });
+            if (!res.ok) throw new Error('Failed');
+            const users = await res.json();
+            if (!users.length) {
+                wrap.innerHTML = '<div style="color:#5a3a2a;font-size:12px;text-align:center;padding:20px;">No users found.</div>';
+                document.getElementById('adm-user-pagination').innerHTML = '';
+                return;
+            }
+            wrap.innerHTML = `
+            <div style="overflow-x:auto;">
+            <table class="adm-orgs-table" style="table-layout:fixed;min-width:520px;">
+                <thead><tr>
+                    <th style="width:36px;">ID</th>
+                    <th style="width:20%;">Username</th>
+                    <th style="width:22%;">Email</th>
+                    <th style="width:13%;">Role</th>
+                    <th>Assigned Nodes</th>
+                    <th style="width:64px;"></th>
+                </tr></thead>
+                <tbody>
+                ${users.map(u => {
+                    const roleLabel = u.is_admin ? '🔑 Admin' : u.org_id ? '🏢 Member' : '👤 User';
+                    const nodeChips = u.assigned_nodes && u.assigned_nodes.length
+                        ? u.assigned_nodes.map(n => `<span style="display:inline-block;background:#3a0a0444;border:1px solid #5a2a1a44;border-radius:4px;padding:1px 5px;font-size:9px;color:#ff9055;margin:1px;">${n}</span>`).join('')
+                        : '<span style="color:#5a3a2a;font-size:10px;font-style:italic;">None</span>';
+                    const uJson = JSON.stringify(u).replace(/"/g,'&quot;');
+                    return `<tr style="border-bottom:1px solid #3a1a0a22;">
+                        <td style="color:#5a3a2a;font-family:monospace;font-size:11px;padding:7px 8px;">${u.id}</td>
+                        <td style="color:#f0d0b8;font-weight:600;padding:7px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.username}</td>
+                        <td style="color:#9a6a5a;font-size:11px;padding:7px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.email||'—'}</td>
+                        <td style="padding:7px 8px;font-size:11px;">${roleLabel}</td>
+                        <td style="padding:7px 8px;">${nodeChips}</td>
+                        <td style="padding:7px 8px;"><button class="adm-btn-sm" onclick="openUserDrawer(${uJson})">Manage</button></td>
+                    </tr>`;
+                }).join('')}
+                </tbody>
+            </table>
+            </div>`;
+            const pagEl = document.getElementById('adm-user-pagination');
+            pagEl.innerHTML = '';
+            if (page > 1) {
+                const pb = document.createElement('button');
+                pb.className = 'adm-btn-sm'; pb.textContent = '← Prev';
+                pb.onclick = () => adminSearchUsers(page - 1);
+                pagEl.appendChild(pb);
+            }
+            if (users.length === 15) {
+                const nb = document.createElement('button');
+                nb.className = 'adm-btn-sm'; nb.textContent = 'Next →';
+                nb.onclick = () => adminSearchUsers(page + 1);
+                pagEl.appendChild(nb);
+            }
+        } catch(err) {
+            wrap.innerHTML = `<div style="color:#ff4757;font-size:12px;text-align:center;padding:20px;">⚠ ${err.message}</div>`;
+        }
+    }
+
+    async function _admLoadAllNodes() {
+        if (_admAllNodes.length) return _admAllNodes;
+        try {
+            const res = await fetch(`${API_BASE()}/nodes`, { headers: authHeader(), cache: 'no-cache' });
+            if (res.ok) _admAllNodes = await res.json();
+        } catch {}
+        return _admAllNodes;
+    }
+
+    async function openUserDrawer(user) {
+        const drawer  = document.getElementById('adm-user-drawer');
+        const overlay = document.getElementById('adm-drawer-overlay');
+        const content = document.getElementById('adm-drawer-content');
+        drawer.style.display  = 'flex';
+        overlay.style.display = 'block';
+        content.innerHTML = '<div style="text-align:center;padding:20px;color:#5a3a2a;">Loading…</div>';
+        drawer.dataset.userId   = user.id;
+        drawer.dataset.username = user.username;
+
+        // Load fresh assigned nodes
+        let assignedNodes = user.assigned_nodes || [];
+        try {
+            const r = await fetch(`${API_BASE()}/admin/users/${user.id}/nodes`, { headers: authHeader() });
+            if (r.ok) { const rows = await r.json(); assignedNodes = rows.map(r => r.node_id); }
+        } catch {}
+
+        // Load all known node IDs
+        const allNodes = await _admLoadAllNodes();
+        const allNodeIds = [...new Set(allNodes.map(n => n.node_id))].sort();
+        const unassigned = allNodeIds.filter(nid => !assignedNodes.includes(nid));
+
+        const roleLabel = user.is_admin ? '🔑 Admin' : user.org_id ? `🏢 Member (org ${user.org_id})` : '👤 User (no org)';
+
+        content.innerHTML = `
+            <div style="background:#3a0a0433;border:1px solid #5a2a1a55;border-radius:10px;padding:14px;margin-bottom:16px;">
+                <div style="font-size:15px;font-weight:700;color:#f0d0b8;margin-bottom:4px;">${user.username}</div>
+                <div style="font-size:11px;color:#9a6a5a;margin-bottom:6px;">${user.email||'No email'}</div>
+                <span style="font-size:10px;color:#ff7033;background:#3a0a0455;border:1px solid #c43d0055;border-radius:20px;padding:2px 10px;">${roleLabel}</span>
+            </div>
+
+            <div style="margin-bottom:6px;font-size:9px;letter-spacing:2px;color:#9a6a5a;text-transform:uppercase;">Assigned Nodes</div>
+            <div id="adm-drawer-chips" style="display:flex;flex-wrap:wrap;gap:5px;min-height:28px;margin-bottom:12px;padding:8px;background:#12050333;border-radius:8px;border:1px solid #3a1a0a44;">
+                ${assignedNodes.length
+                    ? assignedNodes.map(nid => `
+                        <span style="display:inline-flex;align-items:center;gap:4px;background:#3a0a0444;border:1px solid #5a2a1a55;border-radius:6px;padding:3px 8px;font-size:11px;color:#ff9055;">
+                            ${nid}
+                            <button onclick="adminRemoveNodeFromUser(${user.id},'${nid}',this)" style="background:none;border:none;color:#7a3a2a;cursor:pointer;font-size:13px;line-height:1;padding:0 2px;transition:color .15s;" onmouseover="this.style.color='#ff4757'" onmouseout="this.style.color='#7a3a2a'">✕</button>
+                        </span>`).join('')
+                    : '<span style="color:#5a3a2a;font-size:11px;font-style:italic;padding:2px;">No nodes assigned yet</span>'
+                }
+            </div>
+
+            <div style="margin-bottom:6px;font-size:9px;letter-spacing:2px;color:#9a6a5a;text-transform:uppercase;">Assign a Node</div>
+            ${unassigned.length ? `
+            <div style="display:flex;gap:6px;margin-bottom:16px;">
+                <select id="adm-drawer-node-select" class="adm-select" style="flex:1;">
+                    <option value="">— Select node to assign —</option>
+                    ${unassigned.map(nid => `<option value="${nid}">${nid}</option>`).join('')}
+                </select>
+                <button class="adm-btn-sm" onclick="adminAssignNodeToUser(${user.id})">+ Assign</button>
+            </div>` : `<div style="color:#5a3a2a;font-size:11px;font-style:italic;margin-bottom:16px;">${allNodeIds.length ? 'All known nodes are already assigned to this user.' : 'No sensor nodes found in the system yet.'}</div>`}
+
+            <div style="border-top:1px solid #3a1a0a44;padding-top:12px;margin-top:4px;">
+                <div style="font-size:9px;letter-spacing:2px;color:#9a6a5a;text-transform:uppercase;margin-bottom:8px;">Danger Zone</div>
+                <button class="adm-btn-danger" style="width:100%;" onclick="if(confirm('Permanently delete user &quot;${user.username}&quot;? This cannot be undone.')) adminDeleteUserFromDrawer(${user.id})">🗑 Delete This User</button>
+            </div>`;
+    }
+
+    function closeUserDrawer() {
+        document.getElementById('adm-user-drawer').style.display  = 'none';
+        document.getElementById('adm-drawer-overlay').style.display = 'none';
+    }
+
+    async function adminAssignNodeToUser(userId) {
+        const sel = document.getElementById('adm-drawer-node-select');
+        const nodeId = sel ? sel.value : '';
+        if (!nodeId) { adminToast('Select a node first', 'error'); return; }
+        try {
+            const res = await fetch(`${API_BASE()}/admin/users/${userId}/assign-node`, {
+                method: 'POST',
+                headers: { ...authHeader(), 'Content-Type': 'application/json' },
+                body: JSON.stringify({ node_id: nodeId })
+            });
+            if (!res.ok) throw new Error((await res.json()).detail || 'Failed');
+            adminToast(`Node "${nodeId}" assigned!`, 'success');
+            // Refresh drawer with updated data
+            const uRes = await fetch(`${API_BASE()}/admin/users?search=${encodeURIComponent(document.getElementById('adm-user-drawer').dataset.username)}&limit=1`, { headers: authHeader() });
+            if (uRes.ok) { const list = await uRes.json(); if (list.length) openUserDrawer(list[0]); }
+            adminSearchUsers(_admUserPage);
+        } catch(err) { adminToast(err.message, 'error'); }
+    }
+
+    async function adminRemoveNodeFromUser(userId, nodeId, btn) {
+        if (!confirm(`Remove node "${nodeId}" from this user?`)) return;
+        try {
+            const res = await fetch(`${API_BASE()}/admin/users/${userId}/nodes/${encodeURIComponent(nodeId)}`, {
+                method: 'DELETE', headers: authHeader()
+            });
+            if (!res.ok) throw new Error((await res.json()).detail || 'Failed');
+            adminToast(`Node "${nodeId}" removed`, 'success');
+            btn.closest('span').remove();
+            const chips = document.getElementById('adm-drawer-chips');
+            if (chips && !chips.querySelector('span[style*="ff9055"]')) {
+                chips.innerHTML = '<span style="color:#5a3a2a;font-size:11px;font-style:italic;padding:2px;">No nodes assigned yet</span>';
+            }
+            adminSearchUsers(_admUserPage);
+        } catch(err) { adminToast(err.message, 'error'); }
+    }
+
+    async function adminDeleteUserFromDrawer(userId) {
+        try {
+            const res = await fetch(`${API_BASE()}/users/${userId}`, { method: 'DELETE', headers: authHeader() });
+            if (!res.ok) throw new Error((await res.json()).detail || 'Failed');
+            adminToast('User deleted successfully', 'success');
+            closeUserDrawer();
+            adminSearchUsers(_admUserPage);
+        } catch(err) { adminToast(err.message, 'error'); }
+    }
+
     async function adminDeleteOrganization(orgId){
         if(!confirm(`Delete organization ID ${orgId}?\n\nThis will remove the organization and all associated data. This cannot be undone.`))return;
         try{
