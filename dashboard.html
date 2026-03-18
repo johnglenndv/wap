@@ -680,6 +680,14 @@
     [data-theme="light"] .inc-details-resolve-btn{background:#e8f8ee;border-color:#1a9e52;color:#0e7a38;}
     .inc-details-resolve-btn:hover{background:#2ecc7122;box-shadow:0 0 16px #2ecc7144;}
     .inc-details-resolve-btn:disabled{opacity:.4;cursor:not-allowed;}
+    .inc-details-notify-btn{flex:1;padding:10px;background:linear-gradient(135deg,#3a2200,#6b4000);border:1px solid #f1c40f66;border-radius:9px;color:#f1c40f;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;cursor:pointer;transition:.3s;}
+    [data-theme="light"] .inc-details-notify-btn{background:linear-gradient(135deg,#fff8e0,#ffeea0);border-color:#c89400;color:#7a5000;}
+    .inc-details-notify-btn:hover{box-shadow:0 0 16px #f1c40f44;}
+    .inc-details-notify-btn:disabled{opacity:.4;cursor:not-allowed;}
+    .inc-notify-done-badge{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#f1c40f11;border:1px solid #f1c40f44;border-radius:8px;color:#f1c40f;font-size:10px;font-weight:600;}
+    [data-theme="light"] .inc-notify-done-badge{background:#fff8e0;border-color:#c89400;color:#7a5000;}
+    .inc-user-readonly-notice{padding:10px 14px;background:#1a0a0444;border:1px solid #3a1a0a55;border-radius:9px;color:#7a5a4a;font-size:10px;text-align:center;margin-top:12px;}
+    [data-theme="light"] .inc-user-readonly-notice{background:#f5e0d444;border-color:#c0907866;color:#7a4030;}
 
     /* ===================== HISTORY PANEL ===================== */
     .right-history-view{display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;animation:hv-in .3s cubic-bezier(.34,1.56,.64,1);}
@@ -2810,6 +2818,21 @@
                             _saveRescueMap(_incidentRescueMap);
                         }
                         syncResolvedNodesFromAPI().then(()=> loadAndPlaceNodes(true));
+                    } else if(msg.action==='notified' && msg.incident_id) {
+                        const existing = _incidentRescueMap[msg.incident_id] || {};
+                        _incidentRescueMap[msg.incident_id] = {
+                            ...existing,
+                            notifyTime:  msg.notified_at || new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:true}),
+                            notifiedBy:  msg.notified_by || '',
+                        };
+                        _saveRescueMap(_incidentRescueMap);
+                        // Also update cache so details modal sees it immediately
+                        const cachedInc = _liveIncidentsCache.find(i => i.incident_id == msg.incident_id);
+                        if (cachedInc) { cachedInc.notified_at = msg.notified_at; cachedInc.notified_by = msg.notified_by; }
+                        loadLiveIncidents(false);
+                        if(document.getElementById('incident-details-modal').classList.contains('open') && _detailsModalIncidentId == msg.incident_id){
+                            openIncidentDetailsModal(msg.incident_id);
+                        }
                     } else if((msg.action==='responded' || msg.action==='dispatch_updated') && msg.incident_id) {
                         const applyDispatch = (orgName, dispatchTime, vehicleType, nodeId, locationName, incStatus, resolvedAt) => {
                             const vLabel = vehicleType ? (VEHICLE_TYPES[vehicleType]?.label || vehicleType) : null;
@@ -2824,6 +2847,8 @@
                                 locationName: locationName,
                                 vehicleType:  vehicleType || null,
                                 vehicleLabel: vLabel,
+                                notifyTime:   existing?.notifyTime  || null,
+                                notifiedBy:   existing?.notifiedBy  || null,
                             };
                             _saveRescueMap(_incidentRescueMap);
                         };
@@ -3734,6 +3759,34 @@
         }
     }
 
+    // ====================== NOTIFY INCIDENT ======================
+    async function notifyIncident(incidentId) {
+        try {
+            const res = await fetch(`${API_BASE()}/incidents/${incidentId}/notify`, {
+                method: 'PATCH',
+                headers: { ...authHeader(), 'Content-Type': 'application/json' },
+                body: JSON.stringify({})
+            });
+            if (!res.ok) throw new Error((await res.json()).detail || 'Failed to notify');
+            const data = await res.json();
+            // Immediately update local rescue map
+            const existing = _incidentRescueMap[incidentId] || {};
+            _incidentRescueMap[incidentId] = {
+                ...existing,
+                notifyTime: data.notified_at || new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',hour12:true}),
+                notifiedBy: window._flamesCurrentUser?.username || '',
+            };
+            _saveRescueMap(_incidentRescueMap);
+            // Also update live cache
+            const cachedInc = _liveIncidentsCache.find(i => i.incident_id == incidentId);
+            if (cachedInc) { cachedInc.notified_at = data.notified_at; }
+            // Refresh the modal in place
+            openIncidentDetailsModal(incidentId);
+        } catch (err) {
+            alert(`Could not send notification: ${err.message}`);
+        }
+    }
+
     // ====================== RESOLVE INCIDENT ======================
     async function resolveIncident(incidentId, nodeId) {
         try {
@@ -3922,6 +3975,11 @@
         const rescueInfo = _incidentRescueMap[inc.incident_id];
         const isRescued  = rescueInfo && rescueInfo.status === 'rescued';
         const gw         = getPrimaryGateway();
+        const _me2 = window._flamesCurrentUser || {};
+        const _mapIsOrgMember = !!(_me2.org_id || _me2.organization_id);
+        const _mapIsAdmin = !!(window._flamesIsAdmin);
+        const _mapIsUserOnly = !_mapIsOrgMember && !_mapIsAdmin;
+        const _mapHasNotified = !!(rescueInfo?.notifyTime || inc.notified_at);
     
         // ── Resolve coords with fallback (fixes NaN on physical nodes) ──────────
         const resolved    = _resolveIncidentCoords(inc);
@@ -4129,8 +4187,17 @@
             </div>`:''}
     
             <div style="display:flex;flex-direction:column;gap:6px;margin-top:auto;padding-top:4px;">
-                <button class="inc-map-rescue-btn" onclick="closeIncidentMapModal();openRescueModal(${inc.incident_id},'${inc.node_id}','${(inc.location_name||'Node '+inc.node_id).replace(/'/g,"\\'")}')">🚒 ${rescueInfo ? 'EDIT DISPATCH' : 'DISPATCH RESCUE'}</button>
+                ${_mapIsUserOnly ? `
+                <div class="inc-user-readonly-notice">🔔 Waiting for rescuers to be dispatched</div>
+                ` : `
+                ${!_mapHasNotified ? `
+                <button class="inc-details-notify-btn" style="width:100%;padding:10px;" onclick="notifyIncident(${inc.incident_id})">🔔 NOTIFY RESCUERS</button>
+                ` : `
+                <div class="inc-notify-done-badge" style="justify-content:center;">🔔 Notified ${toAmPm(rescueInfo?.notifyTime||inc.notified_at)}</div>
+                `}
+                <button class="inc-map-rescue-btn" onclick="closeIncidentMapModal();openRescueModal(${inc.incident_id},'${inc.node_id}','${(inc.location_name||'Node '+inc.node_id).replace(/'/g,"\\'")}') " ${!_mapHasNotified?'disabled style="opacity:.4;cursor:not-allowed;" title="Send NOTIFY first"':''}>🚒 ${rescueInfo?.orgName ? 'EDIT DISPATCH' : 'DISPATCH RESCUE'}</button>
                 <button class="inc-map-resolve-btn" id="inc-map-resolve-${inc.incident_id}" onclick="resolveIncident(${inc.incident_id},'${inc.node_id}')" ${isRescued?'disabled':''}>✓ MARK RESOLVED</button>
+                `}
             </div>`;
     
         // Immediately restore traffic age from persistent cache — prevents "just now" flash on reopen
@@ -4464,6 +4531,25 @@
                 locationName: data.location_name,
                 vehicleType:  data.vehicle_type  || null,
                 vehicleLabel: data.vehicle_type ? (VEHICLE_TYPES[data.vehicle_type]?.label || data.vehicle_type) : null,
+                notifyTime:   data.notified_at   || null,
+                notifiedBy:   data.notified_by   || null,
+            };
+            _saveRescueMap(_incidentRescueMap);
+        }
+        // Hydrate notifyTime even if no dispatch yet (org notified but not dispatched)
+        if (_incidentRescueMap[incidentId] && !_incidentRescueMap[incidentId].notifyTime && data.notified_at) {
+            _incidentRescueMap[incidentId].notifyTime = data.notified_at;
+            _incidentRescueMap[incidentId].notifiedBy = data.notified_by || '';
+            _saveRescueMap(_incidentRescueMap);
+        }
+        // If no rescue map entry at all but notified, create partial entry
+        if (!_incidentRescueMap[incidentId] && data.notified_at) {
+            _incidentRescueMap[incidentId] = {
+                orgId: null, orgName: null, status: 'notified',
+                dispatchTime: null, rescuedTime: null,
+                nodeId: data.node_id, locationName: data.location_name,
+                vehicleType: null, vehicleLabel: null,
+                notifyTime: data.notified_at, notifiedBy: data.notified_by || '',
             };
             _saveRescueMap(_incidentRescueMap);
         }
@@ -4474,6 +4560,12 @@
         const isRescued = rescueInfo && rescueInfo.status === 'rescued';
         const isEnRoute = rescueInfo && rescueInfo.status === 'en_route';
         const isAlreadyResolved = data.status === 'resolved';
+        // Role flags
+        const _me = window._flamesCurrentUser || {};
+        const _isOrgMember = !!(_me.org_id || _me.organization_id);
+        const _isAdminUser = !!(window._flamesIsAdmin);
+        const _isUserOnly  = !_isOrgMember && !_isAdminUser;
+        const _hasNotified = !!(rescueInfo?.notifyTime || data.notified_at);
         const _gw = getPrimaryGateway();
 
         const { speed: _spd, factor: _fac, label: _peakLabel } = getFiretruckSpeed();
@@ -4587,15 +4679,31 @@
                 <div class="inc-details-section-title">Response Timeline</div>
                 <div class="inc-response-timeline">
                     <div class="inc-timeline-item incident"><div class="inc-timeline-dot incident">🔥</div><div class="inc-timeline-content"><div class="inc-timeline-action">Fire Detected</div><div class="inc-timeline-time">${formatTimestamp(data.started_at)||'—'}</div></div></div>
-                    ${rescueInfo?`
+                    ${(rescueInfo?.notifyTime || data.notified_at) ? `
+                    <div class="inc-timeline-item" style="position:relative;"><div class="inc-timeline-dot" style="border-color:#f1c40f;background:#f1c40f22;color:#f1c40f;">🔔</div><div class="inc-timeline-content"><div class="inc-timeline-action">Rescuers Notified</div><div class="inc-timeline-time">${toAmPm(rescueInfo?.notifyTime||data.notified_at)}</div><div class="inc-timeline-org">${rescueInfo?.notifiedBy||data.notified_by||''}</div></div></div>` : ''}
+                    ${rescueInfo && rescueInfo.orgName ? `
                     <div class="inc-timeline-item dispatched-step"><div class="inc-timeline-dot dispatched">🚨</div><div class="inc-timeline-content"><div class="inc-timeline-action">Rescue Dispatched</div><div class="inc-timeline-time">${toAmPm(rescueInfo.dispatchTime)}</div><div class="inc-timeline-org">${rescueInfo.orgName}</div></div></div>
                     <div class="inc-timeline-item en-route-step"><div class="inc-timeline-dot en-route">🚒</div><div class="inc-timeline-content"><div class="inc-timeline-action">En Route to Scene</div><div class="inc-timeline-time">${toAmPm(rescueInfo.dispatchTime)}</div><div class="inc-timeline-org">${rescueInfo.orgName}</div></div></div>
-                    ${rescueInfo.status==='rescued'?`<div class="inc-timeline-item"><div class="inc-timeline-dot rescued">✓</div><div class="inc-timeline-content"><div class="inc-timeline-action">Incident Resolved</div><div class="inc-timeline-time">${toAmPm(rescueInfo.rescuedTime)}</div><div class="inc-timeline-org">${rescueInfo.orgName}</div></div></div>`:''}`
-                    :'<div class="no-response-msg">No rescue dispatched yet</div>'}
+                    ${rescueInfo.status==='rescued'?`<div class="inc-timeline-item"><div class="inc-timeline-dot rescued">✓</div><div class="inc-timeline-content"><div class="inc-timeline-action">Incident Resolved</div><div class="inc-timeline-time">${toAmPm(rescueInfo.rescuedTime)}</div><div class="inc-timeline-org">${rescueInfo.orgName}</div></div></div>`:''}` :
+                    (!rescueInfo?.notifyTime && !data.notified_at ? '<div class="no-response-msg">Waiting for response…</div>' : '<div class="no-response-msg" style="color:#f1c40f88;">Notified — awaiting dispatch</div>')}
                 </div>
             </div>
             ${isAlreadyResolved||isRescued?`
-            <div style="margin-top:16px;padding:10px;background:#0a1a0a55;border:1px solid #2ecc7144;border-radius:9px;text-align:center;color:#2ecc71;font-size:12px;font-weight:600;">✓ This incident has been resolved</div>`:''}`;
+            <div style="margin-top:16px;padding:10px;background:#0a1a0a55;border:1px solid #2ecc7144;border-radius:9px;text-align:center;color:#2ecc71;font-size:12px;font-weight:600;">✓ This incident has been resolved</div>`:''}
+            ${(!isAlreadyResolved && !isRescued) ? `
+            <div class="inc-details-action-row">
+                ${_isUserOnly ? `
+                <div class="inc-user-readonly-notice" style="flex:1;">🔔 You will be notified when rescuers are dispatched to this location.</div>
+                ` : `
+                ${!_hasNotified ? `
+                <button class="inc-details-notify-btn" onclick="notifyIncident(${incidentId})">🔔 NOTIFY</button>
+                ` : `
+                <span class="inc-notify-done-badge">🔔 Notified ${toAmPm(rescueInfo?.notifyTime||data.notified_at)}</span>
+                `}
+                <button class="inc-details-rescue-btn" onclick="closeIncidentDetailsModal();openRescueModal(${incidentId},'${data.node_id||''}','${(data.location_name||'Node '+(data.node_id||'')).replace(/'/g,"\\'")}')" ${!_hasNotified ? 'disabled title="Send NOTIFY first before dispatching"' : ''}>${rescueInfo?.orgName ? '✏️ EDIT DISPATCH' : '🚒 DISPATCH'}</button>
+                <button class="inc-details-resolve-btn" onclick="resolveIncident(${incidentId},'${data.node_id||''}')" ${isRescued?'disabled':''}>✓ RESOLVE</button>
+                `}
+            </div>` : ''}`;
         } catch(err) {
             console.error('[FLAMES] openIncidentDetailsModal render error:', err);
             body.innerHTML = `<div style="text-align:center;padding:24px;color:#ff4757;">⚠ Failed to load details.<br><span style="font-size:10px;color:#5a3a2a;">${err.message}</span></div>`;
