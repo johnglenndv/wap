@@ -4826,15 +4826,19 @@
             <table class="adm-orgs-table" style="table-layout:auto;width:100%;">
                 <thead><tr>
                     <th style="width:36px;">ID</th>
-                    <th style="width:18%;">Username</th>
-                    <th style="width:20%;">Email</th>
-                    <th style="width:12%;">Role</th>
+                    <th style="width:15%;">Username</th>
+                    <th style="width:18%;">Email</th>
+                    <th style="width:10%;">Role</th>
+                    <th style="width:16%;">Organization</th>
                     <th>Assigned Nodes</th>
                     <th style="width:80px;text-align:center;"></th>
                 </tr></thead>
                 <tbody>
                 ${users.map(u => {
                     const roleLabel = u.is_admin ? '🔑 Admin' : u.org_id ? '🏢 Member' : '👤 User';
+                    const orgLabel = u.org_name
+                        ? `<span style="color:#6db8ff;font-size:11px;">${u.org_name}</span>`
+                        : `<span style="color:#5a3a2a;font-size:10px;font-style:italic;">—</span>`;
                     const nodeChips = u.assigned_nodes && u.assigned_nodes.length
                         ? u.assigned_nodes.map(n => `<span style="display:inline-block;background:#3a0a0444;border:1px solid #5a2a1a44;border-radius:4px;padding:1px 5px;font-size:9px;color:#ff9055;margin:1px;">${n}</span>`).join('')
                         : '<span style="color:#5a3a2a;font-size:10px;font-style:italic;">None</span>';
@@ -4844,6 +4848,7 @@
                         <td style="color:#f0d0b8;font-weight:600;padding:7px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.username}</td>
                         <td style="color:#9a6a5a;font-size:11px;padding:7px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.email||'—'}</td>
                         <td style="padding:7px 8px;font-size:11px;">${roleLabel}</td>
+                        <td style="padding:7px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${orgLabel}</td>
                         <td style="padding:7px 8px;">${nodeChips}</td>
                         <td style="padding:7px 8px;text-align:center;white-space:nowrap;"><button class="adm-btn-sm" onclick="openUserDrawer(${uJson})">Manage</button></td>
                     </tr>`;
@@ -4901,7 +4906,7 @@
         const allNodeIds = [...new Set(allNodes.map(n => n.node_id))].sort();
         const unassigned = allNodeIds.filter(nid => !assignedNodes.includes(nid));
 
-        const roleLabel = user.is_admin ? '🔑 Admin' : user.org_id ? `🏢 Member (org ${user.org_id})` : '👤 User (no org)';
+        const roleLabel = user.is_admin ? '🔑 Admin' : user.org_id ? `🏢 Member · ${user.org_name || 'org '+user.org_id}` : '👤 User (no org)';
 
         content.innerHTML = `
             <div style="background:#3a0a0433;border:1px solid #5a2a1a55;border-radius:10px;padding:14px;margin-bottom:16px;">
