@@ -674,12 +674,22 @@
     [data-theme="light"] .no-response-msg{color:var(--text-muted);}
     .inc-details-action-row{display:flex;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid #2a1a0a44;}
     [data-theme="light"] .inc-details-action-row{border-top-color:#c0907866;}
+    .inc-details-notify-btn{flex:1;padding:10px;background:linear-gradient(135deg,#1a4a26,#2a7a3a);border:1px solid #2ecc7166;border-radius:9px;color:#7effa8;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;cursor:pointer;transition:.3s;}
+    [data-theme="light"] .inc-details-notify-btn{background:linear-gradient(135deg,#d4f5de,#a8edbe);border-color:#1a9e5288;color:#0e6b2a;}
+    .inc-details-notify-btn:hover{box-shadow:0 0 16px #2ecc7144;}
+    .inc-details-notify-btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none;}
+    .inc-details-notify-btn.notified-done{background:#0a2a1255;color:#2ecc71;border-color:#2ecc7133;cursor:default;}
+    [data-theme="light"] .inc-details-notify-btn.notified-done{background:#e8f8ee;color:#0e7a38;}
     .inc-details-rescue-btn{flex:1;padding:10px;background:linear-gradient(135deg,#1a3a66,#2a5a99);border:1px solid #3d9cff66;border-radius:9px;color:white;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;cursor:pointer;transition:.3s;}
     .inc-details-rescue-btn:hover{box-shadow:0 0 16px #3d9cff44;}
+    .inc-details-rescue-btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;}
     .inc-details-resolve-btn{flex:1;padding:10px;background:#0a1a0a55;border:1px solid #2ecc7166;border-radius:9px;color:#2ecc71;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;cursor:pointer;transition:.3s;}
     [data-theme="light"] .inc-details-resolve-btn{background:#e8f8ee;border-color:#1a9e52;color:#0e7a38;}
     .inc-details-resolve-btn:hover{background:#2ecc7122;box-shadow:0 0 16px #2ecc7144;}
     .inc-details-resolve-btn:disabled{opacity:.4;cursor:not-allowed;}
+    .inc-timeline-dot.notified{border-color:#a78bfa;background:#a78bfa22;color:#a78bfa;}
+    [data-theme="light"] .inc-timeline-dot.notified{border-color:#6d28d9;background:#ede9fe;color:#5b21b6;}
+    .inc-timeline-item.notified-step:not(:last-child)::after{background:linear-gradient(to bottom,#a78bfacc,#f1c40f66);}
 
     /* ===================== HISTORY PANEL ===================== */
     .right-history-view{display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden;animation:hv-in .3s cubic-bezier(.34,1.56,.64,1);}
@@ -2802,7 +2812,32 @@
                         _fetchAndCacheNodeGps(msg.node_id);
                     }
                     
-                    if(msg.action==='resolved' && msg.node_id){
+                    if(msg.action==='notified' && msg.incident_id) {
+                        // Update notified_at in live cache
+                        const _notifyInc = _liveIncidentsCache.find(i => i.incident_id == msg.incident_id);
+                        if (_notifyInc) {
+                            _notifyInc.notified_at = msg.notified_at;
+                            _notifyInc.notified_by = msg.notified_by || null;
+                        }
+                        // Also store on rescueMap so hydration picks it up
+                        if (_incidentRescueMap[msg.incident_id]) {
+                            _incidentRescueMap[msg.incident_id].notifiedAt = msg.notified_at;
+                            _incidentRescueMap[msg.incident_id].notifiedBy = msg.notified_by || null;
+                            _saveRescueMap(_incidentRescueMap);
+                        }
+                        // Refresh open details modal live
+                        if (document.getElementById('incident-details-modal').classList.contains('open') &&
+                            _detailsModalIncidentId == msg.incident_id) {
+                            openIncidentDetailsModal(msg.incident_id);
+                        }
+                        // Refresh open map modal live
+                        if (_currentOpenIncidentData?.incident_id == msg.incident_id &&
+                            document.getElementById('incident-map-modal').classList.contains('open')) {
+                            const _freshNotifyInc = _liveIncidentsCache.find(i => i.incident_id == msg.incident_id);
+                            if (_freshNotifyInc) { _currentOpenIncidentData = _freshNotifyInc; openIncidentMapModal(_currentOpenIncidentData, true); }
+                        }
+                        loadLiveIncidents(true);
+                    } else if(msg.action==='resolved' && msg.node_id){
                         clearFireAnimationForNode(msg.node_id);
                         if(msg.incident_id && _incidentRescueMap[msg.incident_id]) {
                             _incidentRescueMap[msg.incident_id].status = 'rescued';
@@ -3276,6 +3311,8 @@
                         locationName: inc.location_name,
                         vehicleType:  inc.vehicle_type || null,
                         vehicleLabel: inc.vehicle_type ? (VEHICLE_TYPES[inc.vehicle_type]?.label || inc.vehicle_type) : null,
+                        notifiedAt:   inc.notified_at || existing?.notifiedAt || null,
+                        notifiedBy:   inc.notified_by || existing?.notifiedBy || null,
                     };
                 }
             });
@@ -3683,6 +3720,37 @@
     function closeRescueModal() {
         document.getElementById('rescue-modal').classList.remove('open');
         _pendingRescueIncidentId = null;
+    }
+
+    // ── NOTIFY INCIDENT ──────────────────────────────────────────
+    async function notifyIncident(incidentId, nodeId) {
+        const btn = document.getElementById(`detail-notify-btn-${incidentId}`);
+        if (btn) { btn.disabled = true; btn.textContent = '⏳ Notifying…'; }
+        try {
+            const res = await fetch(`${API_BASE()}/incidents/${incidentId}/notify`, {
+                method: 'POST',
+                headers: { ...authHeader(), 'Content-Type': 'application/json' },
+                body: JSON.stringify({})
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                alert(err.detail || 'Failed to notify');
+                if (btn) { btn.disabled = false; btn.textContent = '📢 NOTIFY'; }
+                return;
+            }
+            const result = await res.json();
+            // Update live cache immediately
+            const liveInc = _liveIncidentsCache.find(i => i.incident_id == incidentId);
+            if (liveInc) liveInc.notified_at = result.notified_at;
+            // Re-render details modal
+            if (document.getElementById('incident-details-modal').classList.contains('open') &&
+                _detailsModalIncidentId == incidentId) {
+                openIncidentDetailsModal(incidentId);
+            }
+        } catch(e) {
+            alert('Network error: ' + e.message);
+            if (btn) { btn.disabled = false; btn.textContent = '📢 NOTIFY'; }
+        }
     }
 
     let _rescueVehicleType = 'small';
@@ -4129,7 +4197,14 @@
             </div>`:''}
     
             <div style="display:flex;flex-direction:column;gap:6px;margin-top:auto;padding-top:4px;">
-                <button class="inc-map-rescue-btn" onclick="closeIncidentMapModal();openRescueModal(${inc.incident_id},'${inc.node_id}','${(inc.location_name||'Node '+inc.node_id).replace(/'/g,"\\'")}')">🚒 ${rescueInfo ? 'EDIT DISPATCH' : 'DISPATCH RESCUE'}</button>
+                <button class="inc-map-rescue-btn${inc.notified_at?' notified-done':''}"
+                    id="map-notify-btn-${inc.incident_id}"
+                    ${inc.notified_at?'disabled':''}
+                    onclick="notifyIncident(${inc.incident_id},'${inc.node_id}')"
+                    style="background:${inc.notified_at?'#0a2a1255':'linear-gradient(135deg,#1a4a26,#2a7a3a)'};border-color:${inc.notified_at?'#2ecc7133':'#2ecc7166'};color:${inc.notified_at?'#2ecc71':'#7effa8'};${inc.notified_at?'cursor:default;opacity:.7;':''}">
+                    ${inc.notified_at?'✓ NOTIFIED':'📢 NOTIFY RESPONDERS'}
+                </button>
+                <button class="inc-map-rescue-btn" ${!inc.notified_at?'disabled title="Notify responders first before dispatching"':''} onclick="${inc.notified_at?`closeIncidentMapModal();openRescueModal(${inc.incident_id},'${inc.node_id}','${(inc.location_name||'Node '+inc.node_id).replace(/'/g,"\\'")}')`:''}" style="${!inc.notified_at?'opacity:.4;cursor:not-allowed;':''}">🚒 ${rescueInfo ? 'EDIT DISPATCH' : 'DISPATCH RESCUE'}</button>
                 <button class="inc-map-resolve-btn" id="inc-map-resolve-${inc.incident_id}" onclick="resolveIncident(${inc.incident_id},'${inc.node_id}')" ${isRescued?'disabled':''}>✓ MARK RESOLVED</button>
             </div>`;
     
@@ -4469,6 +4544,18 @@
         }
         // Read rescueInfo AFTER hydration so it's always up to date
         const rescueInfo = _incidentRescueMap[incidentId];
+        // ── Hydrate notified_at from DB data into the live cache entry ──
+        if (data.notified_at && rescueInfo && !rescueInfo.notifiedAt) {
+            rescueInfo.notifiedAt = data.notified_at;
+            rescueInfo.notifiedBy = data.notified_by || null;
+            _saveRescueMap(_incidentRescueMap);
+        }
+        // Also hydrate the liveIncidentsCache entry so WS patches work
+        const _liveEntry = _liveIncidentsCache.find(i => i.incident_id == incidentId);
+        if (_liveEntry && data.notified_at && !_liveEntry.notified_at) {
+            _liveEntry.notified_at = data.notified_at;
+            _liveEntry.notified_by = data.notified_by || null;
+        }
         const pred = (data.ai_prediction||'').toLowerCase();
         const isFire = pred === 'fire';
         const isRescued = rescueInfo && rescueInfo.status === 'rescued';
@@ -4587,13 +4674,30 @@
                 <div class="inc-details-section-title">Response Timeline</div>
                 <div class="inc-response-timeline">
                     <div class="inc-timeline-item incident"><div class="inc-timeline-dot incident">🔥</div><div class="inc-timeline-content"><div class="inc-timeline-action">Fire Detected</div><div class="inc-timeline-time">${formatTimestamp(data.started_at)||'—'}</div></div></div>
+                    ${(data.notified_at||rescueInfo?.notifiedAt)?`<div class="inc-timeline-item notified-step"><div class="inc-timeline-dot notified">📢</div><div class="inc-timeline-content"><div class="inc-timeline-action">Responders Notified</div><div class="inc-timeline-time">${toAmPm(data.notified_at||rescueInfo.notifiedAt)}</div>${data.notified_by?`<div class="inc-timeline-org">by ${data.notified_by}</div>`:''}</div></div>`:''}
                     ${rescueInfo?`
                     <div class="inc-timeline-item dispatched-step"><div class="inc-timeline-dot dispatched">🚨</div><div class="inc-timeline-content"><div class="inc-timeline-action">Rescue Dispatched</div><div class="inc-timeline-time">${toAmPm(rescueInfo.dispatchTime)}</div><div class="inc-timeline-org">${rescueInfo.orgName}</div></div></div>
                     <div class="inc-timeline-item en-route-step"><div class="inc-timeline-dot en-route">🚒</div><div class="inc-timeline-content"><div class="inc-timeline-action">En Route to Scene</div><div class="inc-timeline-time">${toAmPm(rescueInfo.dispatchTime)}</div><div class="inc-timeline-org">${rescueInfo.orgName}</div></div></div>
                     ${rescueInfo.status==='rescued'?`<div class="inc-timeline-item"><div class="inc-timeline-dot rescued">✓</div><div class="inc-timeline-content"><div class="inc-timeline-action">Incident Resolved</div><div class="inc-timeline-time">${toAmPm(rescueInfo.rescuedTime)}</div><div class="inc-timeline-org">${rescueInfo.orgName}</div></div></div>`:''}`
-                    :'<div class="no-response-msg">No rescue dispatched yet</div>'}
+                    :(!data.notified_at&&!rescueInfo?.notifiedAt?'<div class="no-response-msg">Awaiting notification to responders</div>':'<div class="no-response-msg" style="color:#a78bfa;">Notified — awaiting dispatch</div>')}
                 </div>
             </div>
+            ${(!isAlreadyResolved&&!isRescued)?`
+            <div class="inc-details-action-row">
+                <button class="inc-details-notify-btn${data.notified_at?' notified-done':''}"
+                    id="detail-notify-btn-${data.incident_id}"
+                    ${data.notified_at?'disabled':''} 
+                    onclick="notifyIncident(${data.incident_id},'${data.node_id}')">
+                    ${data.notified_at?'✓ NOTIFIED':'📢 NOTIFY'}
+                </button>
+                <button class="inc-details-rescue-btn"
+                    id="detail-dispatch-btn-${data.incident_id}"
+                    ${!data.notified_at?'disabled title="Notify responders first before dispatching"':''}
+                    onclick="openRescueModal(${data.incident_id},'${data.node_id}','${(data.location_name||'Node '+data.node_id).replace(/'/g,"\\'")}')">
+                    🚒 ${rescueInfo?'EDIT DISPATCH':'DISPATCH'}
+                </button>
+                <button class="inc-details-resolve-btn" onclick="resolveIncident(${data.incident_id},'${data.node_id}')" ${isRescued?'disabled':''}>✓ RESOLVE</button>
+            </div>`:''}
             ${isAlreadyResolved||isRescued?`
             <div style="margin-top:16px;padding:10px;background:#0a1a0a55;border:1px solid #2ecc7144;border-radius:9px;text-align:center;color:#2ecc71;font-size:12px;font-weight:600;">✓ This incident has been resolved</div>`:''}`;
         } catch(err) {

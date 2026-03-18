@@ -277,6 +277,59 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 .readings-table .node-col{font-family:monospace;color:#ff9055;font-weight:700;}
 .readings-table .val-col{font-family:monospace;font-weight:600;}
 
+/* ── LIVE INCIDENT PANEL ── */
+.live-incident-panel{display:none;background:linear-gradient(135deg,#1a0805ee,#200c06ee);border:1px solid #ff475566;border-top:2px solid #ff4757aa;border-radius:var(--radius);margin-bottom:20px;box-shadow:0 4px 30px #ff475720;overflow:hidden;animation:banner-in .4s cubic-bezier(.34,1.56,.64,1);}
+.live-incident-panel.visible{display:block;}
+[data-theme="light"] .live-incident-panel{background:linear-gradient(135deg,#fff4f4ee,#ffe8e8ee);border-color:#d04040aa;border-top-color:#d04040;}
+.lip-header{padding:12px 16px;display:flex;align-items:center;gap:10px;background:linear-gradient(to right,#2a060288,#1a020088);border-bottom:1px solid #ff475533;}
+[data-theme="light"] .lip-header{background:linear-gradient(to right,#ffe0e088,#ffd0d088);border-bottom-color:#d0404033;}
+.lip-pulse{width:36px;height:36px;border-radius:50%;background:#1a000055;border:2px solid #ff4757;display:flex;align-items:center;justify-content:center;font-size:16px;animation:pulse-dot .8s ease infinite;flex-shrink:0;}
+.lip-title-wrap{flex:1;}
+.lip-title{font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;color:#ff6575;font-weight:700;}
+[data-theme="light"] .lip-title{color:#c02030;}
+.lip-subtitle{font-size:10px;color:#9a6a5a;margin-top:2px;}
+[data-theme="light"] .lip-subtitle{color:#7a3030;}
+.lip-body{padding:14px 16px;}
+.lip-section-title{font-size:8px;letter-spacing:2px;color:#7a4a3a;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.lip-section-title::before{content:'';display:inline-block;width:3px;height:10px;background:#ff4757;border-radius:2px;}
+[data-theme="light"] .lip-section-title{color:#7a3020;}
+.lip-timeline{display:flex;flex-direction:column;gap:0;margin-bottom:14px;}
+.lip-step{display:flex;align-items:flex-start;gap:12px;padding:8px 0;position:relative;}
+.lip-step:not(:last-child)::after{content:'';position:absolute;left:10px;top:30px;bottom:-8px;width:2px;background:#3a1a0a55;}
+[data-theme="light"] .lip-step:not(:last-child)::after{background:#c0907855;}
+.lip-step.step-fire:not(:last-child)::after{background:linear-gradient(to bottom,#ff4757cc,#a78bfa66);}
+.lip-step.step-notified:not(:last-child)::after{background:linear-gradient(to bottom,#a78bfacc,#3d9cff66);}
+.lip-step.step-enroute:not(:last-child)::after{background:linear-gradient(to bottom,#3d9cffcc,#2ecc7166);}
+.lip-dot{width:22px;height:22px;border-radius:50%;border:2px solid;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;margin-top:2px;}
+.lip-dot.fire{border-color:#ff4757;background:#ff475722;color:#ff4757;}
+.lip-dot.notified{border-color:#a78bfa;background:#a78bfa22;color:#a78bfa;}
+.lip-dot.enroute{border-color:#3d9cff;background:#3d9cff22;color:#3d9cff;}
+.lip-dot.resolved{border-color:#2ecc71;background:#2ecc7122;color:#2ecc71;}
+.lip-dot.pending{border-color:#4a3a2a;background:#2a1a0a33;color:#5a4a3a;}
+[data-theme="light"] .lip-dot.pending{border-color:#c09080;background:#f5e8e0;color:#9a7060;}
+.lip-content{flex:1;}
+.lip-action{font-size:12px;font-weight:600;color:var(--text);}
+.lip-time{font-size:10px;color:var(--text-dim);margin-top:1px;}
+.lip-org{font-size:10px;color:#6db8ff;margin-top:1px;}
+[data-theme="light"] .lip-org{color:#1a40a0;}
+.lip-pending-label{font-size:11px;color:#5a4a3a;font-style:italic;}
+[data-theme="light"] .lip-pending-label{color:#9a7060;}
+.lip-divider{height:1px;background:#3a1a0a44;margin:10px 0;}
+[data-theme="light"] .lip-divider{background:#c0907844;}
+.lip-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.lip-info-tile{background:#2a0a0433;border:1px solid #3a1a0a44;border-radius:8px;padding:9px 12px;}
+[data-theme="light"] .lip-info-tile{background:#f5e8e055;border-color:#c0907866;}
+.lip-info-label{font-size:8px;letter-spacing:1.5px;color:var(--text-dim);text-transform:uppercase;margin-bottom:3px;}
+.lip-info-val{font-size:14px;font-weight:700;color:var(--text);}
+.lip-info-val.highlight{color:#f1c40f;}
+.lip-info-val.green{color:#2ecc71;}
+.lip-info-val.blue{color:#6db8ff;}
+[data-theme="light"] .lip-info-val.highlight{color:#c89400;}
+[data-theme="light"] .lip-info-val.green{color:#0e7a38;}
+[data-theme="light"] .lip-info-val.blue{color:#1a40a0;}
+.lip-resolved-banner{background:#0a1a0a55;border:1px solid #2ecc7144;border-radius:9px;padding:12px;text-align:center;color:#2ecc71;font-size:12px;font-weight:600;margin-top:10px;}
+[data-theme="light"] .lip-resolved-banner{background:#e8f8ee;border-color:#1a9e52;color:#0e7a38;}
+
 /* ── RESPONSIVE ── */
 @media(max-width:600px){
     :root{--hdr:52px;}
@@ -343,6 +396,20 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
             <p id="alert-sub">—</p>
         </div>
         <button class="ack-btn" onclick="dismissAlert()">ACKNOWLEDGE</button>
+    </div>
+
+    <!-- Live Incident Details Panel (visible only during active fire) -->
+    <div class="live-incident-panel" id="live-incident-panel">
+        <div class="lip-header">
+            <div class="lip-pulse">🔥</div>
+            <div class="lip-title-wrap">
+                <div class="lip-title" id="lip-title">ACTIVE FIRE INCIDENT</div>
+                <div class="lip-subtitle" id="lip-subtitle">Responders have been alerted</div>
+            </div>
+        </div>
+        <div class="lip-body" id="lip-body">
+            <!-- Rendered by JS -->
+        </div>
     </div>
 
     <!-- Welcome Bar -->
@@ -456,6 +523,171 @@ let _hpLimit       = 50;
 let _hpMetric      = 'temperature';
 let _alertDismissed = false;
 let _ws            = null;
+let _activeIncidents = [];   // live incidents for my nodes
+
+// ── VEHICLE LABEL MAP ──
+const VEHICLE_LABELS = { motor:'Motorcycle Unit', small:'Fire Truck (Small)', big:'Fire Truck (Large)' };
+
+// ── HELPERS ──
+function _toAmPm(raw) {
+    if (!raw) return null;
+    try {
+        const s = raw.toString().replace('T',' ').replace(/\.\d+Z?$/,'');
+        const parts = s.split(' ');
+        if (parts.length < 2) return raw;
+        const [hh, mm] = parts[1].split(':');
+        const h = parseInt(hh, 10);
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 || 12;
+        return `${h12}:${mm} ${ampm}`;
+    } catch { return raw; }
+}
+
+// ── LIVE INCIDENT PANEL ──
+async function loadActiveIncidents() {
+    try {
+        const res = await fetch(`${API_BASE()}/incidents/active`, { headers: authHdr() });
+        if (!res.ok) return;
+        const incidents = await res.json();
+        // Filter to only incidents for my assigned nodes
+        const myNodeIds = new Set(_myNodes.map(n => n.node_id));
+        _activeIncidents = incidents.filter(i => myNodeIds.has(i.node_id));
+        renderIncidentPanel();
+    } catch (e) {
+        console.warn('[FLAMES] loadActiveIncidents error:', e);
+    }
+}
+
+function renderIncidentPanel() {
+    const panel = document.getElementById('live-incident-panel');
+    const body  = document.getElementById('lip-body');
+    const subtitle = document.getElementById('lip-subtitle');
+
+    // Find the most severe active fire incident for my nodes
+    const fireInc = _activeIncidents.find(i => (i.ai_prediction||'').toLowerCase() === 'fire')
+                 || _activeIncidents[0];
+
+    if (!fireInc) {
+        panel.classList.remove('visible');
+        return;
+    }
+
+    panel.classList.add('visible');
+    document.getElementById('lip-title').textContent =
+        `ACTIVE FIRE — ${fireInc.location_name || 'Node ' + fireInc.node_id}`;
+
+    // Determine current status for subtitle
+    const hasDispatch  = !!fireInc.assigned_team;
+    const hasNotified  = !!fireInc.notified_at;
+    const isResolved   = fireInc.status === 'resolved';
+    subtitle.textContent = isResolved
+        ? 'Incident has been resolved'
+        : hasDispatch
+            ? `${fireInc.assigned_team} is responding`
+            : hasNotified
+                ? 'Responders notified — awaiting dispatch'
+                : 'Fire detected — awaiting response';
+
+    const vehicleLabel = VEHICLE_LABELS[fireInc.vehicle_type] || fireInc.vehicle_type || '—';
+
+    // Build timeline
+    let timelineHTML = `
+        <div class="lip-step step-fire">
+            <div class="lip-dot fire">🔥</div>
+            <div class="lip-content">
+                <div class="lip-action">Fire Detected</div>
+                <div class="lip-time">${_toAmPm(fireInc.started_at) || '—'}</div>
+            </div>
+        </div>`;
+
+    if (hasNotified) {
+        timelineHTML += `
+        <div class="lip-step step-notified">
+            <div class="lip-dot notified">📢</div>
+            <div class="lip-content">
+                <div class="lip-action">Responders Notified</div>
+                <div class="lip-time">${_toAmPm(fireInc.notified_at)}</div>
+            </div>
+        </div>`;
+    } else {
+        timelineHTML += `
+        <div class="lip-step">
+            <div class="lip-dot pending">📢</div>
+            <div class="lip-content">
+                <div class="lip-pending-label">Awaiting notification…</div>
+            </div>
+        </div>`;
+    }
+
+    if (hasDispatch) {
+        timelineHTML += `
+        <div class="lip-step step-enroute">
+            <div class="lip-dot enroute">🚒</div>
+            <div class="lip-content">
+                <div class="lip-action">Rescue En Route</div>
+                <div class="lip-time">${_toAmPm(fireInc.dispatch_time) || '—'}</div>
+                <div class="lip-org">${fireInc.assigned_team}</div>
+            </div>
+        </div>`;
+        if (isResolved) {
+            timelineHTML += `
+        <div class="lip-step">
+            <div class="lip-dot resolved">✓</div>
+            <div class="lip-content">
+                <div class="lip-action">Incident Resolved</div>
+                <div class="lip-time">${_toAmPm(fireInc.resolved_at) || '—'}</div>
+            </div>
+        </div>`;
+        }
+    } else if (!hasNotified) {
+        // Nothing yet
+    } else {
+        timelineHTML += `
+        <div class="lip-step">
+            <div class="lip-dot pending">🚒</div>
+            <div class="lip-content">
+                <div class="lip-pending-label">Dispatch pending…</div>
+            </div>
+        </div>`;
+    }
+
+    // Info tiles
+    let infoHTML = '';
+    if (hasDispatch) {
+        infoHTML = `
+        <div class="lip-divider"></div>
+        <div class="lip-section-title">Response Details</div>
+        <div class="lip-info-grid">
+            <div class="lip-info-tile">
+                <div class="lip-info-label">Organization</div>
+                <div class="lip-info-val blue" style="font-size:12px;">${fireInc.assigned_team || '—'}</div>
+            </div>
+            <div class="lip-info-tile">
+                <div class="lip-info-label">Vehicle</div>
+                <div class="lip-info-val" style="font-size:11px;">${vehicleLabel}</div>
+            </div>
+            <div class="lip-info-tile">
+                <div class="lip-info-label">Dispatch Time</div>
+                <div class="lip-info-val highlight" style="font-size:12px;">${_toAmPm(fireInc.dispatch_time) || '—'}</div>
+            </div>
+            <div class="lip-info-tile">
+                <div class="lip-info-label">Status</div>
+                <div class="lip-info-val" style="color:#f1c40f;font-size:12px;">🚒 En Route</div>
+            </div>
+        </div>`;
+    }
+
+    let resolvedBanner = '';
+    if (isResolved) {
+        resolvedBanner = `<div class="lip-resolved-banner">✓ This incident has been resolved</div>`;
+    }
+
+    body.innerHTML = `
+        <div class="lip-section-title">Response Timeline</div>
+        <div class="lip-timeline">${timelineHTML}</div>
+        ${infoHTML}
+        ${resolvedBanner}`;
+}
 
 const CHART_CFG = {
     temperature: { label:'Temperature Trend (°C)',  unit:'°C',  color:'#ff6b35', key:'temperature' },
@@ -735,6 +967,7 @@ async function loadMyNodes(silent = false) {
         // Load a bit of history for sparklines
         await loadSparklineHistory();
         loadRecentReadings();
+        loadActiveIncidents(); // load live incident panel
     } catch (err) {
         if (!silent) {
             document.getElementById('nodes-loading').innerHTML = `<p style="color:var(--red);">⚠ Could not load nodes: ${err.message}</p>`;
@@ -955,6 +1188,33 @@ function connectWS() {
                 return;
             }
 
+            // ── Incident update — refresh panel if it's for one of our nodes ──
+            if (msg.type === 'incident_update' && msg.node_id) {
+                const isMyIncidentNode = _myNodes.some(n => n.node_id === msg.node_id);
+                if (isMyIncidentNode) {
+                    if (msg.action === 'notified' && msg.incident_id) {
+                        // Patch notified_at directly without re-fetching
+                        const inc = _activeIncidents.find(i => i.incident_id == msg.incident_id);
+                        if (inc) { inc.notified_at = msg.notified_at; renderIncidentPanel(); }
+                        else loadActiveIncidents();
+                    } else if (msg.action === 'responded' || msg.action === 'dispatch_updated') {
+                        // Org dispatched — fetch fresh incident data
+                        loadActiveIncidents();
+                    } else if (msg.action === 'resolved') {
+                        // Mark resolved in cache then hide after short delay
+                        const inc = _activeIncidents.find(i => i.incident_id == msg.incident_id);
+                        if (inc) { inc.status = 'resolved'; renderIncidentPanel(); }
+                        setTimeout(() => {
+                            _activeIncidents = _activeIncidents.filter(i => i.incident_id != msg.incident_id);
+                            renderIncidentPanel();
+                        }, 8000); // keep visible for 8s so user can read "Resolved"
+                    } else if (msg.action === 'new_or_updated') {
+                        loadActiveIncidents();
+                    }
+                }
+                return;
+            }
+
             // Live sensor update for one of our nodes
             const isMyNode = _myNodes.some(n => n.node_id === (msg.node_id || msg.node));
             if (!isMyNode) return;
@@ -974,6 +1234,9 @@ function connectWS() {
                     if (msg.longitude)            nd.longitude     = msg.longitude;
                     _alertDismissed = false; // re-show banner if fire reoccurs
                 }
+                // If a fire reading just came in, refresh incident panel too
+                const pred = (msg.ai_prediction || '').toLowerCase();
+                if (pred === 'fire' || pred === 'false') loadActiveIncidents();
                 renderNodes();
                 loadRecentReadings();
                 // Update history panel if open on this node
