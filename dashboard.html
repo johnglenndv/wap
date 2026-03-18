@@ -4901,339 +4901,46 @@
             if (r.ok) { const rows = await r.json(); assignedNodes = rows.map(r => r.node_id); }
         } catch {}
 
-        const allNodes   = await _admLoadAllNodes();
+        // Load all known node IDs
+        const allNodes = await _admLoadAllNodes();
         const allNodeIds = [...new Set(allNodes.map(n => n.node_id))].sort();
         const unassigned = allNodeIds.filter(nid => !assignedNodes.includes(nid));
-        const roleLabel  = user.is_admin ? '🔑 Admin' : user.org_id ? `🏢 Member · ${user.org_name || 'org '+user.org_id}` : '👤 User (no org)';
+
+        const roleLabel = user.is_admin ? '🔑 Admin' : user.org_id ? `🏢 Member · ${user.org_name || 'org '+user.org_id}` : '👤 User (no org)';
 
         content.innerHTML = `
-            <!-- Profile card -->
-            <div style="background:#3a0a0433;border:1px solid #5a2a1a55;border-radius:10px;padding:14px;margin-bottom:14px;">
+            <div style="background:#3a0a0433;border:1px solid #5a2a1a55;border-radius:10px;padding:14px;margin-bottom:16px;">
                 <div style="font-size:15px;font-weight:700;color:#f0d0b8;margin-bottom:4px;">${user.username}</div>
                 <div style="font-size:11px;color:#9a6a5a;margin-bottom:6px;">${user.email||'No email'}</div>
                 <span style="font-size:10px;color:#ff7033;background:#3a0a0455;border:1px solid #c43d0055;border-radius:20px;padding:2px 10px;">${roleLabel}</span>
             </div>
 
-            <!-- Tab bar -->
-            <div id="udr-tabs" style="display:flex;gap:0;margin-bottom:14px;border-bottom:1px solid #3a1a0a55;">
-                <button id="udr-tab-nodes"  onclick="_userDrawerTab('nodes')"
-                    style="flex:1;padding:8px 4px;border:none;border-bottom:2px solid #e14f00;background:transparent;
-                           color:#f0d0b8;font-family:'Cinzel',serif;font-size:9px;letter-spacing:1px;cursor:pointer;transition:.2s;">
-                    📡 NODES
-                </button>
-                <button id="udr-tab-rescue" onclick="_userDrawerTab('rescue')"
-                    style="flex:1;padding:8px 4px;border:none;border-bottom:2px solid transparent;background:transparent;
-                           color:#7a5a4a;font-family:'Cinzel',serif;font-size:9px;letter-spacing:1px;cursor:pointer;transition:.2s;">
-                    🚒 RESCUE
-                </button>
-                <button id="udr-tab-danger" onclick="_userDrawerTab('danger')"
-                    style="flex:1;padding:8px 4px;border:none;border-bottom:2px solid transparent;background:transparent;
-                           color:#7a5a4a;font-family:'Cinzel',serif;font-size:9px;letter-spacing:1px;cursor:pointer;transition:.2s;">
-                    ⚠ DANGER
-                </button>
+            <div style="margin-bottom:6px;font-size:9px;letter-spacing:2px;color:#9a6a5a;text-transform:uppercase;">Assigned Nodes</div>
+            <div id="adm-drawer-chips" style="display:flex;flex-wrap:wrap;gap:5px;min-height:28px;margin-bottom:12px;padding:8px;background:#12050333;border-radius:8px;border:1px solid #3a1a0a44;">
+                ${assignedNodes.length
+                    ? assignedNodes.map(nid => `
+                        <span style="display:inline-flex;align-items:center;gap:4px;background:#3a0a0444;border:1px solid #5a2a1a55;border-radius:6px;padding:3px 8px;font-size:11px;color:#ff9055;">
+                            ${nid}
+                            <button onclick="adminRemoveNodeFromUser(${user.id},'${nid}',this)" style="background:none;border:none;color:#7a3a2a;cursor:pointer;font-size:13px;line-height:1;padding:0 2px;transition:color .15s;" onmouseover="this.style.color='#ff4757'" onmouseout="this.style.color='#7a3a2a'">✕</button>
+                        </span>`).join('')
+                    : '<span style="color:#5a3a2a;font-size:11px;font-style:italic;padding:2px;">No nodes assigned yet</span>'
+                }
             </div>
 
-            <!-- NODES TAB -->
-            <div id="udr-panel-nodes">
-                <div style="margin-bottom:6px;font-size:9px;letter-spacing:2px;color:#9a6a5a;text-transform:uppercase;">Assigned Nodes</div>
-                <div id="adm-drawer-chips" style="display:flex;flex-wrap:wrap;gap:5px;min-height:28px;margin-bottom:12px;padding:8px;background:#12050333;border-radius:8px;border:1px solid #3a1a0a44;">
-                    ${assignedNodes.length
-                        ? assignedNodes.map(nid => `
-                            <span style="display:inline-flex;align-items:center;gap:4px;background:#3a0a0444;border:1px solid #5a2a1a55;border-radius:6px;padding:3px 8px;font-size:11px;color:#ff9055;">
-                                ${nid}
-                                <button onclick="adminRemoveNodeFromUser(${user.id},'${nid}',this)"
-                                    style="background:none;border:none;color:#7a3a2a;cursor:pointer;font-size:13px;line-height:1;padding:0 2px;transition:color .15s;"
-                                    onmouseover="this.style.color='#ff4757'" onmouseout="this.style.color='#7a3a2a'">✕</button>
-                            </span>`).join('')
-                        : '<span style="color:#5a3a2a;font-size:11px;font-style:italic;padding:2px;">No nodes assigned yet</span>'
-                    }
-                </div>
-                <div style="margin-bottom:6px;font-size:9px;letter-spacing:2px;color:#9a6a5a;text-transform:uppercase;">Assign a Node</div>
-                ${unassigned.length ? `
-                <div style="display:flex;gap:6px;margin-bottom:16px;">
-                    <select id="adm-drawer-node-select" class="adm-select" style="flex:1;">
-                        <option value="">— Select node to assign —</option>
-                        ${unassigned.map(nid => `<option value="${nid}">${nid}</option>`).join('')}
-                    </select>
-                    <button class="adm-btn-sm" onclick="adminAssignNodeToUser(${user.id})">+ Assign</button>
-                </div>`
-                : `<div style="color:#5a3a2a;font-size:11px;font-style:italic;margin-bottom:16px;">
-                    ${allNodeIds.length ? 'All known nodes are already assigned to this user.' : 'No sensor nodes found in the system yet.'}
-                   </div>`}
-            </div>
+            <div style="margin-bottom:6px;font-size:9px;letter-spacing:2px;color:#9a6a5a;text-transform:uppercase;">Assign a Node</div>
+            ${unassigned.length ? `
+            <div style="display:flex;gap:6px;margin-bottom:16px;">
+                <select id="adm-drawer-node-select" class="adm-select" style="flex:1;">
+                    <option value="">— Select node to assign —</option>
+                    ${unassigned.map(nid => `<option value="${nid}">${nid}</option>`).join('')}
+                </select>
+                <button class="adm-btn-sm" onclick="adminAssignNodeToUser(${user.id})">+ Assign</button>
+            </div>` : `<div style="color:#5a3a2a;font-size:11px;font-style:italic;margin-bottom:16px;">${allNodeIds.length ? 'All known nodes are already assigned to this user.' : 'No sensor nodes found in the system yet.'}</div>`}
 
-            <!-- RESCUE TAB -->
-            <div id="udr-panel-rescue" style="display:none;">
-                <div id="udr-rescue-content">
-                    <div style="text-align:center;padding:20px;color:#5a3a2a;font-size:12px;">
-                        <div style="font-size:24px;margin-bottom:8px;">⏳</div>Loading rescue timeline…
-                    </div>
-                </div>
-            </div>
-
-            <!-- DANGER TAB -->
-            <div id="udr-panel-danger" style="display:none;">
-                <div style="padding-top:8px;">
-                    <div style="font-size:9px;letter-spacing:2px;color:#9a6a5a;text-transform:uppercase;margin-bottom:10px;">Danger Zone</div>
-                    <div style="background:#1a000033;border:1px solid #ff475533;border-radius:9px;padding:14px;margin-bottom:10px;">
-                        <div style="font-size:11px;color:#9a6a5a;margin-bottom:10px;">
-                            ⚠ Permanently deletes this user and all their data. This action cannot be undone.
-                        </div>
-                        <button class="adm-btn-danger" style="width:100%;"
-                            onclick="if(confirm('Permanently delete user &quot;${user.username}&quot;? This cannot be undone.')) adminDeleteUserFromDrawer(${user.id})">
-                            🗑 Delete This User
-                        </button>
-                    </div>
-                </div>
+            <div style="border-top:1px solid #3a1a0a44;padding-top:12px;margin-top:4px;">
+                <div style="font-size:9px;letter-spacing:2px;color:#9a6a5a;text-transform:uppercase;margin-bottom:8px;">Danger Zone</div>
+                <button class="adm-btn-danger" style="width:100%;" onclick="if(confirm('Permanently delete user &quot;${user.username}&quot;? This cannot be undone.')) adminDeleteUserFromDrawer(${user.id})">🗑 Delete This User</button>
             </div>`;
-
-        // Pre-load rescue data in the background
-        _renderUserIncidentTimeline(user, assignedNodes);
-    }
-
-    // ── Tab switcher ──────────────────────────────────────────────────────────
-    function _userDrawerTab(tab) {
-        ['nodes','rescue','danger'].forEach(t => {
-            const panel = document.getElementById(`udr-panel-${t}`);
-            const btn   = document.getElementById(`udr-tab-${t}`);
-            if (!panel || !btn) return;
-            const active = t === tab;
-            panel.style.display         = active ? 'block' : 'none';
-            btn.style.borderBottomColor = active ? '#e14f00' : 'transparent';
-            btn.style.color             = active ? '#f0d0b8' : '#7a5a4a';
-        });
-    }
-
-    // ── Rescue Timeline Renderer ──────────────────────────────────────────────
-    async function _renderUserIncidentTimeline(user, assignedNodes) {
-        const container = document.getElementById('udr-rescue-content');
-        if (!container) return;
-
-        const VT_LABELS = { motor: '🏍 Motorcycle', small: '🚒 Small Fire Truck', big: '🚛 Big Fire Truck' };
-        const VT_SPEEDS = { motor: 60, small: 40, big: 30 };
-
-        // Fetch active + resolved incidents in parallel
-        let activeList = [], resolvedList = [];
-        try {
-            const [aRes, rRes] = await Promise.all([
-                fetch(`${API_BASE()}/incidents/active`,           { headers: authHeader() }),
-                fetch(`${API_BASE()}/incidents/resolved?limit=50`, { headers: authHeader() }),
-            ]);
-            if (aRes.ok)  activeList   = await aRes.json();
-            if (rRes.ok)  resolvedList = await rRes.json();
-        } catch(e) {
-            container.innerHTML = `<div style="color:#ff4757;font-size:12px;text-align:center;padding:16px;">⚠ Failed to load incident data.</div>`;
-            return;
-        }
-
-        // Filter to this user's assigned nodes
-        const nodeSet  = new Set(assignedNodes);
-        const filterFn = inc => nodeSet.size === 0 || nodeSet.has(inc.node_id);
-        const userActive   = activeList.filter(filterFn);
-        const userResolved = resolvedList.filter(filterFn);
-        const allUserInc   = [...userActive, ...userResolved];
-
-        if (!allUserInc.length) {
-            container.innerHTML = `
-                <div style="text-align:center;padding:28px 12px;">
-                    <div style="font-size:36px;margin-bottom:10px;">🟢</div>
-                    <div style="font-size:12px;color:#2ecc71;font-weight:700;letter-spacing:1px;">NO INCIDENTS</div>
-                    <div style="font-size:11px;color:#5a3a2a;margin-top:5px;">
-                        No fire incidents recorded for the nodes assigned to this user.
-                    </div>
-                </div>`;
-            return;
-        }
-
-        // Summary counts
-        const totalFire     = allUserInc.filter(i => (i.ai_prediction||'').toLowerCase() === 'fire').length;
-        const withDispatch  = allUserInc.filter(i => i.assigned_team).length;
-        const totalResolved = userResolved.length;
-
-        // Build each incident card
-        const makeCard = (inc) => {
-            const pred      = (inc.ai_prediction || '').toLowerCase();
-            const isActive  = !inc.resolved_at;
-            const isFire    = pred === 'fire';
-            const isPossible= pred === 'false';
-
-            const statusColor = isActive && isFire    ? '#ff4757'
-                              : isActive && isPossible ? '#f1c40f'
-                              : '#2ecc71';
-            const statusLabel = isActive && isFire    ? '🔥 Active Fire'
-                              : isActive && isPossible ? '⚠ Possible Fire'
-                              : '✅ Resolved';
-
-            const startedFmt  = formatTimestamp(inc.started_at)   || '—';
-            const dispatchFmt = formatTimestamp(inc.dispatch_time) || null;
-            const resolvedFmt = formatTimestamp(inc.resolved_at)   || null;
-            const vehicleLabel = inc.vehicle_type ? (VT_LABELS[inc.vehicle_type] || inc.vehicle_type) : null;
-            const dispatched   = !!inc.assigned_team;
-            const resolved     = !!inc.resolved_at;
-
-            // ETA calculation
-            let etaHtml = '';
-            const gw     = typeof getPrimaryGateway === 'function' ? getPrimaryGateway() : { lat: 16.0435, lng: 120.3351 };
-            const incLat = parseFloat(inc.latitude);
-            const incLng = parseFloat(inc.longitude);
-            if (!isNaN(incLat) && incLat !== 0 && !isNaN(incLng) && incLng !== 0 && inc.vehicle_type) {
-                const distKm  = typeof calcDistance === 'function'
-                    ? calcDistance(gw.lat, gw.lng, incLat, incLng)
-                    : Math.sqrt(Math.pow((incLat - gw.lat)*111,2) + Math.pow((incLng - gw.lng)*111,2));
-                const speed   = VT_SPEEDS[inc.vehicle_type] || 40;
-                const etaMins = Math.max(1, Math.round((distKm / speed) * 60));
-                etaHtml = `
-                    <div style="display:flex;align-items:center;gap:10px;margin-top:8px;padding:8px 10px;
-                                background:#12090344;border:1px solid #f1c40f33;border-radius:8px;">
-                        <span style="font-size:20px;">⏱</span>
-                        <div>
-                            <div style="font-size:9px;color:#9a6a5a;text-transform:uppercase;letter-spacing:1px;">Estimated Travel Time</div>
-                            <div style="font-size:15px;font-weight:700;color:#f1c40f;">~${etaMins} min</div>
-                            <div style="font-size:9px;color:#7a7a5a;">${distKm.toFixed(1)} km · ${vehicleLabel || inc.vehicle_type}</div>
-                        </div>
-                    </div>`;
-            }
-
-            // Timeline steps
-            const steps = [
-                {
-                    icon: isFire ? '🔥' : isPossible ? '⚠' : '📡',
-                    label: isFire ? 'Fire Detected' : isPossible ? 'Possible Fire Flagged' : 'Incident Opened',
-                    time: startedFmt,
-                    sub: null,
-                    color: statusColor,
-                    done: true,
-                },
-                {
-                    icon: dispatched ? '🚒' : '⋯',
-                    label: dispatched ? 'Rescue Dispatched' : 'Awaiting Dispatch',
-                    time: dispatchFmt,
-                    sub: dispatched ? `${inc.assigned_team}${vehicleLabel ? ' · ' + vehicleLabel : ''}` : null,
-                    color: dispatched ? '#ff9f1c' : '#3a2a1a',
-                    done: dispatched,
-                },
-                {
-                    icon: resolved ? '✅' : '⋯',
-                    label: resolved ? 'Incident Resolved' : 'Pending Resolution',
-                    time: resolvedFmt,
-                    sub: null,
-                    color: resolved ? '#2ecc71' : '#3a2a1a',
-                    done: resolved,
-                },
-            ];
-
-            const timelineHtml = steps.map((s, i) => `
-                <div style="display:flex;gap:10px;align-items:flex-start;">
-                    <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:28px;">
-                        <div style="width:28px;height:28px;border-radius:50%;
-                                    background:${s.done ? s.color+'22' : '#1a0a0444'};
-                                    border:2px solid ${s.done ? s.color : '#3a1a0a44'};
-                                    display:flex;align-items:center;justify-content:center;
-                                    font-size:13px;flex-shrink:0;">
-                            ${s.icon}
-                        </div>
-                        ${i < steps.length-1 ? `<div style="width:2px;min-height:18px;flex:1;background:${s.done ? s.color+'55' : '#2a1a0a'};margin:2px 0;"></div>` : ''}
-                    </div>
-                    <div style="padding-bottom:${i < steps.length-1 ? '12px' : '0'};min-width:0;">
-                        <div style="font-size:11px;font-weight:700;color:${s.done ? s.color : '#4a2a1a'};">${s.label}</div>
-                        ${s.time ? `<div style="font-size:10px;color:#7a5a4a;margin-top:1px;">${s.time}</div>` : ''}
-                        ${s.sub  ? `<div style="font-size:10px;color:#9a7a5a;margin-top:2px;">${s.sub}</div>` : ''}
-                    </div>
-                </div>`).join('');
-
-            return `
-                <div style="background:#1a0805cc;border:1px solid ${statusColor}44;border-left:3px solid ${statusColor};
-                            border-radius:10px;padding:12px 14px;margin-bottom:10px;">
-                    <!-- Card header -->
-                    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:6px;">
-                        <div>
-                            <div style="font-size:11px;font-weight:700;color:#ff9055;letter-spacing:1px;">
-                                📍 ${inc.node_id}
-                                <span style="font-size:9px;color:#5a3a2a;font-weight:400;margin-left:3px;">#${inc.incident_id}</span>
-                            </div>
-                            <div style="font-size:9px;color:#5a3a2a;margin-top:2px;">
-                                ${inc.trigger_source === 'manual' ? '🚨 Manual trigger' : '🤖 AI detected'}
-                            </div>
-                        </div>
-                        <span style="flex-shrink:0;font-size:9px;font-weight:700;color:${statusColor};
-                                     background:${statusColor}18;border:1px solid ${statusColor}44;
-                                     border-radius:20px;padding:2px 8px;white-space:nowrap;">
-                            ${statusLabel}
-                        </span>
-                    </div>
-
-                    <!-- Sensor snapshot -->
-                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:10px;">
-                        ${[
-                            ['🌡', inc.temperature != null ? inc.temperature+'°C' : '—', 'Temp'],
-                            ['💧', inc.humidity    != null ? inc.humidity+'%'     : '—', 'Hum'],
-                            ['💨', inc.smoke       != null ? inc.smoke            : '—', 'Smoke'],
-                            ['🔥', inc.flame       != null ? inc.flame            : '—', 'Flame'],
-                        ].map(([em, val, lbl]) => `
-                            <div style="background:#12050333;border:1px solid #3a1a0a44;border-radius:6px;padding:5px;text-align:center;">
-                                <div style="font-size:11px;">${em}</div>
-                                <div style="font-size:11px;font-weight:700;color:#f0d0b8;">${val}</div>
-                                <div style="font-size:8px;color:#5a3a2a;text-transform:uppercase;">${lbl}</div>
-                            </div>`).join('')}
-                    </div>
-
-                    <!-- Timeline -->
-                    <div style="margin-bottom:4px;">${timelineHtml}</div>
-
-                    <!-- ETA chip -->
-                    ${etaHtml}
-
-                    <!-- Responding org -->
-                    ${dispatched ? `
-                    <div style="margin-top:8px;padding:8px 10px;background:#0a1a0a55;
-                                border:1px solid #2ecc7133;border-radius:8px;">
-                        <div style="font-size:9px;color:#9a6a5a;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;">
-                            Responding Organization
-                        </div>
-                        <div style="display:flex;align-items:center;gap:8px;">
-                            <span style="font-size:20px;">🏢</span>
-                            <div>
-                                <div style="font-size:13px;font-weight:700;color:#6db8ff;">${inc.assigned_team}</div>
-                                ${vehicleLabel ? `<div style="font-size:10px;color:#7a9a7a;">${vehicleLabel}</div>` : ''}
-                            </div>
-                        </div>
-                    </div>` : ''}
-                </div>`;
-        };
-
-        // Summary bar
-        const summaryHtml = `
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px;">
-                ${[
-                    ['🔥', totalFire,     'Fire Events', '#ff4757'],
-                    ['🚒', withDispatch,  'Dispatched',  '#ff9f1c'],
-                    ['✅', totalResolved, 'Resolved',    '#2ecc71'],
-                ].map(([icon, val, lbl, color]) => `
-                    <div style="background:#12050333;border:1px solid ${color}33;border-radius:8px;padding:8px;text-align:center;">
-                        <div style="font-size:16px;">${icon}</div>
-                        <div style="font-size:20px;font-weight:700;color:${color};">${val}</div>
-                        <div style="font-size:9px;color:#5a3a2a;text-transform:uppercase;letter-spacing:.5px;">${lbl}</div>
-                    </div>`).join('')}
-            </div>`;
-
-        let bodyHtml = summaryHtml;
-
-        if (userActive.length) {
-            bodyHtml += `<div style="font-size:9px;letter-spacing:2px;color:#ff4757;text-transform:uppercase;margin-bottom:8px;font-weight:700;">
-                            🔴 Active Incidents (${userActive.length})
-                         </div>`;
-            bodyHtml += userActive.map(makeCard).join('');
-        }
-
-        if (userResolved.length) {
-            bodyHtml += `<div style="font-size:9px;letter-spacing:2px;color:#2ecc71;text-transform:uppercase;
-                                    margin:${userActive.length ? '14px' : '0'} 0 8px;font-weight:700;">
-                            ✅ Resolved Incidents (${userResolved.length})
-                         </div>`;
-            bodyHtml += userResolved.map(makeCard).join('');
-        }
-
-        container.innerHTML = bodyHtml;
     }
 
     function closeUserDrawer() {
