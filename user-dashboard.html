@@ -138,7 +138,7 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 .node-card:hover{border-color:#6a2a1a88;}
 .node-card.fire{border-color:#ff475566;border-top-color:#ff4757aa;box-shadow:0 4px 20px #ff475722;}
 .node-card.possible{border-color:#f1c40f55;border-top-color:#f1c40f88;box-shadow:0 4px 20px #f1c40f11;}
-.node-card.offline{opacity:.7;}
+.node-card.offline{opacity:.75;filter:saturate(0.4);}
 
 /* card header */
 .node-card-header{padding:12px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #2a1a0a33;}
@@ -148,6 +148,15 @@ input:checked+.slider:before{content:"🌙";transform:translateX(26px);}
 .status-ring.fire{background:#1a000055;border:2px solid #ff475577;animation:pulse-dot .8s ease infinite;}
 .status-ring.possible{background:#1a160055;border:2px solid #f1c40f77;animation:pulse-dot 1.2s ease infinite;}
 .status-ring.offline{background:#1a1a1a33;border:2px solid #4a4a4a44;}
+.online-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block;}
+.online-dot.online{background:#2ecc71;box-shadow:0 0 6px #2ecc71cc;animation:pulse-dot 2s ease infinite;}
+.online-dot.offline{background:#4a4a4a;box-shadow:none;}
+.online-dot.fire{background:#ff4757;box-shadow:0 0 6px #ff4757cc;animation:pulse-dot 1s ease infinite;}
+.offline-badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;letter-spacing:1px;color:#5a5a5a;background:#2a2a2a44;border:1px solid #3a3a3a55;border-radius:4px;padding:2px 6px;text-transform:uppercase;}
+[data-theme="light"] .offline-badge{color:#8a8a8a;background:#e0e0e055;border-color:#c0c0c0;}
+.online-badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;letter-spacing:1px;color:#2ecc71;background:#0a1a0a55;border:1px solid #2ecc7133;border-radius:4px;padding:2px 6px;text-transform:uppercase;}
+[data-theme="light"] .online-badge{color:#0e7a38;background:#e8f8ee;border-color:#1a9e5266;}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.4}}
 .node-header-info{flex:1;min-width:0;}
 .node-id-label{font-size:13px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .node-location-label{font-size:10px;color:var(--text-dim);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -597,6 +606,26 @@ function renderNodes() {
         const isFire = pred === 'fire' || pred === 'false';
         if (pred === 'fire' || pred === 'false') fireCount++; else normalCount++;
 
+        // ── Offline detection (>3 min since last update) ──
+        const OFFLINE_MIN = 3;
+        const lastTs = n.local_timestamp || n.timestamp || n.updated_at || null;
+        let isOffline = false;
+        if (lastTs) {
+            try {
+                const s = lastTs.toString().replace('T',' ').replace(/\.\d+Z?$/,'');
+                const d = new Date(s + '+08:00');
+                isOffline = !isNaN(d.getTime()) && (Date.now() - d.getTime()) / 60000 > OFFLINE_MIN;
+            } catch {}
+        }
+        // Fire/possible nodes are never shown as offline
+        if (isFire) isOffline = false;
+
+        const dotCls   = isFire ? 'fire' : isOffline ? 'offline' : 'online';
+        const cardCls  = isOffline ? 'offline' : cardClass(pred);
+        const statusBadge = isOffline
+            ? `<span class="offline-badge"><span class="online-dot offline"></span>Offline</span>`
+            : `<span class="online-badge"><span class="online-dot online"></span>Online</span>`;
+
         // add to filter dropdown
         if (!existing.has(n.node_id)) {
             const opt = document.createElement('option');
@@ -606,35 +635,41 @@ function renderNodes() {
             existing.add(n.node_id);
         }
 
-        const sparkColor = pred === 'fire' ? '#ff4757' : pred === 'false' ? '#f1c40f' : '#2ecc71';
+        const sparkColor = pred === 'fire' ? '#ff4757' : pred === 'false' ? '#f1c40f' : isOffline ? '#4a4a4a' : '#2ecc71';
         const history = (n._history || []).map(r => r.temperature).filter(v => v != null);
         const hasGps  = n.latitude && parseFloat(n.latitude) !== 0;
 
-        return `<div class="node-card ${cardClass(pred)}" id="nodecard-${n.node_id}">
+        return `<div class="node-card ${cardCls}" id="nodecard-${n.node_id}">
             <div class="node-card-header">
-                <div class="status-ring ${statusRingClass(pred)}">${statusIcon(pred)}</div>
+                <div class="status-ring ${isOffline ? 'offline' : statusRingClass(pred)}">${isOffline ? '—' : statusIcon(pred)}</div>
                 <div class="node-header-info">
                     <div class="node-id-label">${n.node_id}</div>
                     <div class="node-location-label">${n.location_name || (n.gateway_id ? `via ${n.gateway_id}` : 'No location set')}</div>
                 </div>
-                <span class="ai-badge ${aiClass(pred)}">${aiLabel(pred)}</span>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+                    ${statusBadge}
+                    <span class="ai-badge ${isOffline ? 'ai-offline' : aiClass(pred)}">${isOffline ? 'Offline' : aiLabel(pred)}</span>
+                </div>
             </div>
             <div class="sensor-grid">
                 <div class="sensor-cell">
                     <div class="sensor-lbl">Temperature</div>
-                    <div class="sensor-val ${tempColor(n.temperature, pred)}">${n.temperature != null ? n.temperature + '°C' : '—'}</div>
+                    <div class="sensor-val ${isOffline ? 'sval-normal' : tempColor(n.temperature, pred)}" style="${isOffline?'opacity:.5':''}">
+                        ${n.temperature != null ? n.temperature + '°C' : '—'}
+                        ${isOffline ? '<span style="font-size:9px;color:#5a5a5a;margin-left:3px;">(last)</span>' : ''}
+                    </div>
                 </div>
                 <div class="sensor-cell">
                     <div class="sensor-lbl">Humidity</div>
-                    <div class="sensor-val sval-normal">${n.humidity != null ? n.humidity + '%' : '—'}</div>
+                    <div class="sensor-val sval-normal" style="${isOffline?'opacity:.5':''}">${n.humidity != null ? n.humidity + '%' : '—'}${isOffline ? '<span style="font-size:9px;color:#5a5a5a;margin-left:3px;">(last)</span>' : ''}</div>
                 </div>
                 <div class="sensor-cell">
                     <div class="sensor-lbl">Smoke (ppm)</div>
-                    <div class="sensor-val ${smokeColor(n.smoke, pred)}">${n.smoke != null ? n.smoke : '—'}</div>
+                    <div class="sensor-val ${isOffline ? 'sval-normal' : smokeColor(n.smoke, pred)}" style="${isOffline?'opacity:.5':''}">${n.smoke != null ? n.smoke : '—'}${isOffline ? '<span style="font-size:9px;color:#5a5a5a;margin-left:3px;">(last)</span>' : ''}</div>
                 </div>
                 <div class="sensor-cell">
                     <div class="sensor-lbl">Flame</div>
-                    <div class="sensor-val ${n.flame > 0 ? 'sval-alert' : 'sval-ok'}">${n.flame > 0 ? n.flame + ' det.' : 'None'}</div>
+                    <div class="sensor-val ${isOffline ? 'sval-normal' : (n.flame > 0 ? 'sval-alert' : 'sval-ok')}" style="${isOffline?'opacity:.5':''}">${n.flame > 0 ? n.flame + ' det.' : 'None'}${isOffline ? '<span style="font-size:9px;color:#5a5a5a;margin-left:3px;">(last)</span>' : ''}</div>
                 </div>
             </div>
             <div class="sparkline-wrap">
@@ -642,7 +677,9 @@ function renderNodes() {
                 <div class="sparkline-box">${history.length >= 2 ? sparklineSVG(history.slice(0,20).reverse(), sparkColor) : '<svg><text x="50%" y="55%" text-anchor="middle" fill="#3a1a0a" font-size="10">No trend data</text></svg>'}</div>
             </div>
             <div class="node-card-footer">
-                <span class="node-time-label">Updated: ${formatTimestamp(n.local_timestamp)}</span>
+                <span class="node-time-label" style="${isOffline?'color:#ff9f1c;font-weight:600;':''}">
+                    ${isOffline ? '⚠ Last seen: ' : 'Updated: '}${formatTimestamp(n.local_timestamp)}
+                </span>
                 ${hasGps ? `<span class="gps-badge">GPS: ${parseFloat(n.latitude).toFixed(4)}, ${parseFloat(n.longitude).toFixed(4)}</span>` : '<span class="gps-badge" style="color:var(--text-muted);">No GPS</span>'}
                 <button class="history-btn" onclick="openHistory('${n.node_id}')">History</button>
             </div>
@@ -652,6 +689,17 @@ function renderNodes() {
     // Status chips
     chips.innerHTML = '';
     if (fireCount) chips.innerHTML += `<span class="chip chip-fire">🔥 ${fireCount} ALERT</span>`;
+    const offlineCount = _myNodes.filter(n => {
+        const lastTs = n.local_timestamp || n.timestamp || null;
+        if (!lastTs) return false;
+        try {
+            const s = lastTs.toString().replace('T',' ').replace(/\.\d+Z?$/,'');
+            const d = new Date(s + '+08:00');
+            const pred = (n.ai_prediction||'').toLowerCase();
+            return !isNaN(d.getTime()) && (Date.now()-d.getTime())/60000 > 3 && pred !== 'fire' && pred !== 'false';
+        } catch { return false; }
+    }).length;
+    if (offlineCount) chips.innerHTML += `<span class="chip" style="color:#8a8a8a;background:#2a2a2a44;border:1px solid #3a3a3a55;">⚫ ${offlineCount} OFFLINE</span>`;
     chips.innerHTML += `<span class="chip chip-normal">✓ ${normalCount} NORMAL</span>`;
     chips.innerHTML += `<span class="chip chip-total">${_myNodes.length} TOTAL</span>`;
 
