@@ -1201,13 +1201,25 @@ function connectWS() {
                         // Org dispatched — fetch fresh incident data
                         loadActiveIncidents();
                     } else if (msg.action === 'resolved') {
-                        // Mark resolved in cache then hide after short delay
+                        // Mark resolved — show "Resolved" state in panel first
                         const inc = _activeIncidents.find(i => i.incident_id == msg.incident_id);
-                        if (inc) { inc.status = 'resolved'; renderIncidentPanel(); }
+                        if (inc) {
+                            inc.status = 'resolved';
+                            inc.resolved_at = msg.resolved_at || new Date().toLocaleTimeString();
+                        }
+                        // Reset node's ai_prediction so fire banner + INCIDENT button disappear immediately
+                        const resolvedNode = _myNodes.find(n => n.node_id === msg.node_id);
+                        if (resolvedNode) {
+                            resolvedNode.ai_prediction = 'normal';
+                            resolvedNode.confidence    = 0.99;
+                        }
+                        _alertDismissed = false;
+                        renderIncidentPanel(); // shows "Resolved" banner
+                        renderNodes();         // clears fire state on card
                         setTimeout(() => {
                             _activeIncidents = _activeIncidents.filter(i => i.incident_id != msg.incident_id);
-                            renderIncidentPanel();
-                        }, 8000); // keep visible for 8s so user can read "Resolved"
+                            renderIncidentPanel(); // hides panel after 8s
+                        }, 8000);
                     } else if (msg.action === 'new_or_updated') {
                         loadActiveIncidents();
                     }
