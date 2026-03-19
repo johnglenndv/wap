@@ -532,15 +532,19 @@ const VEHICLE_LABELS = { motor:'Motorcycle Unit', small:'Fire Truck (Small)', bi
 function _toAmPm(raw) {
     if (!raw) return null;
     try {
-        const s = raw.toString().replace('T',' ').replace(/\.\d+Z?$/,'');
+        const s = raw.toString().replace('T', ' ').replace(/\.\d+Z?$/, '');
         const parts = s.split(' ');
         if (parts.length < 2) return raw;
-        const [hh, mm] = parts[1].split(':');
+        const timeParts = parts[1].split(':');
+        if (timeParts.length < 2) return raw;
+        const hh = timeParts[0], mm = timeParts[1];
+        if (!hh || !mm || mm === 'undefined') return '—';
         const h = parseInt(hh, 10);
+        if (isNaN(h)) return '—';
         const ampm = h >= 12 ? 'PM' : 'AM';
         const h12 = h % 12 || 12;
         return `${h12}:${mm} ${ampm}`;
-    } catch { return raw; }
+    } catch { return '—'; }
 }
 
 // ── LIVE INCIDENT PANEL ──
@@ -1205,7 +1209,10 @@ function connectWS() {
                         const inc = _activeIncidents.find(i => i.incident_id == msg.incident_id);
                         if (inc) {
                             inc.status = 'resolved';
-                            inc.resolved_at = msg.resolved_at || new Date().toLocaleTimeString();
+                            const _now = new Date();
+                            const _pad = n => String(n).padStart(2,'0');
+                            const _nowStr = `${_now.getFullYear()}-${_pad(_now.getMonth()+1)}-${_pad(_now.getDate())} ${_pad(_now.getHours())}:${_pad(_now.getMinutes())}:${_pad(_now.getSeconds())}`;
+                            inc.resolved_at = msg.resolved_at || _nowStr;
                         }
                         // Reset node's ai_prediction so fire banner + INCIDENT button disappear immediately
                         const resolvedNode = _myNodes.find(n => n.node_id === msg.node_id);
