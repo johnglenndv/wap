@@ -2116,7 +2116,11 @@
             if (res.status === 401) { window.location.href = 'login.html'; return; }
             const me = await res.json();
             localStorage.setItem('flames_username', me.username);
-            window._flamesCurrentUser = me;  // store for dispatch use
+            window._flamesCurrentUser = me;
+            if (!me.is_admin && !me.organization_id) {
+                window.location.href = 'user-dashboard.html';
+                return;
+                }  // store for dispatch use
             document.getElementById('side-username').textContent = me.username || '—';
             document.getElementById('side-org-name').textContent = me.organization_name || '—';
             const rb = document.getElementById('side-role-badge');
