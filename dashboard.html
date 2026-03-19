@@ -1917,21 +1917,21 @@
         const lit = Math.round(38 + (t < 0.5 ? t * 8 : (1 - t) * 8));
         return `hsl(${hue},100%,${lit}%)`;
     }
-    function _jamLabel(jf) {
+    function _jamLabel(jf) { //JAM FACTOR CLASSIFICATION
         if (jf <= 1.5) return { cls: 'free',     text: '🟢 FREE FLOW' };
         if (jf <= 3.5) return { cls: 'moderate', text: '🟡 MODERATE' };
         if (jf <= 6.5) return { cls: 'heavy',    text: '🟠 HEAVY' };
         return               { cls: 'severe',    text: '🔴 SEVERE' };
     }
-    function _samplePoints(coords, n = 10) {
+    function _samplePoints(coords, n = 10) { //SAMPLE POINTS
         if (coords.length <= n) return coords;
         const step = (coords.length - 1) / (n - 1);
         return Array.from({ length: n }, (_, i) => coords[Math.round(i * step)]);
     }
-    // _fetchFlowPoint removed — flow data now proxied through backend /api/traffic-flow
+    // _fetchFlowPoint removed — flow data now proxied through backend /api/traffic-flow LIVE TRAFFIC FLOW
     async function fetchTrafficOnRoute(coords) {
         try {
-            const pts = _samplePoints(coords, 10);
+            const pts = _samplePoints(coords, 10); // sample points
             const res = await fetch(`${API_BASE()}/api/traffic-flow`, {
                 method: 'POST',
                 headers: {...authHeader(), 'Content-Type': 'application/json'},
@@ -1947,6 +1947,7 @@
         if (!coords.length) return layers;
         if (!traffic) {
             layers.push(L.polyline(coords, { color:'#000000', weight:weight+3, opacity:0.55 }).addTo(mapTarget));
+            //walang traffic
             layers.push(L.polyline(coords, { color:'#ff4400', weight, opacity:0.95 }).addTo(mapTarget));
             return layers;
         }
@@ -1958,7 +1959,8 @@
         for (let i=0;i<n-1;i++) {
             const frac=i/segCount, ji=frac*(jams.length-1), lo=Math.floor(ji), hi=Math.min(lo+1,jams.length-1);
             const jf=jams[lo]+(jams[hi]-jams[lo])*(ji-lo);
-            layers.push(L.polyline([coords[i],coords[i+1]],{color:_trafficColor(jf),weight,opacity:0.97}).addTo(mapTarget));
+            // may traffic
+            layers.push(L.polyline([coords[i],coords[i+1]],{color:_trafficColor(jf),weight,opacity:0.97}).addTo(mapTarget)); 
         }
         return layers;
     }
@@ -1995,9 +1997,9 @@
     document.getElementById('traffic-toggle-btn').addEventListener('click', toggleTrafficLayer);
     // TOMTOM traffic code end ──────────────────────────────────────────────────────
 
-    // ── Time-aware firetruck speed for Dagupan/PH ─────────────────
+    // ── Time-aware firetruck speed for Dagupan/PH JAM FACTOR CLASSFICATION // PEAK PERIOD
     function getFiretruckSpeed() {
-        const now = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' });
+        const now = new Date().toLocaleString('en-US', { timeZone: 'Asia/Manila' }); // TIME BASIS NG PEAK PERIOD
         const ph  = new Date(now);
         const hour = ph.getHours();
         const min  = ph.getMinutes();
@@ -2013,7 +2015,7 @@
         return { speed: 25, factor: 1.5, label: 'Normal' };
     }
 
-    // ── Vehicle type system ───────────────────────────────────────────────────────
+    // VEHICLE
     // speedMult  : multiplier on base speed  (higher = faster = lower ETA)
     // trafficMult: how much traffic jams affect this vehicle (higher = more affected)
     const VEHICLE_TYPES = {
@@ -2060,9 +2062,9 @@
         return `${(+a).toFixed(5)},${(+b).toFixed(5)}-${(+c).toFixed(5)},${(+d).toFixed(5)}`;
     }
 
-    // Straight-line fallback with road-factor estimate (1.35x multiplier for urban roads)
+    // Straight-line fallback with road-factor estimate (1.35x multiplier for urban roads) HAVERSINE FORMULA
     function _straightLineFallback(sLat, sLng, eLat, eLng) {
-        const R = 6371;
+        const R = 6371; // radius ng EARTH kapag kilometer
         const dLt = (eLat - sLat) * Math.PI / 180;
         const dLn = (eLng - sLng) * Math.PI / 180;
         const a = Math.sin(dLt/2)**2 + Math.cos(sLat*Math.PI/180)*Math.cos(eLat*Math.PI/180)*Math.sin(dLn/2)**2;
@@ -2075,7 +2077,7 @@
             const f = i / steps;
             return [sLat + (eLat - sLat) * f, sLng + (eLng - sLng) * f];
         });
-        return { coords, distKm: (d * 1.35).toFixed(2), timeMins, isFallback: true };
+        return { coords, distKm: (d * 1.35).toFixed(2), timeMins, isFallback: true }; //HAVERSINE FORMULA END
     }
 
     async function chRoute(sLat, sLng, eLat, eLng) {
@@ -2084,7 +2086,7 @@
         if (cx && Date.now() - cx.ts < CH_CACHE_TTL) return cx.data;
         try {
             // OSRM /route uses CH algorithm internally, returns time-optimal route
-            const url = `${OSRM_BASE}/${sLng},${sLat};${eLng},${eLat}?overview=full&geometries=geojson`;
+            const url = `${OSRM_BASE}/${sLng},${sLat};${eLng},${eLat}?overview=full&geometries=geojson`; // CH ALGORITHM
             const r = await fetch(url);
             if (!r.ok) throw new Error(`OSRM HTTP ${r.status}`);
             const j = await r.json();
