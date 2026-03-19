@@ -521,8 +521,9 @@ let _filterNode    = 'all';
 let _hpNode        = null;
 let _hpLimit       = 50;
 let _hpMetric      = 'temperature';
-let _alertDismissed = false;
-let _ws            = null;
+let _alertDismissed      = false;
+let _ws                  = null;
+let _resolvedIncidentIds = new Set(); // tracks locally resolved incidents so polls won't bring them back
 let _activeIncidents = [];   // live incidents for my nodes
 
 // ── VEHICLE LABEL MAP ──
@@ -549,9 +550,11 @@ async function loadActiveIncidents() {
         const res = await fetch(`${API_BASE()}/incidents/active`, { headers: authHdr() });
         if (!res.ok) return;
         const incidents = await res.json();
-        // Filter to only incidents for my assigned nodes
+        // Filter to only incidents for my assigned nodes AND not already locally resolved
         const myNodeIds = new Set(_myNodes.map(n => n.node_id));
-        _activeIncidents = incidents.filter(i => myNodeIds.has(i.node_id));
+        _activeIncidents = incidents.filter(i =>
+            myNodeIds.has(i.node_id) && !_resolvedIncidentIds.has(i.incident_id)
+        );
         renderIncidentPanel();
     } catch (e) {
         console.warn('[FLAMES] loadActiveIncidents error:', e);
@@ -1201,21 +1204,23 @@ function connectWS() {
                         // Org dispatched — fetch fresh incident data
                         loadActiveIncidents();
                     } else if (msg.action === 'resolved') {
-                        // Mark resolved — show "Resolved" state in panel first
+                        // Add to blacklist FIRST so no poll can bring it back
+                        if (msg.incident_id) _resolvedIncidentIds.add(msg.incident_id);
+                        // Mark resolved — show "Resolved" state in panel for 8s
                         const inc = _activeIncidents.find(i => i.incident_id == msg.incident_id);
                         if (inc) {
                             inc.status = 'resolved';
                             inc.resolved_at = msg.resolved_at || new Date().toLocaleTimeString();
                         }
-                        // Reset node's ai_prediction so fire banner + INCIDENT button disappear immediately
+                        // Reset node's ai_prediction so fire banner + card clear immediately
                         const resolvedNode = _myNodes.find(n => n.node_id === msg.node_id);
                         if (resolvedNode) {
                             resolvedNode.ai_prediction = 'normal';
                             resolvedNode.confidence    = 0.99;
                         }
                         _alertDismissed = false;
-                        renderIncidentPanel(); // shows "Resolved" banner
-                        renderNodes();         // clears fire state on card
+                        renderIncidentPanel(); // shows "✓ Resolved" state
+                        renderNodes();         // clears fire card immediately
                         setTimeout(() => {
                             _activeIncidents = _activeIncidents.filter(i => i.incident_id != msg.incident_id);
                             renderIncidentPanel(); // hides panel after 8s
@@ -1246,9 +1251,15 @@ function connectWS() {
                     if (msg.longitude)            nd.longitude     = msg.longitude;
                     _alertDismissed = false; // re-show banner if fire reoccurs
                 }
-                // If a fire reading just came in, refresh incident panel too
+                // If a fire reading came in, refresh incident panel — but only if not already resolved
                 const pred = (msg.ai_prediction || '').toLowerCase();
-                if (pred === 'fire' || pred === 'false') loadActiveIncidents();
+                if (pred === 'fire' || pred === 'false') {
+                    // Only reload if this node has no locally-resolved incident blocking it
+                    const nodeHasResolvedBlock = _activeIncidents.some(i =>
+                        i.node_id === msg.node_id && _resolvedIncidentIds.has(i.incident_id)
+                    );
+                    if (!nodeHasResolvedBlock) loadActiveIncidents();
+                }
                 renderNodes();
                 loadRecentReadings();
                 // Update history panel if open on this node
