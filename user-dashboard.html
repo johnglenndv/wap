@@ -1204,11 +1204,12 @@ function connectWS() {
                     } else if (msg.action === 'responded' || msg.action === 'dispatch_updated') {
                         // Org dispatched — fetch fresh incident data
                         loadActiveIncidents();
+                    // FIND the resolved block — should look like this now:
                     } else if (msg.action === 'resolved') {
-                        // Mark resolved — show "Resolved" state in panel first
                         const inc = _activeIncidents.find(i => i.incident_id == msg.incident_id);
                         if (inc) {
                             inc.status = 'resolved';
+                            // MAKE SURE these lines are here and the old toLocaleTimeString line is gone:
                             const _now = new Date();
                             const _pad = n => String(n).padStart(2,'0');
                             const _nowStr = `${_now.getFullYear()}-${_pad(_now.getMonth()+1)}-${_pad(_now.getDate())} ${_pad(_now.getHours())}:${_pad(_now.getMinutes())}:${_pad(_now.getSeconds())}`;
@@ -1254,8 +1255,34 @@ function connectWS() {
                     _alertDismissed = false; // re-show banner if fire reoccurs
                 }
                 // If a fire reading just came in, refresh incident panel too
+                // REPLACE WITH:
                 const pred = (msg.ai_prediction || '').toLowerCase();
-                if (pred === 'fire' || pred === 'false') loadActiveIncidents();
+                if (pred === 'fire' || pred === 'false') {
+                    // Patch _activeIncidents directly from WS data — no extra HTTP round trip
+                    const existingInc = _activeIncidents.find(i => i.node_id === (msg.node_id || msg.node));
+                    if (!existingInc) {
+                        // New fire — add a placeholder immediately, real data arrives via incident_update
+                        _activeIncidents.push({
+                            incident_id:    msg.incident_id || null,
+                            node_id:        msg.node_id || msg.node,
+                            location_name:  msg.location_name || ('Node ' + (msg.node_id || msg.node)),
+                            ai_prediction:  msg.ai_prediction,
+                            confidence:     msg.confidence,
+                            status:         'active',
+                            started_at:     msg.local_timestamp || new Date().toLocaleTimeString(),
+                            assigned_team:  null,
+                            dispatch_time:  null,
+                            notified_at:    null,
+                        });
+                    } else {
+                        // Update existing
+                        existingInc.ai_prediction = msg.ai_prediction;
+                        existingInc.confidence    = msg.confidence;
+                    }
+                    renderIncidentPanel(); // instant — no fetch needed
+                    // Still fetch in background to get real incident_id and full data
+                    loadActiveIncidents();
+                }
                 renderNodes();
                 loadRecentReadings();
                 // Update history panel if open on this node
